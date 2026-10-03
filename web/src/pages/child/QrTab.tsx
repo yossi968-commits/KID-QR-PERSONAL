@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useI18n } from '../../i18n';
-import type { Child } from '../../lib/api';
+import { DEMO, type Child } from '../../lib/api';
+import { Link } from 'react-router-dom';
 import { QrCanvas, giftUrl, cardPng } from '../../components/Qr';
 
 export default function QrTab({ child }: { child: Child }) {
@@ -27,13 +28,13 @@ export default function QrTab({ child }: { child: Child }) {
         <p className="muted">{t('qr.desc', { name: child.firstName })}</p>
         <div className="row">
           <input readOnly value={url} dir="ltr" onFocus={(e) => e.target.select()} style={{ flex: 1, minWidth: 200 }} />
-          <button className="btn secondary" onClick={() => { navigator.clipboard?.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? t('qr.copied') : t('qr.copy')}</button>
+          <button className="btn secondary" onClick={() => { navigator.clipboard?.writeText(url).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? t('qr.copied') : t('qr.copy')}</button>
         </div>
         <div className="row">
           <a className="btn" style={{ background: '#25d366', color: '#073b1c' }} href={`https://wa.me/?text=${encodeURIComponent(share)}`} target="_blank" rel="noreferrer">💬 {t('qr.whatsapp')}</a>
-          <button className="btn secondary" onClick={download}>⬇️ {t('qr.download')}</button>
-          <button className="btn secondary" onClick={() => window.print()}>🖨️ {t('qr.print')}</button>
-          <a className="btn ghost" href={`/g/${child.giftCode}`} target="_blank" rel="noreferrer">{t('qr.open')} ↗</a>
+          {!DEMO && <button className="btn secondary" onClick={download}>⬇️ {t('qr.download')}</button>}
+          {!DEMO && <button className="btn secondary" onClick={() => window.print()}>🖨️ {t('qr.print')}</button>}
+          {DEMO ? <Link className="btn ghost" to={`/g/${child.giftCode}`}>{t('qr.open')}</Link> : <a className="btn ghost" href={`/g/${child.giftCode}`} target="_blank" rel="noreferrer">{t('qr.open')} ↗</a>}
         </div>
       </div>
     </div>

@@ -17,9 +17,10 @@ export default function Settings({ data, reload }: { data: ChildData; reload: ()
   const [txs, setTxs] = useState<Tx[] | null>(null);
   useEffect(() => { api<{ tracks: Track[] }>('/tracks').then((r) => setTracks(r.tracks)); }, []);
 
+  const [confirming, setConfirming] = useState(false);
   const switchTrack = async () => {
-    if (!confirm(t('settings.confirmSwitch', { track: t(('track.' + track) as any) }))) return;
     await api(`/children/${child.id}/track`, { body: { track } });
+    setConfirming(false);
     reload();
   };
   const save = async () => {
@@ -36,7 +37,15 @@ export default function Settings({ data, reload }: { data: ChildData; reload: ()
         <p className="small muted" style={{ margin: 0 }}>{t('settings.trackDesc')}</p>
         <div className="small">{t('settings.current')}: <b>{t(('track.' + child.track) as any)}</b></div>
         <TrackPicker tracks={tracks} value={track} onChange={setTrack} />
-        <button className="btn" disabled={track === child.track} onClick={switchTrack}>{t('settings.switch')} {t(('track.' + track) as any)}</button>
+        {confirming ? (
+          <div className="banner">
+            <span>{t('settings.confirmSwitch', { track: t(('track.' + track) as any) })}</span>
+            <button className="btn sm" onClick={switchTrack}>{t('settings.switch')} {t(('track.' + track) as any)}</button>
+            <button className="btn ghost sm" onClick={() => setConfirming(false)}>{t('common.cancel')}</button>
+          </div>
+        ) : (
+          <button className="btn" disabled={track === child.track} onClick={() => setConfirming(true)}>{t('settings.switch')} {t(('track.' + track) as any)}</button>
+        )}
       </div>
       <div className="card stack">
         <h3>{t('settings.profileTitle')}</h3>

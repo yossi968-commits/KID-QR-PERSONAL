@@ -16,7 +16,10 @@ export function setToken(t: string | null) {
 }
 export const hasToken = () => Boolean(token);
 
+export const DEMO = import.meta.env.VITE_DEMO === '1';
+
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
+  if (DEMO) return (await import('../demo/mockApi')).mockApi(path, opts, token);
   const res = await fetch('/api' + path, {
     method: opts.method || (opts.body ? 'POST' : 'GET'),
     headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },

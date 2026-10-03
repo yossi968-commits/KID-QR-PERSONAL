@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
+import iconUrl from '../../public/icon.svg';
 
 export default function Layout() {
   const { t, locale, setLocale } = useI18n();
@@ -10,7 +11,7 @@ export default function Layout() {
     <>
       <header className="topbar">
         <div className="container">
-          <Link to="/" className="logo"><img src="/icon.svg" alt="" />{t('appName')}</Link>
+          <Link to="/" className="logo"><img src={iconUrl} alt="" />{t('appName')}</Link>
           <span className="spacer" />
           <nav className="nav">
             {user ? (

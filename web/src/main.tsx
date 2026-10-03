@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { DEMO } from './lib/api';
+import DemoBar from './demo/DemoBar';
 import './styles.css';
 import { I18nProvider } from './i18n';
 import { AuthProvider, useAuth } from './lib/auth';
@@ -16,6 +18,9 @@ import PayPage from './pages/PayPage';
 import Thanks from './pages/Thanks';
 import Admin from './pages/Admin';
 
+// The demo build runs inside a sandboxed frame, so routing stays in memory.
+const Router = DEMO ? MemoryRouter : BrowserRouter;
+
 function Private({ children, admin }: { children: JSX.Element; admin?: boolean }) {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -28,7 +33,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <I18nProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <Router>
+          {DEMO && <DemoBar />}
           <Routes>
             <Route path="/kid/:id" element={<Private><KidMode /></Private>} />
             <Route element={<Layout />}>
@@ -45,12 +51,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
-        </BrowserRouter>
+        </Router>
       </AuthProvider>
     </I18nProvider>
   </React.StrictMode>
 );
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator && import.meta.env.PROD && !DEMO) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
