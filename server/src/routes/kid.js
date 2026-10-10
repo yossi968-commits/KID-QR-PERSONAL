@@ -50,6 +50,7 @@ r.post('/wishes', h((req, res) => {
 r.post('/withdrawals', h((req, res) => {
   const { db, partner, notifier } = req.ctx;
   const amount = toAgorot(req.body.amount);
+  if (req.child.account_status !== 'active') throw bad('fund_not_open');
   if (amount > withdrawalBudget(db, partner, req.child).available) throw bad('over_budget');
   const wishId = req.body.wishId && db.prepare('SELECT 1 FROM wishes WHERE id=? AND child_id=?').get(Number(req.body.wishId), req.child.id) ? Number(req.body.wishId) : null;
   db.prepare('INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, tax_estimate, note) VALUES (?,?,?,?,?,?)')

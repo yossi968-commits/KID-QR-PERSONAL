@@ -7,6 +7,7 @@ import { portfolioSummary, switchTrack } from '../lib/portfolio.js';
 import { pledgeView } from '../lib/pledges.js';
 import { plannerPayload, withdrawalBudget, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
+import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef } from '../lib/fund.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 
 const r = Router();
@@ -39,33 +40,34 @@ r.post('/', h((req, res) => {
   const birthDate = requireDate(req.body.birthDate, 'birth_date');
   const age = ageOn(birthDate);
   if (age < 0 || age >= 18) throw bad('child_age_out_of_range');
-  const track = partner.listTracks().some((t) => t.id === req.body.track) ? req.body.track : 'equity';
+  const track = partner.listTracks().some((t) => t.id === req.body.track && t.core) ? req.body.track : 'equity';
+  const provider = PROVIDERS.some((p) => p.id === req.body.provider) ? req.body.provider : DEFAULT_PROVIDER;
   const avatar = AVATARS.includes(req.body.avatar) ? req.body.avatar : AVATARS[0];
   let code;
   do code = newGiftCode(); while (db.prepare('SELECT 1 FROM children WHERE gift_code=?').get(code));
   const { lastInsertRowid } = db
-    .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message)
-              VALUES (?,?,?,?,?,?,?,?,?,?)`)
+    .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message, provider, account_status, application_ref)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(
       req.user.id, firstName, req.body.lastName?.trim() || null, birthDate, avatar, code, track,
       req.body.goalText?.trim()?.slice(0, 120) || null,
       req.body.goalAmount ? toAgorot(req.body.goalAmount, 'goal_amount') : null,
-      req.body.publicMessage?.trim()?.slice(0, 280) || null
+      req.body.publicMessage?.trim()?.slice(0, 280) || null,
+      provider, 'pending_docs', newApplicationRef()
     );
+  // The QR works from now on; the fund opens once the document checklist is complete.
   const child = db.prepare('SELECT * FROM children WHERE id=?').get(lastInsertRowid);
-  const { accountId } = partner.openAccount({ guardian: req.user, child });
-  db.prepare('UPDATE children SET partner_account_id=? WHERE id=?').run(accountId, child.id);
   // Every child gets a standing birthday campaign from day one.
   db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(child.id, 'birthday', `יום הולדת ${age + 1}`, nextBirthday(birthDate));
-  audit(db, req.user.id, 'child_created', { childId: child.id, accountId });
-  res.status(201).json({ child: childView({ ...child, partner_account_id: accountId }) });
+  audit(db, req.user.id, 'child_created', { childId: child.id, provider });
+  res.status(201).json({ child: childView(child), documents: docsStatus(db, child) });
 }));
 
 r.get('/:id', h((req, res) => {
   const { db, partner } = req.ctx;
   const c = loadChild(req);
   const events = db.prepare('SELECT * FROM events WHERE child_id=? ORDER BY date DESC').all(c.id);
-  res.json({ child: childView(c), portfolio: portfolioSummary(db, partner, c), events });
+  res.json({ child: childView(c), portfolio: portfolioSummary(db, partner, c), events, documents: docsStatus(db, c) });
 }));
 
 r.patch('/:id', h((req, res) => {
@@ -89,7 +91,12 @@ r.post('/:id/track', h((req, res) => {
   const c = loadChild(req);
   if (!partner.listTracks().some((t) => t.id === req.body.track)) throw bad('invalid_track');
   if (req.body.track === c.track) return res.json({ moved: 0 });
+  const next = nextSwitchDate(c);
+  if (next && today() < next) throw bad('track_switch_quarter');
+  // Until 18 both parents sign actions on the child's fund.
+  if (c.account_status === 'active' && req.body.coSigned !== true) throw bad('second_guardian_signature_required');
   const out = switchTrack(db, partner, c, req.body.track);
+  db.prepare('UPDATE children SET track_changed_at=? WHERE id=?').run(today(), c.id);
   audit(db, req.user.id, 'track_switched', { childId: c.id, from: c.track, to: req.body.track });
   res.json(out);
 }));
@@ -149,8 +156,11 @@ r.post('/:id/withdraw-pct', h((req, res) => {
   res.json(plannerPayload(req.ctx.db, req.ctx.partner, req.ctx.db.prepare('SELECT * FROM children WHERE id=?').get(c.id)));
 }));
 
-function payoutTarget(body) {
+function payoutTarget(body, c) {
+  if (c.account_status !== 'active') throw bad('fund_not_open');
   if (!PAYOUT_METHODS.includes(body.method)) throw bad('invalid_payout_method');
+  // Until 18 both parents sign withdrawals from the child's fund.
+  if (body.coSigned !== true) throw bad('second_guardian_signature_required');
   return { method: body.method, destination: requireString(body.destination, 'destination', { max: 60 }) };
 }
 
@@ -159,7 +169,7 @@ r.post('/:id/withdrawals', h((req, res) => {
   const { db, partner } = req.ctx;
   const c = loadChild(req);
   const amount = toAgorot(req.body.amount);
-  const target = payoutTarget(req.body);
+  const target = payoutTarget(req.body, c);
   if (amount > withdrawalBudget(db, partner, c).available) throw bad('over_budget');
   const wishId = req.body.wishId ? Number(req.body.wishId) : null;
   const { lastInsertRowid } = db
@@ -176,7 +186,7 @@ r.post('/:id/withdrawals/:wid/approve', h((req, res) => {
   const c = loadChild(req);
   const w = db.prepare(`SELECT * FROM withdrawals WHERE id=? AND child_id=? AND status='requested'`).get(Number(req.params.wid), c.id);
   if (!w) throw notFound();
-  executeWithdrawal(req.ctx, c, w, payoutTarget(req.body));
+  executeWithdrawal(req.ctx, c, w, payoutTarget(req.body, c));
   audit(db, req.user.id, 'withdrawal_approved', { childId: c.id, withdrawalId: w.id });
   res.json(plannerPayload(db, partner, c));
 }));
@@ -185,6 +195,18 @@ r.post('/:id/withdrawals/:wid/reject', h((req, res) => {
   const c = loadChild(req);
   req.ctx.db.prepare(`UPDATE withdrawals SET status='rejected', decided_at=datetime('now') WHERE id=? AND child_id=? AND status='requested'`).run(Number(req.params.wid), c.id);
   res.json(plannerPayload(req.ctx.db, req.ctx.partner, c));
+}));
+
+// Fund opening checklist: the parent can finish it any time after the QR was created.
+r.get('/:id/documents', h((req, res) => res.json(docsStatus(req.ctx.db, loadChild(req)))));
+
+r.post('/:id/documents/:doc', h((req, res) => {
+  const c = loadChild(req);
+  const out = submitDocument(req.ctx, c, req.params.doc, req.body);
+  if (!out) throw notFound();
+  if (out.error) throw bad(out.error);
+  audit(req.ctx.db, req.user.id, 'document_submitted', { childId: c.id, doc: req.params.doc });
+  res.json(out);
 }));
 
 r.post('/:id/events', h((req, res) => {

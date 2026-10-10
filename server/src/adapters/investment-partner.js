@@ -20,11 +20,14 @@
  */
 import crypto from 'node:crypto';
 
+// `core` tracks are the three offered when the fund is opened (solid, conservative,
+// equities); the others show up as "more tracks" and the list can grow.
 export const TRACKS = [
-  { id: 'conservative', risk: 2, expectedReturn: 0.035, annualVol: 0.04, mgmtFee: 0.004, equityShare: 0.15 },
-  { id: 'balanced', risk: 3, expectedReturn: 0.055, annualVol: 0.09, mgmtFee: 0.005, equityShare: 0.5 },
-  { id: 'equity', risk: 5, expectedReturn: 0.075, annualVol: 0.16, mgmtFee: 0.005, equityShare: 1 },
-  { id: 'sp500', risk: 5, expectedReturn: 0.08, annualVol: 0.17, mgmtFee: 0.003, equityShare: 1 },
+  { id: 'conservative', core: true, risk: 2, expectedReturn: 0.04, annualVol: 0.05, mgmtFee: 0.006, equityShare: 0.25 },
+  { id: 'balanced', core: false, risk: 3, expectedReturn: 0.055, annualVol: 0.09, mgmtFee: 0.006, equityShare: 0.5 },
+  { id: 'equity', core: true, risk: 5, expectedReturn: 0.075, annualVol: 0.16, mgmtFee: 0.006, equityShare: 1 },
+  { id: 'sp500', core: false, risk: 5, expectedReturn: 0.08, annualVol: 0.17, mgmtFee: 0.005, equityShare: 1 },
+  { id: 'solid', core: true, risk: 1, expectedReturn: 0.03, annualVol: 0.02, mgmtFee: 0.006, equityShare: 0 },
 ];
 
 const START = Date.UTC(2004, 0, 1);
@@ -68,7 +71,8 @@ export class SandboxInvestmentPartner {
   }
 
   openAccount({ child }) {
-    return { accountId: 'SBX-' + crypto.randomBytes(5).toString('hex').toUpperCase() + '-' + child.id };
+    const house = (child.provider || 'sbx').slice(0, 3).toUpperCase();
+    return { accountId: `${house}-GML-` + crypto.randomBytes(4).toString('hex').toUpperCase() + '-' + child.id };
   }
 
   #index(date) {

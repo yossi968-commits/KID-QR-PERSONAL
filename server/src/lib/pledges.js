@@ -19,10 +19,12 @@ export const newPledgeToken = () => crypto.randomBytes(12).toString('base64url')
 export function settleContribution({ db, partner, notifier }, x, paymentRef, date = today()) {
   db.prepare(`UPDATE contributions SET status='paid', payment_ref=?, paid_at=? WHERE id=?`).run(paymentRef, `${date} ${new Date().toISOString().slice(11, 19)}`, x.id);
   const child = db.prepare('SELECT * FROM children WHERE id=?').get(x.child_id);
-  investContribution(db, partner, child, x, date);
+  // Until the fund is open the money waits as 'paid' and is invested on activation.
+  const open = (child.account_status || 'active') === 'active';
+  if (open) investContribution(db, partner, child, x, date);
   const guardian = db.prepare('SELECT email FROM users WHERE id=?').get(child.guardian_id);
   const monthly = x.pledge_id ? ' (מתנה חודשית)' : '';
-  notifier.send({ to: guardian.email, subject: `🎁 ${x.giver_name} שלח/ה מתנה לעתיד של ${child.first_name}${monthly}`, body: `₪${x.amount / 100} הושקעו בחשבון. ${x.message || ''}` });
+  notifier.send({ to: guardian.email, subject: `🎁 ${x.giver_name} שלח/ה מתנה לעתיד של ${child.first_name}${monthly}`, body: `₪${x.amount / 100} ${open ? 'הושקעו בחשבון' : 'ממתינים ויושקעו עם פתיחת הקופה'}. ${x.message || ''}` });
   if (x.giver_email) notifier.send({ to: x.giver_email, subject: `קבלה: מתנה לעתיד של ${child.first_name}`, body: `תודה! ₪${x.amount / 100} הושקעו עבור ${child.first_name}. אסמכתא ${paymentRef}.` });
   return child;
 }

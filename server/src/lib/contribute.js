@@ -2,6 +2,7 @@ import { bad, requireString, toAgorot } from './http.js';
 import { ageOn } from './dates.js';
 import { GIFT_MIN, GIFT_MAX } from './portfolio.js';
 import { newPledgeToken } from './pledges.js';
+import { ANNUAL_CEILING, depositedThisYear } from './fund.js';
 
 /**
  * Where money comes from. Gifts are what family gives; the rest is the child's own
@@ -19,6 +20,7 @@ export const isEarning = (source) => source && source !== 'gift';
 export function startContribution({ db, payments }, c, body) {
   const amount = toAgorot(body.amount);
   if (amount < GIFT_MIN || amount > GIFT_MAX) throw bad('amount_out_of_range');
+  if (depositedThisYear(db, c.id) + amount > ANNUAL_CEILING) throw bad('annual_ceiling');
   const giverName = requireString(body.giverName, 'giver_name', { max: 60 });
   const giverEmail = body.giverEmail ? requireString(body.giverEmail, 'giver_email', { max: 120 }) : null;
   const message = body.message ? String(body.message).trim().slice(0, 500) : null;

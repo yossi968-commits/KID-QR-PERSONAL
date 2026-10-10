@@ -8,10 +8,13 @@ import { GIFT_MIN, GIFT_MAX } from '../lib/portfolio.js';
 import { settleContribution, chargePledge, pledgeView } from '../lib/pledges.js';
 import { startContribution, SOURCES } from '../lib/contribute.js';
 import { lessonsFor } from '../content/lessons.js';
+import { PROVIDERS, DEFAULT_PROVIDER, DOCUMENTS, ANNUAL_CEILING } from '../lib/fund.js';
 
 const r = Router();
 
 r.get('/tracks', (req, res) => res.json({ tracks: req.ctx.partner.listTracks(), partner: req.ctx.partner.name }));
+
+r.get('/providers', (req, res) => res.json({ providers: PROVIDERS, defaultProvider: DEFAULT_PROVIDER, documents: DOCUMENTS.map((d) => d.id), annualCeiling: ANNUAL_CEILING }));
 
 r.get('/payment-methods', (req, res) => res.json({ methods: req.ctx.payments.methods }));
 

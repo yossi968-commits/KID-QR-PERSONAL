@@ -5,9 +5,28 @@ import { createApp } from '../src/app.js';
 import { SandboxInvestmentPartner } from '../src/adapters/investment-partner.js';
 import { SandboxPayments } from '../src/adapters/payments.js';
 import { validIsraeliId } from '../src/routes/auth.js';
+import { activateFund, remindMissingDocs } from '../src/lib/fund.js';
+import { OutboxNotifier } from '../src/adapters/notifier.js';
 
 let server, base, token, childId, giftCode;
 const db = openDb(':memory:');
+const ctx = { db, partner: new SandboxInvestmentPartner(), payments: new SandboxPayments(), notifier: new OutboxNotifier(db) };
+
+const DOCS = {
+  guardian_id: { fileName: 'id.jpg', size: 200000 },
+  second_guardian_id: { fileName: 'id2.pdf', size: 200000 },
+  child_birth: { fileName: 'sefach.png', size: 300000 },
+  bank_confirmation: { fileName: 'bank.pdf', size: 90000 },
+  kyc_form: { answers: { occupation: 'מהנדסת', sourceOfFunds: 'מתנות משפחה', pep: false } },
+  application_signed: { signerName: 'הורה', secondSignerName: 'הורה שני', agree: true },
+};
+/** Complete the checklist through the API, then confirm as the investment house would. */
+async function openFund(id) {
+  let st;
+  for (const [doc, body] of Object.entries(DOCS)) st = (await api(`/children/${id}/documents/${doc}`, { method: 'POST', body })).body;
+  assert.equal(st.accountStatus, 'in_review');
+  return activateFund(ctx, db.prepare('SELECT * FROM children WHERE id=?').get(id));
+}
 
 async function api(path, { method = 'GET', body, auth = true } = {}) {
   const res = await fetch(base + path, {
@@ -19,7 +38,7 @@ async function api(path, { method = 'GET', body, auth = true } = {}) {
 }
 
 before(async () => {
-  const app = createApp({ db, partner: new SandboxInvestmentPartner(), payments: new SandboxPayments() });
+  const app = createApp(ctx);
   await new Promise((r) => (server = app.listen(0, r)));
   base = `http://127.0.0.1:${server.address().port}/api`;
 });
@@ -48,14 +67,21 @@ test('child creation requires KYC', async () => {
   assert.equal(k.body.user.kycStatus, 'verified');
 });
 
-test('create child gets QR code, partner account and birthday event', async () => {
-  const r = await api('/children', { method: 'POST', body: { firstName: 'דני', birthDate: '2020-01-01', track: 'balanced' } });
+test('create child gets QR code and birthday event; fund opens after the document checklist', async () => {
+  const r = await api('/children', { method: 'POST', body: { firstName: 'דני', birthDate: '2020-01-01', track: 'conservative', provider: 'meitav' } });
   assert.equal(r.status, 201);
   childId = r.body.child.id;
   giftCode = r.body.child.giftCode;
   assert.match(giftCode, /^[a-z0-9]{10}$/);
-  assert.match(r.body.child.partnerAccountId, /^SBX-/);
+  assert.equal(r.body.child.accountStatus, 'pending_docs');
+  assert.equal(r.body.child.providerName, 'מיטב');
+  assert.equal(r.body.documents.missing.length, 6);
+  assert.equal((await api(`/children/${childId}/documents/guardian_id`, { method: 'POST', body: { fileName: 'virus.exe' } })).body.error, 'invalid_file');
+  assert.equal((await api(`/children/${childId}/documents/application_signed`, { method: 'POST', body: { signerName: 'x', agree: true } })).body.error, 'both_signatures_required');
+  const { accountId } = await openFund(childId);
+  assert.match(accountId, /^MEI-GML-/);
   const d = await api(`/children/${childId}`);
+  assert.equal(d.body.child.accountStatus, 'active');
   assert.equal(d.body.events.length, 1);
   assert.equal(d.body.portfolio.value, 0);
 });
@@ -86,13 +112,31 @@ test('gift flow: public page -> checkout -> invested', async () => {
   assert.equal(wall.body.giverCount, 1);
 });
 
-test('switch track keeps value', async () => {
+test('switch track keeps value; both parents sign; once per quarter', async () => {
   const before = (await api(`/children/${childId}`)).body.portfolio.value;
-  await api(`/children/${childId}/track`, { method: 'POST', body: { track: 'equity' } });
+  assert.equal((await api(`/children/${childId}/track`, { method: 'POST', body: { track: 'equity' } })).body.error, 'second_guardian_signature_required');
+  await api(`/children/${childId}/track`, { method: 'POST', body: { track: 'equity', coSigned: true } });
   const d = await api(`/children/${childId}`);
   assert.equal(d.body.child.track, 'equity');
   assert.ok(Math.abs(d.body.portfolio.value - before) <= 2);
   assert.equal(d.body.portfolio.holdings.length, 1);
+  assert.ok(d.body.child.nextTrackSwitch > new Date().toISOString().slice(0, 10));
+  assert.equal((await api(`/children/${childId}/track`, { method: 'POST', body: { track: 'solid', coSigned: true } })).body.error, 'track_switch_quarter');
+});
+
+test('gifts before the fund opens wait, then are invested on opening; parents get reminders', async () => {
+  const kid = (await api('/children', { method: 'POST', body: { firstName: 'מיה', birthDate: '2026-01-15', provider: 'altshuler' } })).body.child;
+  const c = await api(`/gift/${kid.giftCode}/contribute`, { method: 'POST', auth: false, body: { amount: 360, giverName: 'סבא' } });
+  await api(`/payments/${c.body.checkoutId}/complete`, { method: 'POST', auth: false, body: {} });
+  let d = (await api(`/children/${kid.id}`)).body;
+  assert.equal(d.portfolio.held, 36000);
+  assert.equal(d.portfolio.value, 0);
+  assert.equal(remindMissingDocs(ctx).reminded, 1);
+  assert.equal(remindMissingDocs(ctx).reminded, 0, 'not again within 3 days');
+  await openFund(kid.id);
+  d = (await api(`/children/${kid.id}`)).body;
+  assert.equal(d.portfolio.held, 0);
+  assert.equal(d.portfolio.deposited, 36000);
 });
 
 test('lessons graded and stars counted', async () => {
@@ -224,7 +268,7 @@ test('planned gifts: child requests within the yearly budget, parent approves th
 
   token = parentToken;
   const valueBefore = (await api(`/children/${childId}`)).body.portfolio.value;
-  plan = (await api(`/children/${childId}/withdrawals/${req.id}/approve`, { method: 'POST', body: { method: 'bit', destination: '050-0000000' } })).body;
+  plan = (await api(`/children/${childId}/withdrawals/${req.id}/approve`, { method: 'POST', body: { method: 'bit', destination: '050-0000000', coSigned: true } })).body;
   assert.equal(plan.withdrawals[0].status, 'paid');
   const valueAfter = (await api(`/children/${childId}`)).body.portfolio.value;
   assert.ok(Math.abs(valueBefore - valueAfter - req.amount) <= 2, 'units sold for the payout');

@@ -1,3 +1,4 @@
+import { nextSwitchDate, providerName } from './fund.js';
 import { ageOn, nextBirthday, schoolGrade, stageOf } from './dates.js';
 import { lessonsFor, gradeLesson, AGE_BANDS } from '../content/lessons.js';
 
@@ -19,6 +20,11 @@ export function childView(c) {
     goalAmount: c.goal_amount,
     publicMessage: c.public_message,
     kidUsername: c.kid_username || null,
+    provider: c.provider,
+    providerName: providerName(c.provider),
+    accountStatus: c.account_status || 'active',
+    accountOpenedAt: c.account_opened_at || null,
+    nextTrackSwitch: nextSwitchDate(c),
   };
 }
 

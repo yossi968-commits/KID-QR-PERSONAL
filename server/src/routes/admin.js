@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { h } from '../lib/http.js';
-import { requireAdmin } from '../lib/guards.js';
+import { h, notFound } from '../lib/http.js';
+import { requireAdmin, audit } from '../lib/guards.js';
 import { holdings } from '../lib/portfolio.js';
 import { today } from '../lib/dates.js';
 import { runDuePledges } from '../lib/pledges.js';
+import { docsStatus, activateFund, remindMissingDocs, providerName } from '../lib/fund.js';
 
 const r = Router();
 r.use(requireAdmin);
@@ -38,6 +39,9 @@ r.get('/stats', h((req, res) => {
     activePledges: one(`SELECT COUNT(*) AS n FROM pledges WHERE status='active'`).n,
     monthlyRecurring: one(`SELECT COALESCE(SUM(amount),0) AS s FROM pledges WHERE status='active'`).s,
     bySource: db.prepare(`SELECT COALESCE(source,'gift') AS source, COUNT(*) AS n, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
+    byProvider: db.prepare(`SELECT provider, COUNT(*) AS children, SUM(account_status='active') AS open FROM children GROUP BY 1 ORDER BY 2 DESC`).all(),
+    applicationsOpen: one(`SELECT COUNT(*) AS n FROM children WHERE account_status<>'active'`).n,
+    heldAmount: one(`SELECT COALESCE(SUM(amount),0) AS s FROM contributions WHERE status='paid'`).s,
     byMethod: db.prepare(`SELECT COALESCE(method,'card') AS method, COUNT(*) AS gifts, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
   });
 }));
@@ -77,5 +81,32 @@ r.get('/pledges', h((req, res) => {
 
 /** Run the monthly-gift scheduler now (it also runs automatically every few hours). */
 r.post('/pledges/run', h((req, res) => res.json(runDuePledges(req.ctx))));
+
+/** Fund applications waiting on documents or on the investment house. */
+r.get('/applications', h((req, res) => {
+  const { db } = req.ctx;
+  const rows = db
+    .prepare(`SELECT c.*, u.name AS guardian_name, u.email AS guardian_email FROM children c JOIN users u ON u.id=c.guardian_id ORDER BY (c.account_status='active'), c.created_at DESC`)
+    .all();
+  res.json({
+    applications: rows.map((c) => ({
+      childId: c.id, child: c.first_name, guardian: c.guardian_name, guardianEmail: c.guardian_email, provider: c.provider, providerName: providerName(c.provider),
+      status: c.account_status, ref: c.application_ref, accountId: c.partner_account_id, openedAt: c.account_opened_at, createdAt: c.created_at,
+      docs: (({ done, total, missing }) => ({ done, total, missing }))(docsStatus(db, c)),
+      held: db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM contributions WHERE child_id=? AND status='paid'`).get(c.id).s,
+    })),
+  });
+}));
+
+/** Sandbox stand-in for the investment house confirming the fund. */
+r.post('/applications/:childId/approve', h((req, res) => {
+  const c = req.ctx.db.prepare(`SELECT * FROM children WHERE id=? AND account_status='in_review'`).get(Number(req.params.childId));
+  if (!c) throw notFound();
+  const out = activateFund(req.ctx, c);
+  audit(req.ctx.db, req.user.id, 'fund_opened', { childId: c.id, accountId: out.accountId });
+  res.json(out);
+}));
+
+r.post('/reminders/run', h((req, res) => res.json(remindMissingDocs(req.ctx))));
 
 export default r;

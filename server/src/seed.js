@@ -3,6 +3,7 @@
  * invested every year since birth (back-dated against sandbox prices), plus an admin.
  *   parent: demo@kfq.app / demo1234     admin: admin@kfq.app / admin1234
  *   kids (username / PIN): noa, itay, omer / 1234
+ *   newborn אלה: fund documents still missing; רוני (yael@example.com): waiting for the investment house
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,10 +14,9 @@ import { investContribution } from './lib/portfolio.js';
 import { SandboxPayments } from './adapters/payments.js';
 import { runDuePledges, newPledgeToken } from './lib/pledges.js';
 import { executeWithdrawal } from './lib/wishes.js';
+import { DOCUMENTS, newApplicationRef } from './lib/fund.js';
 import { addYears, today, nextBirthday, ageOn } from './lib/dates.js';
 
-const file = process.env.DB_PATH || path.resolve('data/kfq.db');
-if (file !== ':memory:') for (const f of [file, file + '-wal', file + '-shm']) fs.rmSync(f, { force: true });
 
 export function seed(db, partner = new SandboxInvestmentPartner()) {
   const addUser = (email, pw, name, role, kyc) =>
@@ -39,16 +39,16 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
 
   const kids = [
-    { first: 'נועה', birth: '2019-05-12', avatar: '🦄', track: 'equity', goal: 'לימודים באוניברסיטה', goalAmount: 15000000, msg: 'נועה חוסכת לחלום הגדול שלה 🎓', code: 'noa2019demo', user: 'noa' },
-    { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'balanced', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
-    { first: 'איתי', birth: '2013-11-03', avatar: '🚀', track: 'sp500', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'איתי עולה לתורה בקרוב! במקום צ\'ק, מתנה שגדלה איתו 🚀', code: 'itay2013demo', user: 'itay' },
+    { first: 'נועה', birth: '2019-05-12', avatar: '🦄', track: 'equity', provider: 'altshuler', goal: 'לימודים באוניברסיטה', goalAmount: 15000000, msg: 'נועה חוסכת לחלום הגדול שלה 🎓', code: 'noa2019demo', user: 'noa' },
+    { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'conservative', provider: 'meitav', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
+    { first: 'איתי', birth: '2013-11-03', avatar: '🚀', track: 'equity', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'איתי עולה לתורה בקרוב! במקום צ\'ק, מתנה שגדלה איתו 🚀', code: 'itay2013demo', user: 'itay' },
   ];
 
   for (const k of kids) {
     const code = k.code;
     const childId = db
-      .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message) VALUES (?,?,?,?,?,?,?,?,?,?)`)
-      .run(parent, k.first, 'לוי', k.birth, k.avatar, code, k.track, k.goal, k.goalAmount, k.msg).lastInsertRowid;
+      .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message, provider, application_ref, account_opened_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(parent, k.first, 'לוי', k.birth, k.avatar, code, k.track, k.goal, k.goalAmount, k.msg, k.provider, newApplicationRef(), k.birth).lastInsertRowid;
     db.prepare('UPDATE children SET kid_username=?, kid_pin_hash=? WHERE id=?').run(k.user, hashPassword('1234'), childId);
     const child = db.prepare('SELECT * FROM children WHERE id=?').get(childId);
     child.partner_account_id = partner.openAccount({ child }).accountId;
@@ -117,6 +117,28 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   executeWithdrawal(ctx, itay, db.prepare('SELECT * FROM withdrawals WHERE id=?').get(wd), { method: 'bit', destination: '050-1234567' }, '2023-11-05');
   db.prepare(`INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, note, tax_estimate) VALUES (?,?,?,?,?,?)`).run(kidId('omer'), omerLaptop, 120000, 'child', 'מקדמה למחשב, אחסוך את השאר', 4200);
 
+  // A newborn whose QR is already collecting gifts while the parent finishes the fund documents,
+  // and another family's baby whose application waits for the investment house.
+  const newborn = (guardian, first, birth, avatar, provider, code, docs, status) => {
+    const id = db
+      .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, provider, account_status, application_ref, public_message) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(guardian, first, guardian === parent ? 'לוי' : 'כהן', birth, avatar, code, 'equity', provider, status, newApplicationRef(), `${first} נולדה! במקום עוד בגד, מתנה שגדלה איתה 💕`).lastInsertRowid;
+    for (const d of DOCUMENTS.slice(0, docs))
+      db.prepare(`INSERT INTO child_documents (child_id, doc_type, status, file_name, uploaded_at) VALUES (?,?,?,?,?)`).run(id, d.id, 'received', d.kind === 'upload' ? `${d.id}.pdf` : null, birth + ' 20:00:00');
+    const ev = db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(id, 'birthday', 'לידה', birth).lastInsertRowid;
+    db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(id, 'birthday', 'יום הולדת 1', addYears(birth, 1));
+    givers.slice(0, 4).forEach(([name, email, message], i) => {
+      const d = new Date(Date.parse(birth) + (i + 2) * 86400000).toISOString().slice(0, 10);
+      db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, status, payment_ref, paid_at, method) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+        .run(id, ev, name, email, [36000, 18000, 50000, 26000][i], message, 'paid', 'SEED-NB-' + id + '-' + i, d + ' 11:00:00', ['bit', 'card', 'bank_transfer', 'paybox'][i]);
+    });
+    return id;
+  };
+  const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  newborn(parent, 'אלה', daysAgo(40), '🐣', 'altshuler', 'ella2026demo', 3, 'pending_docs');
+  const yael = addUser('yael@example.com', 'demo1234', 'יעל כהן', 'parent', 'verified');
+  newborn(yael, 'רוני', daysAgo(12), '🐥', 'more', 'roni2026demo', DOCUMENTS.length, 'in_review');
+
   const progress = {
     noa: [['what-is-money', 3], ['three-jars', 3]],
     itay: [['needs-wants', 4], ['compound-interest', 5], ['what-is-a-share', 5]],
@@ -129,6 +151,8 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const file = process.env.DB_PATH || path.resolve('data/kfq.db');
+  if (file !== ':memory:') for (const f of [file, file + '-wal', file + '-shm']) fs.rmSync(f, { force: true });
   const db = openDb(file);
   seed(db);
   console.log('Seeded', file, '\n  parent: demo@kfq.app / demo1234\n  admin:  admin@kfq.app / admin1234\n  kids:   noa / itay / omer, PIN 1234\n  gift pages: /g/noa2019demo  /g/itay2013demo  /g/omer2009demo');

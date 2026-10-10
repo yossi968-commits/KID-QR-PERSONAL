@@ -149,6 +149,16 @@ CREATE TABLE IF NOT EXISTS audit_log (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS child_documents (
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  doc_type TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('received','verified','rejected')),
+  file_name TEXT,
+  data TEXT,
+  uploaded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (child_id, doc_type)
+);
+
 CREATE INDEX IF NOT EXISTS idx_children_guardian ON children(guardian_id);
 CREATE INDEX IF NOT EXISTS idx_contrib_child ON contributions(child_id);
 CREATE INDEX IF NOT EXISTS idx_tx_child ON transactions(child_id);
@@ -174,6 +184,13 @@ function migrate(db) {
   if (!ccols.has('pledge_id')) db.exec('ALTER TABLE contributions ADD COLUMN pledge_id INTEGER REFERENCES pledges(id)');
   if (!cols.has('withdraw_pct')) db.exec('ALTER TABLE children ADD COLUMN withdraw_pct INTEGER NOT NULL DEFAULT 25');
   if (!cols.has('kid_pin_hash')) db.exec('ALTER TABLE children ADD COLUMN kid_pin_hash TEXT');
+  // Investment provident fund at the chosen house; existing children were opened before checklists.
+  if (!cols.has('provider')) db.exec(`ALTER TABLE children ADD COLUMN provider TEXT NOT NULL DEFAULT 'altshuler'`);
+  if (!cols.has('account_status')) db.exec(`ALTER TABLE children ADD COLUMN account_status TEXT NOT NULL DEFAULT 'active'`);
+  if (!cols.has('application_ref')) db.exec('ALTER TABLE children ADD COLUMN application_ref TEXT');
+  if (!cols.has('account_opened_at')) db.exec('ALTER TABLE children ADD COLUMN account_opened_at TEXT');
+  if (!cols.has('docs_reminded_at')) db.exec('ALTER TABLE children ADD COLUMN docs_reminded_at TEXT');
+  if (!cols.has('track_changed_at')) db.exec('ALTER TABLE children ADD COLUMN track_changed_at TEXT');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
 }
 
