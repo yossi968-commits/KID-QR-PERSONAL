@@ -56,6 +56,7 @@ export async function mockApi(path: string, opts: { method?: string; body?: unkn
     ctx,
     user: t?.uid ? ctx.db.prepare('SELECT * FROM users WHERE id=?').get(t.uid) || null : null,
     child: t?.cid ? ctx.db.prepare('SELECT * FROM children WHERE id=?').get(t.cid) || null : null,
+    employer: t?.eid ? ctx.db.prepare('SELECT * FROM employers WHERE id=?').get(t.eid) || null : null,
     get: () => undefined,
   };
   let out: { status: number; body: any } | null = null;

@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import he, { type Dict } from './he';
-import en from './en';
+import heBase from './he';
+import enBase from './en';
+import { heMore, enMore } from './more';
+
+const he = { ...heBase, ...heMore };
+const en = { ...enBase, ...enMore };
+type Dict = typeof he;
 
 export type Locale = 'he' | 'en';
 const DICTS: Record<Locale, Dict> = { he, en };

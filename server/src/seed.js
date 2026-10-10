@@ -52,6 +52,8 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
       .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message, provider, application_ref, account_opened_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .run(parent, k.first, 'לוי', k.birth, k.avatar, code, k.track, k.goal, k.goalAmount, k.msg, k.provider, newApplicationRef(), k.birth).lastInsertRowid;
     db.prepare('UPDATE children SET kid_username=?, kid_pin_hash=? WHERE id=?').run(k.user, hashPassword('1234'), childId);
+    for (const d of DOCUMENTS)
+      db.prepare(`INSERT INTO child_documents (child_id, doc_type, status, file_name, uploaded_at) VALUES (?,?,?,?,?)`).run(childId, d.id, 'received', d.kind === 'upload' ? `${d.id}.pdf` : null, k.birth + ' 20:00:00');
     const child = db.prepare('SELECT * FROM children WHERE id=?').get(childId);
     child.partner_account_id = partner.openAccount({ child }).accountId;
     db.prepare('UPDATE children SET partner_account_id=? WHERE id=?').run(child.partner_account_id, childId);

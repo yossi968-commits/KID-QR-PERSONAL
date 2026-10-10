@@ -17,6 +17,8 @@ export function setToken(t: string | null) {
 export const hasToken = () => Boolean(token);
 
 export const DEMO = import.meta.env.VITE_DEMO === '1';
+/** Origin printed in shared links; the demo runs from a file, so it shows the product domain instead. */
+export const publicOrigin = () => (DEMO || !location.origin.startsWith('http') ? 'https://kfq.app' : location.origin);
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
   if (DEMO) return (await import('../demo/mockApi')).mockApi(path, opts, token);
@@ -30,20 +32,53 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   return data as T;
 }
 
+export type Stage = 'young' | 'middle' | 'senior';
 export type User = { id: number; email: string; name: string; phone?: string; role: 'parent' | 'admin'; locale: 'he' | 'en'; kycStatus: string };
+export type AccountStatus = 'pending_docs' | 'in_review' | 'active';
 export type Child = {
-  id: number; firstName: string; lastName?: string; birthDate: string; age: number; nextBirthday: string; avatar: string;
-  giftCode: string; track: string; partnerAccountId: string; goalText?: string; goalAmount?: number; publicMessage?: string;
+  id: number; firstName: string; lastName?: string; birthDate: string; age: number; grade: number; stage: Stage; nextBirthday: string; avatar: string;
+  giftCode: string; track: string; partnerAccountId?: string; goalText?: string; goalAmount?: number; publicMessage?: string; kidUsername?: string | null;
+  provider: string; providerName: string; accountStatus: AccountStatus; accountOpenedAt?: string | null; nextTrackSwitch?: string | null;
   value?: number; deposited?: number;
 };
-export type Track = { id: string; risk: number; expectedReturn: number; annualVol: number; mgmtFee: number; equityShare: number };
+export type Track = { id: string; core: boolean; risk: number; expectedReturn: number; annualVol: number; mgmtFee: number; equityShare: number };
 export type Portfolio = {
-  value: number; deposited: number; gain: number; gainPct: number; giverCount: number;
+  value: number; deposited: number; gain: number; gainPct: number; giverCount: number; earned: number; held: number;
   holdings: { track: string; units: number; value: number }[];
   history: { date: string; value: number; deposited: number }[];
   projection: { payoutDate: string; payoutAge: number; annualAssumed: number; points: { age: number; low: number; mid: number; high: number }[]; finals: { low: number; mid: number; high: number } };
 };
 export type EventRow = { id: number; type: string; title: string; date: string; goal_amount: number | null; active: number };
+export type DocItem = { id: string; kind: 'upload' | 'form' | 'sign'; status: 'missing' | 'received' | 'verified' | 'rejected'; fileName: string | null; uploadedAt: string | null };
+export type Docs = { items: DocItem[]; missing: string[]; done: number; total: number; accountStatus: AccountStatus; applicationRef: string };
+export type ChildData = { child: Child; portfolio: Portfolio; events: EventRow[]; documents: Docs };
+export type Gift = {
+  id: number; giverName: string; giverEmail?: string; amount: number; status: string; source: string; method?: string; monthly: boolean;
+  eventTitle?: string; paidAt: string; thankedAt?: string; unlockAge: number | null; sealed: boolean; message: string | null;
+};
+export type Pledge = { id: number; token: string; giverName: string; amount: number; method: string; status: string; nextDate: string; charges: number; source: string; institutionCode?: string; mandateRef?: string; createdAt: string };
+export type Wish = { id: number; title: string; icon: string; targetAmount: number; targetDate: string | null; status: string; createdBy: string; withdrawn: number; costAt21: number };
+export type Withdrawal = { id: number; wishId: number | null; amount: number; method: string | null; destination: string | null; note: string | null; status: 'requested' | 'paid' | 'rejected'; requestedBy: string; taxEstimate: number; createdAt: string; decidedAt: string | null };
+export type Planner = {
+  budget: { pct: number; since: string; resetsOn: string; yearGifts: number; allowed: number; used: number; available: number; value: number };
+  growthRate: number; yearsTo21: number; wishes: Wish[]; withdrawals: Withdrawal[]; taxRate: number;
+};
+export type Method = { id: string; kind: string; recurring: boolean; recurringOnly?: boolean };
+export type Provider = { id: string; name: string; nameEn: string };
+
+export type Employer = {
+  id: number; slug: string; name: string; kind: 'employer' | 'committee'; email?: string; contactName?: string; logo: string;
+  giftAmount: number; giftMessage?: string; occasions: string[]; amounts: Record<string, number>;
+};
+export type BirthReport = {
+  id: number; employeeName: string; employeeEmail?: string; employeeNumber?: string; babyName?: string; birthDate: string; eventDate?: string | null; occasion: string;
+  status: 'reported' | 'invited' | 'linked' | 'gifted'; reportedBy: string; createdAt: string; invitedAt?: string;
+  child: { firstName: string; giftCode: string; fundOpen: boolean } | null; gift: { amount: number; status: string; paidAt: string } | null;
+};
+export const OCCASIONS = ['birth', 'bar_mitzvah', 'bat_mitzvah', 'enlistment'];
+
+export const EARN_SOURCES = ['pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
+export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'holiday', 'other'];
 
 /** Future value of a lump sum after n years at rate r. */
 export const fv = (amount: number, years: number, r = 0.065) => amount * Math.pow(1 + r, Math.max(0, years));

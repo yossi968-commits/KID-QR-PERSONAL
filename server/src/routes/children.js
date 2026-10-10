@@ -32,7 +32,7 @@ r.get('/', h((req, res) => {
       const p = portfolioSummary(db, partner, c);
       return {
         ...childView(c), value: p.value, deposited: p.deposited, held: p.held, earned: p.earned,
-        docsMissing: docsStatus(db, c).missing.length,
+        docsMissing: c.account_status === 'pending_docs' ? docsStatus(db, c).missing.length : 0,
         pendingWithdrawals: db.prepare(`SELECT COUNT(*) AS n FROM withdrawals WHERE child_id=? AND status='requested'`).get(c.id).n,
         monthly: db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM pledges WHERE child_id=? AND status='active'`).get(c.id).s,
       };
