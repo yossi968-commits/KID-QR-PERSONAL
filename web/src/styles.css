@@ -406,3 +406,11 @@ footer.site { padding-block: 28px 40px; color: var(--muted); font-size: 0.82rem;
 /* ================= Employers & workers' committees ================= */
 .theme-employer { --header-bg: #1f2a37; --brand: #2f4a6d; --brand-2: #3b5b84; --brand-soft: #e7edf5; --accent: #2f8f83; --accent-soft: #e2f2ef; --accent-ink: #fff; --warn: #8a5a00; }
 .theme-employer h1 { font-family: var(--font); font-weight: 700; }
+
+/* Lifecycle road: birth → 18 → 21 → after */
+.life { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.life li { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: var(--radius-sm); background: var(--surface-2); opacity: .7; }
+.life li.done { opacity: 1; }
+.life li.now { opacity: 1; background: var(--accent-soft); outline: 2px solid var(--accent); }
+.life .dot { font-size: 20px; line-height: 1; }
+@media (max-width: 720px) { .life { grid-template-columns: 1fr; } }

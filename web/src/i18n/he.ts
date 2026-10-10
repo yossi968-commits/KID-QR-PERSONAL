@@ -103,7 +103,7 @@ const he = {
   'child.chartTitle': 'הצמיחה לאורך זמן',
   'child.chartValue': 'שווי',
   'child.chartDeposited': 'הפקדות',
-  'child.projTitle': 'תחזית לגיל 21',
+  'child.projTitle': 'תחזית לגיל {age}',
   'child.projLow': 'שמרני',
   'child.projMid': 'צפוי',
   'child.projHigh': 'אופטימי',

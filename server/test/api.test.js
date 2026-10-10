@@ -6,6 +6,7 @@ import { SandboxInvestmentPartner } from '../src/adapters/investment-partner.js'
 import { SandboxPayments } from '../src/adapters/payments.js';
 import { validIsraeliId } from '../src/routes/auth.js';
 import { activateFund, remindMissingDocs } from '../src/lib/fund.js';
+import { runHandovers, phaseOf } from '../src/lib/lifecycle.js';
 import { OutboxNotifier } from '../src/adapters/notifier.js';
 
 let server, base, token, childId, giftCode;
@@ -321,4 +322,58 @@ test('employer: employee reports a birth, report links to the QR, HR sends the g
   token = parentToken;
   const g = (await api(`/children/${reports[0].child && (await api('/children')).body.children.find((c) => c.firstName === 'מיה').id}/contributions`)).body.contributions;
   assert.ok(g.some((x) => x.source === 'employer_gift' && x.giverName === 'אקמי'));
+});
+
+test('at 18 the young adult takes over; from 21 the savings move to a regular fund and the QR keeps taking gifts', async () => {
+  const parentToken = token;
+  const made = await api('/children', { method: 'POST', body: { firstName: 'גל', birthDate: '2016-02-01', provider: 'altshuler' } });
+  const id = made.body.child.id, code = made.body.child.giftCode;
+  assert.equal(made.body.child.lifecycle.phase, 'minor');
+  await openFund(id);
+  await api(`/children/${id}/kid-login`, { method: 'POST', body: { username: 'gal', pin: '1357' } });
+  const g = await api(`/gift/${code}/contribute`, { method: 'POST', auth: false, body: { amount: 1000, giverName: 'סבא' } });
+  await api(`/payments/${g.body.checkoutId}/complete`, { method: 'POST', auth: false, body: { method: 'card' } });
+
+  // Turn 18: the guardians are told once, and can no longer act on the fund.
+  db.prepare('UPDATE children SET birth_date=? WHERE id=?').run('2008-02-01', id);
+  assert.equal(phaseOf(db.prepare('SELECT * FROM children WHERE id=?').get(id)), 'adult');
+  const before = db.prepare('SELECT COUNT(*) AS n FROM outbox').get().n;
+  assert.ok(runHandovers(ctx).handedOver >= 1);
+  assert.ok(db.prepare('SELECT COUNT(*) AS n FROM outbox').get().n > before);
+  assert.equal(runHandovers(ctx).handedOver, 0, 'handover happens once');
+  assert.equal((await api(`/children/${id}/track`, { method: 'POST', body: { track: 'solid', coSigned: true } })).body.error, 'managed_by_child');
+  assert.equal((await api(`/children/${id}/withdrawals`, { method: 'POST', body: { amount: 50, method: 'bit', destination: '050', coSigned: true } })).status, 403);
+  assert.equal((await api(`/children/${id}`)).status, 200, 'parents still see it by default');
+
+  token = (await api('/kid/login', { method: 'POST', auth: false, body: { username: 'gal', pin: '1357' } })).body.token;
+  assert.equal((await api('/kid/me')).body.child.lifecycle.managedBy, 'self');
+  // Own signature, own payout; no yearly share limit.
+  const w = await api('/kid/withdrawals', { method: 'POST', body: { amount: 100, method: 'paybox', destination: '052-0000000' } });
+  assert.equal(w.status, 201);
+  assert.equal(w.body.withdrawals[0].status, 'paid');
+  assert.equal((await api('/kid/track', { method: 'POST', body: { track: 'solid' } })).status, 200);
+  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'meitav' } })).body.error, 'too_young');
+  await api('/kid/privacy', { method: 'POST', body: { parentView: false } });
+  const ev = await api('/kid/events', { method: 'POST', body: { type: 'enlistment', title: 'הגיוס של גל', date: '2026-12-01' } });
+  assert.equal(ev.body.event.type, 'enlistment');
+
+  token = parentToken;
+  assert.equal((await api(`/children/${id}`)).body.error, 'private_by_child');
+  assert.equal((await api('/children')).body.children.find((c) => c.id === id).hidden, true);
+
+  // Turn 21: move to a regular fund in their own name; value carries over, gifts keep coming.
+  db.prepare('UPDATE children SET birth_date=? WHERE id=?').run('2005-02-01', id);
+  token = (await api('/kid/login', { method: 'POST', auth: false, body: { username: 'gal', pin: '1357' } })).body.token;
+  const v0 = (await api('/kid/me')).body.portfolio.value;
+  const grad = await api('/kid/graduate', { method: 'POST', body: { provider: 'meitav' } });
+  assert.match(grad.body.accountId, /^MEI-GML-/);
+  assert.equal(grad.body.child.lifecycle.phase, 'graduated');
+  assert.equal((await api('/kid/me')).body.portfolio.value, v0);
+  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'meitav' } })).body.error, 'already_graduated');
+  const page = await api(`/gift/${code}`, { auth: false });
+  assert.ok(page.body.events.some((e) => e.type === 'enlistment'));
+  const g2 = await api(`/gift/${code}/contribute`, { method: 'POST', auth: false, body: { amount: 500, giverName: 'חברים' } });
+  assert.equal((await api(`/payments/${g2.body.checkoutId}/complete`, { method: 'POST', auth: false, body: { method: 'bit' } })).status, 200);
+  assert.ok((await api('/kid/me')).body.portfolio.value > v0);
+  token = parentToken;
 });

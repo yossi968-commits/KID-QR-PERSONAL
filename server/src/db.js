@@ -226,6 +226,10 @@ function migrate(db) {
   if (!cols.has('account_opened_at')) db.exec('ALTER TABLE children ADD COLUMN account_opened_at TEXT');
   if (!cols.has('docs_reminded_at')) db.exec('ALTER TABLE children ADD COLUMN docs_reminded_at TEXT');
   if (!cols.has('track_changed_at')) db.exec('ALTER TABLE children ADD COLUMN track_changed_at TEXT');
+  if (!cols.has('handed_over_at')) db.exec('ALTER TABLE children ADD COLUMN handed_over_at TEXT');
+  if (!cols.has('graduated_at')) db.exec('ALTER TABLE children ADD COLUMN graduated_at TEXT');
+  if (!cols.has('minor_account_id')) db.exec('ALTER TABLE children ADD COLUMN minor_account_id TEXT');
+  if (!cols.has('parent_view')) db.exec('ALTER TABLE children ADD COLUMN parent_view INTEGER NOT NULL DEFAULT 1');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
 }
 

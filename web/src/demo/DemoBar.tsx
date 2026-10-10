@@ -19,6 +19,7 @@ export default function DemoBar() {
         <button className="btn sm secondary" onClick={() => go(() => loginKid('noa', '1234'), '/kid')}>🦄 {t('demo.young')}</button>
         <button className="btn sm secondary" onClick={() => go(() => loginKid('itay', '1234'), '/kid')}>🚀 {t('demo.middle')}</button>
         <button className="btn sm secondary" onClick={() => go(() => loginKid('omer', '1234'), '/kid')}>⭐ {t('demo.senior')}</button>
+        <button className="btn sm secondary" onClick={() => go(() => loginKid('shira', '1234'), '/kid')}>🎓 {t('demo.adult')}</button>
         <button className="btn sm secondary" onClick={() => go(() => loginEmployer('hr@alpha.example', 'demo1234'), '/employer')}>🏢 {t('demo.employer')}</button>
         <button className="btn sm secondary" onClick={() => go(() => login('admin@kfq.app', 'admin1234', 'admin'), '/admin')}>🛡️ {t('demo.admin')}</button>
         <button className="btn sm secondary" onClick={() => { logout(); nav('/g/itay2013demo'); }}>🎁 {t('demo.gift')}</button>

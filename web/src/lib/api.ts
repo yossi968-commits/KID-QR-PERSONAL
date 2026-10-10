@@ -39,7 +39,13 @@ export type Child = {
   id: number; firstName: string; lastName?: string; birthDate: string; age: number; grade: number; stage: Stage; nextBirthday: string; avatar: string;
   giftCode: string; track: string; partnerAccountId?: string; goalText?: string; goalAmount?: number; publicMessage?: string; kidUsername?: string | null;
   provider: string; providerName: string; accountStatus: AccountStatus; accountOpenedAt?: string | null; nextTrackSwitch?: string | null;
-  value?: number; deposited?: number;
+  value?: number; deposited?: number; hidden?: boolean;
+  lifecycle: Lifecycle;
+};
+/** Birth → 18 (young adult takes over) → 21 (moves to a regular fund in their own name). */
+export type Lifecycle = {
+  phase: 'minor' | 'adult' | 'graduated'; managedBy: 'guardians' | 'self'; handoverDate: string; handedOverAt: string | null;
+  graduateFrom: string; canGraduate: boolean; graduatedAt: string | null; minorAccountId: string | null; parentView: boolean;
 };
 export type Track = { id: string; core: boolean; risk: number; expectedReturn: number; annualVol: number; mgmtFee: number; equityShare: number };
 export type Portfolio = {
@@ -60,7 +66,7 @@ export type Pledge = { id: number; token: string; giverName: string; amount: num
 export type Wish = { id: number; title: string; icon: string; targetAmount: number; targetDate: string | null; status: string; createdBy: string; withdrawn: number; costAt21: number };
 export type Withdrawal = { id: number; wishId: number | null; amount: number; method: string | null; destination: string | null; note: string | null; status: 'requested' | 'paid' | 'rejected'; requestedBy: string; taxEstimate: number; createdAt: string; decidedAt: string | null };
 export type Planner = {
-  budget: { pct: number; since: string; resetsOn: string; yearGifts: number; allowed: number; used: number; available: number; value: number };
+  budget: { pct: number; since: string; resetsOn: string; yearGifts: number; allowed: number; used: number; available: number; value: number; selfManaged?: boolean };
   growthRate: number; yearsTo21: number; wishes: Wish[]; withdrawals: Withdrawal[]; taxRate: number;
 };
 export type Method = { id: string; kind: string; recurring: boolean; recurringOnly?: boolean };
@@ -78,7 +84,10 @@ export type BirthReport = {
 export const OCCASIONS = ['birth', 'bar_mitzvah', 'bat_mitzvah', 'enlistment'];
 
 export const EARN_SOURCES = ['pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
-export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'holiday', 'other'];
+export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'];
+/** Occasions a young adult opens on their own QR. */
+export const ADULT_EVENT_TYPES = ['enlistment', 'graduation', 'wedding', 'birthday', 'other'];
+export const PAYOUT_METHODS = ['bit', 'paybox', 'card', 'bank'];
 
 /** Future value of a lump sum after n years at rate r. */
 export const fv = (amount: number, years: number, r = 0.065) => amount * Math.pow(1 + r, Math.max(0, years));

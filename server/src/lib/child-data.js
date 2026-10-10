@@ -1,4 +1,5 @@
 import { nextSwitchDate, providerName } from './fund.js';
+import { lifecycleView } from './lifecycle.js';
 import { ageOn, nextBirthday, schoolGrade, stageOf } from './dates.js';
 import { lessonsFor, gradeLesson, AGE_BANDS } from '../content/lessons.js';
 
@@ -25,6 +26,7 @@ export function childView(c) {
     accountStatus: c.account_status || 'active',
     accountOpenedAt: c.account_opened_at || null,
     nextTrackSwitch: nextSwitchDate(c),
+    lifecycle: lifecycleView(c),
   };
 }
 

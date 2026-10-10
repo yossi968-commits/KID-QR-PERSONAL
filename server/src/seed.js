@@ -2,7 +2,7 @@
  * Demo data: one verified parent with two children whose birthday gifts have been
  * invested every year since birth (back-dated against sandbox prices), plus an admin.
  *   parent: demo@kfq.app / demo1234     admin: admin@kfq.app / admin1234
- *   kids (username / PIN): noa, itay, omer / 1234
+ *   kids (username / PIN): noa, itay, omer, shira (21, self-managed) / 1234
  *   employer HR: hr@alpha.example / demo1234
  *   newborn אלה: fund documents still missing; רוני (yael@example.com): waiting for the investment house
  */
@@ -43,6 +43,7 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   const kids = [
     { first: 'נועה', birth: '2019-05-12', avatar: '🦄', track: 'equity', provider: 'altshuler', goal: 'לימודים באוניברסיטה', goalAmount: 15000000, msg: 'נועה חוסכת לחלום הגדול שלה 🎓', code: 'noa2019demo', user: 'noa' },
     { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'conservative', provider: 'meitav', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
+    { first: 'שירה', birth: '2005-01-15', avatar: '🎓', track: 'conservative', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'שירה השתחררה ומתחילה ללמוד. מתנה לעתיד שלה 🎓', code: 'shira2005demo', user: 'shira' },
     { first: 'איתי', birth: '2013-11-03', avatar: '🚀', track: 'equity', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'איתי עולה לתורה בקרוב! במקום צ\'ק, מתנה שגדלה איתו 🚀', code: 'itay2013demo', user: 'itay' },
   ];
 
@@ -175,7 +176,21 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   sendGifts({ db, partner, notifier: { send() {} } }, empRow, [ellaReport]);
   db.prepare(`UPDATE birth_reports SET status='invited', invited_at=? WHERE employee_name='דניאל אברהם'`).run(daysAgo(5) + ' 09:00:00');
 
+  // Shira is 21: she has managed her own fund since 18 and can now move it into a regular
+  // investment provident fund. Gifts keep coming: enlistment, and soon her graduation.
+  const shira = db.prepare("SELECT * FROM children WHERE kid_username='shira'").get();
+  db.prepare('UPDATE children SET handed_over_at=? WHERE id=?').run(addYears(shira.birth_date, 18), shira.id);
+  const enl = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(shira.id, 'enlistment', 'הגיוס של שירה', '2023-03-12').lastInsertRowid;
+  [['סבתא אסתר', 100000, 'שתשמרי על עצמך ❤️'], ['דוד אבי', 50000, 'בהצלחה בצבא!'], ['מיכל לוי', 150000, 'גאים בך']].forEach(([name, amount, message], i) => {
+    const d = `2023-03-${String(12 + i).padStart(2, '0')}`;
+    const cid = db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, amount, message, status, payment_ref, paid_at, method) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(shira.id, enl, name, amount, message, 'paid', 'SEED-ENL-' + i, d + ' 12:00:00', ['bit', 'paybox', 'bank_transfer'][i]).lastInsertRowid;
+    investContribution(db, partner, shira, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), d);
+  });
+  db.prepare('INSERT INTO events (child_id, type, title, date, goal_amount) VALUES (?,?,?,?,?)').run(shira.id, 'graduation', 'סיום הלימודים של שירה', '2028-06-30', 1000000);
+
   const progress = {
+    shira: [['compound-interest', 5], ['risk-return', 6], ['fees', 6], ['scams', 6]],
     noa: [['what-is-money', 3], ['three-jars', 3]],
     itay: [['needs-wants', 4], ['compound-interest', 5], ['what-is-a-share', 5]],
     omer: [['compound-interest', 5], ['what-is-a-share', 5], ['risk-return', 6], ['fees', 6], ['scams', 6]],
@@ -191,5 +206,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (file !== ':memory:') for (const f of [file, file + '-wal', file + '-shm']) fs.rmSync(f, { force: true });
   const db = openDb(file);
   seed(db);
-  console.log('Seeded', file, '\n  parent: demo@kfq.app / demo1234\n  admin:  admin@kfq.app / admin1234\n  kids:   noa / itay / omer, PIN 1234\n  gift pages: /g/noa2019demo  /g/itay2013demo  /g/omer2009demo');
+  console.log('Seeded', file, '\n  parent: demo@kfq.app / demo1234\n  admin:  admin@kfq.app / admin1234\n  kids:   noa / itay / omer / shira, PIN 1234\n  gift pages: /g/noa2019demo  /g/itay2013demo  /g/omer2009demo');
 }

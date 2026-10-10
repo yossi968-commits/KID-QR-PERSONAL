@@ -2,7 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
-import { api, type Child, type Pledge, type Planner, type Portfolio } from '../../lib/api';
+import { api, ADULT_EVENT_TYPES, PAYOUT_METHODS, type Child, type EventRow, type Pledge, type Planner, type Portfolio, type Provider } from '../../lib/api';
+import TrackDialog from '../../components/TrackDialog';
+import { LifeTimeline } from '../../components/Lifecycle';
 import MoneyTree from '../../components/MoneyTree';
 import QrPanel from '../../components/QrPanel';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
@@ -14,7 +16,7 @@ import { gradeLabel } from '../parent/Dashboard';
 import { useErr } from '../Auth';
 
 type Deposit = { id: number; amount: number; source: string; method: string; monthly: boolean; paidAt: string; payer: string };
-type KidData = { child: Child; portfolio: Portfolio; planner: Planner; deposits: Deposit[]; pledges: Pledge[]; reload: () => void };
+type KidData = { child: Child; portfolio: Portfolio; planner: Planner; deposits: Deposit[]; pledges: Pledge[]; events: EventRow[]; reload: () => void };
 
 /** Sources a child can tag their own money with, by stage: the older, the more options. */
 const SOURCES_BY_STAGE = {
@@ -27,7 +29,7 @@ function useKidData(): KidData | null {
   const [s, setS] = useState<Omit<KidData, 'reload'> | null>(null);
   const load = async () => {
     const [me, planner, dep] = await Promise.all([api('/kid/me'), api<Planner>('/kid/planner'), api('/kid/deposits')]);
-    setS({ child: me.child, portfolio: me.portfolio, planner, deposits: dep.deposits, pledges: dep.pledges });
+    setS({ child: me.child, portfolio: me.portfolio, planner, deposits: dep.deposits, pledges: dep.pledges, events: me.events || [] });
   };
   useEffect(() => { load(); }, []);
   return s && { ...s, reload: load };
@@ -199,10 +201,14 @@ function Middle({ d, lessons, reloadLessons }: P) {
 
 /* ============ High school + army: clean fintech ============ */
 const SEN_TABS = ['overview', 'deposits', 'plan', 'learn', 'qr'] as const;
+/** From 18 the young adult also runs the fund: track, privacy, events, and at 21 the move to their own fund. */
+const SELF_TABS = ['overview', 'mine', 'deposits', 'plan', 'learn', 'qr'] as const;
 function Senior({ d, lessons, reloadLessons }: P) {
   const { t, fmtMoney, fmtDate } = useI18n();
   const L = useLabels();
-  const [tab, go] = useTab(SEN_TABS);
+  const self = d.child.lifecycle.managedBy === 'self';
+  const TABS = (self ? SELF_TABS : SEN_TABS) as readonly (typeof SELF_TABS)[number][];
+  const [tab, go] = useTab(TABS);
   const [open, setOpen] = useState<Lesson | null>(null);
   const { child, portfolio: p } = d;
   return (
@@ -210,7 +216,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
       <header className="sen-top">
         <div className="container row" style={{ flexWrap: 'nowrap' }}>
           <b style={{ whiteSpace: 'nowrap' }}>{child.firstName}</b>
-          <nav className="sen-nav" aria-label={t('kid.nav')}>{SEN_TABS.map((k) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)}>{t(`sen.tab.${k}` as any)}</button>)}</nav>
+          <nav className="sen-nav" aria-label={t('kid.nav')}>{TABS.map((k) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)}>{t(`sen.tab.${k}` as any)}</button>)}</nav>
           <span className="spacer" />
           <LangButton className="btn ghost sm" /><Logout />
         </div>
@@ -226,15 +232,19 @@ function Senior({ d, lessons, reloadLessons }: P) {
               </div>
               <button className="btn" onClick={() => go('deposits')}>＋ {t('sen.deposit')}</button>
             </div>
+            {!self && <div className="banner small">🔑 {t('life.until18', { date: fmtDate(child.lifecycle.handoverDate), n: Math.max(0, Math.round((Date.parse(child.lifecycle.handoverDate) - Date.now()) / 86400000)) })}</div>}
+            {self && <LifeTimeline child={child} />}
             <Kpis items={[
               { label: t('sen.fromFamily'), value: fmtMoney(p.deposited - p.earned) },
               { label: t('sen.fromMe'), value: fmtMoney(p.earned), sub: d.pledges.some((x) => x.status === 'active') ? t('sen.standing', { amount: fmtMoney(d.pledges.filter((x) => x.status === 'active').reduce((s, x) => s + x.amount, 0)) }) : undefined },
-              { label: t('kid.at21'), value: fmtMoney(p.projection.finals.mid), sub: fmtDate(p.projection.payoutDate) },
-              { label: t('plan.available'), value: fmtMoney(d.planner.budget.available), sub: t('plan.resets', { date: fmtDate(d.planner.budget.resetsOn) }) },
+              { label: p.projection.payoutAge > 21 ? t('kid.atAge', { age: p.projection.payoutAge }) : t('kid.at21'), value: fmtMoney(p.projection.finals.mid), sub: fmtDate(p.projection.payoutDate) },
+              self
+                ? { label: t('child.gain'), value: fmtMoney(p.gain), sub: `${(p.gainPct * 100).toFixed(1)}%` }
+                : { label: t('plan.available'), value: fmtMoney(d.planner.budget.available), sub: t('plan.resets', { date: fmtDate(d.planner.budget.resetsOn) }) },
             ]} />
             <div className="grid grid-2">
               <div className="card"><h3>{t('child.chartTitle')}</h3><GrowthChart data={p.history} /></div>
-              <div className="card"><h3>{t('child.projTitle')}</h3><ProjectionChart points={p.projection.points} /></div>
+              <div className="card"><h3>{t('child.projTitle', { age: p.projection.payoutAge })}</h3><ProjectionChart points={p.projection.points} /></div>
             </div>
             <div className="card">
               <h3>{t('sen.mix')}</h3>
@@ -243,6 +253,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
             </div>
           </>
         )}
+        {tab === 'mine' && <MyFund d={d} />}
         {tab === 'deposits' && <Earn d={d} />}
         {tab === 'plan' && <div className="card"><WishPlanner d={d} /></div>}
         {tab === 'learn' && (
@@ -336,7 +347,8 @@ function WishPlanner({ d, simple }: { d: KidData; simple?: boolean }) {
   const errText = useErr();
   const [p, setP] = useState<Planner>(d.planner);
   const [wish, setWish] = useState({ title: '', icon: '🎁', targetAmount: '' });
-  const [ask, setAsk] = useState<{ wishId?: number; amount: string; note: string } | null>(null);
+  const [ask, setAsk] = useState<{ wishId?: number; amount: string; note: string; method?: string; destination?: string } | null>(null);
+  const self = Boolean(p.budget.selfManaged);
   const [err, setErr] = useState('');
   const fundOpen = d.child.accountStatus === 'active';
   const at21 = (a: number) => a * Math.pow(1 + p.growthRate, p.yearsTo21);
@@ -346,27 +358,33 @@ function WishPlanner({ d, simple }: { d: KidData; simple?: boolean }) {
     <div className="stack">
       <div className="row between">
         <h2 style={{ margin: 0 }}>{t(simple ? 'young.wishesTitle' : 'plan.kidTitle')}</h2>
-        <span className="pill gold">{t('plan.kidBudget', { amount: fmtMoney(b.available) })}</span>
+        {self ? <button className="btn sm" disabled={!fundOpen} onClick={() => setAsk({ amount: '', note: '', method: 'bit', destination: '' })}>{t('plan.withdrawNow')}</button> : <span className="pill gold">{t('plan.kidBudget', { amount: fmtMoney(b.available) })}</span>}
       </div>
-      <p className="small muted" style={{ margin: 0 }}>{t('plan.kidBudgetDesc', { pct: b.pct, date: fmtDate(b.resetsOn) })}</p>
+      <p className="small muted" style={{ margin: 0 }}>{self ? t('plan.selfDesc') : t('plan.kidBudgetDesc', { pct: b.pct, date: fmtDate(b.resetsOn) })}</p>
       {p.wishes.map((w) => (
         <div key={w.id} className="list-row">
           <span style={{ fontSize: simple ? 34 : 24 }} aria-hidden>{w.icon}</span>
           <span style={{ flex: 1 }}><b>{w.title}</b><div className="small muted">{fmtMoney(w.targetAmount)}{w.targetDate ? ` · ${fmtDate(w.targetDate)}` : ''} · {t('plan.orAt21', { amount: fmtMoney(w.costAt21) })}</div></span>
-          {w.status === 'done' ? <span className="pill good">✓</span> : fundOpen && b.available > 0 && <button className="btn sm secondary" onClick={() => setAsk({ wishId: w.id, amount: String(Math.min(w.targetAmount, b.available) / 100), note: '' })}>{t('plan.ask')}</button>}
+          {w.status === 'done' ? <span className="pill good">✓</span> : fundOpen && b.available > 0 && <button className="btn sm secondary" onClick={() => setAsk({ wishId: w.id, amount: String(Math.min(w.targetAmount, b.available) / 100), note: '', method: 'bit', destination: '' })}>{t('plan.ask')}</button>}
         </div>
       ))}
       {ask && (
         <div className="card" style={{ background: 'var(--surface-2)' }}>
           <label className="field"><span>{t('plan.askAmount')}</span><input type="number" dir="ltr" value={ask.amount} onChange={(e) => setAsk({ ...ask, amount: e.target.value })} max={b.available / 100} /></label>
-          <div className="banner small" style={{ marginTop: 8 }}>🌱 {t('plan.nudge', { amount: fmtMoney(Number(ask.amount) * 100), at21: fmtMoney(at21(Number(ask.amount) * 100)), half: fmtMoney(Number(ask.amount) * 50) })}</div>
-          <label className="field" style={{ marginTop: 8 }}><span>{t('plan.note')}</span><input value={ask.note} onChange={(e) => setAsk({ ...ask, note: e.target.value })} /></label>
+          {!self && <div className="banner small" style={{ marginTop: 8 }}>🌱 {t('plan.nudge', { amount: fmtMoney(Number(ask.amount) * 100), at21: fmtMoney(at21(Number(ask.amount) * 100)), half: fmtMoney(Number(ask.amount) * 50) })}</div>}
+          <label className="field" style={{ marginTop: 8 }}><span>{t(self ? 'money.note' : 'plan.note')}</span><input value={ask.note} onChange={(e) => setAsk({ ...ask, note: e.target.value })} /></label>
+          {self && (
+            <div className="row" style={{ marginTop: 8 }}>
+              <label className="field" style={{ flex: 1 }}><span>{t('plan.to')}</span><select value={ask.method} onChange={(e) => setAsk({ ...ask, method: e.target.value })}>{PAYOUT_METHODS.map((m) => <option key={m} value={m}>{t(`method.${m}` as any)}</option>)}</select></label>
+              <label className="field" style={{ flex: 2 }}><span>{t('plan.dest')}</span><input dir="ltr" value={ask.destination} onChange={(e) => setAsk({ ...ask, destination: e.target.value })} /></label>
+            </div>
+          )}
           <div className="row" style={{ marginTop: 8 }}>
-            <button className="btn sm" onClick={async () => { if (await run(() => api('/kid/withdrawals', { body: { amount: Number(ask.amount), wishId: ask.wishId, note: ask.note } }))) setAsk(null); }}>{t('plan.send')}</button>
-            <button className="btn ghost sm" onClick={() => setAsk({ ...ask, amount: String(Math.floor(Number(ask.amount) / 2)) })}>{t('plan.halfIt')}</button>
+            <button className="btn sm" onClick={async () => { if (await run(() => api('/kid/withdrawals', { body: { amount: Number(ask.amount), wishId: ask.wishId, note: ask.note, ...(self && { method: ask.method, destination: ask.destination }) } }))) setAsk(null); }}>{self ? t('plan.withdrawNow') : t('plan.send')}</button>
+            {!self && <button className="btn ghost sm" onClick={() => setAsk({ ...ask, amount: String(Math.floor(Number(ask.amount) / 2)) })}>{t('plan.halfIt')}</button>}
             <button className="btn ghost sm" onClick={() => setAsk(null)}>{t('common.cancel')}</button>
           </div>
-          <p className="small muted" style={{ margin: '8px 0 0' }}>{t('plan.parentsApprove')}</p>
+          {!self && <p className="small muted" style={{ margin: '8px 0 0' }}>{t('plan.parentsApprove')}</p>}
         </div>
       )}
       <form className="row" onSubmit={async (e) => { e.preventDefault(); if (await run(() => api('/kid/wishes', { body: { ...wish, targetAmount: Number(wish.targetAmount) } }))) setWish({ title: '', icon: '🎁', targetAmount: '' }); }}>
@@ -387,3 +405,70 @@ function WishPlanner({ d, simple }: { d: KidData; simple?: boolean }) {
   );
 }
 
+
+/** The young adult's controls: who sees the fund, its track, gift events, and from 21 the move to a fund in their own name. */
+function MyFund({ d }: { d: KidData }) {
+  const { t, fmtMoney, fmtDate } = useI18n();
+  const L = useLabels();
+  const errText = useErr();
+  const { child, portfolio: p } = d;
+  const lc = child.lifecycle;
+  const [err, setErr] = useState('');
+  const [dialog, setDialog] = useState(false);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [house, setHouse] = useState(child.provider);
+  const [ev, setEv] = useState({ type: 'graduation', title: '', date: '' });
+  useEffect(() => { api<{ providers: Provider[] }>('/providers').then((r) => setProviders(r.providers)); }, []);
+  const run = async (fn: () => Promise<unknown>) => { setErr(''); try { await fn(); d.reload(); return true; } catch (x) { setErr(errText(x)); return false; } };
+  const graduated = lc.phase === 'graduated';
+  return (
+    <div className="stack">
+      <div className="sen-hero"><div><div className="eyebrow">🔑 {t('life.selfPill')}</div><h2 style={{ margin: '4px 0' }}>{t('life.mine.title')}</h2><p className="small muted" style={{ margin: 0 }}>{t('life.mine.desc')}</p></div></div>
+      {err && <div className="error">{err}</div>}
+      <div className="grid grid-2">
+        <div className="card stack">
+          <h3 style={{ margin: 0 }}>🎓 {t('life.grad.title')}</h3>
+          <p className="small muted" style={{ margin: 0 }}>{t('life.grad.desc')}</p>
+          {graduated ? (
+            <>
+              <div className="banner small">✓ {t('life.grad.done', { date: fmtDate(lc.graduatedAt!), account: child.partnerAccountId || '', house: child.providerName })}</div>
+              {lc.minorAccountId && <div className="small muted">{t('life.grad.prev', { account: lc.minorAccountId })}</div>}
+            </>
+          ) : lc.canGraduate ? (
+            <>
+              <label className="field"><span>{t('life.grad.house')}</span><select value={house} onChange={(e) => setHouse(e.target.value)}>{providers.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+              <button className="btn" onClick={() => run(() => api('/kid/graduate', { body: { provider: house } }))}>{t('life.grad.cta', { amount: fmtMoney(p.value) })}</button>
+            </>
+          ) : <span className="pill gold">{t('life.grad.from', { date: fmtDate(lc.graduateFrom) })}</span>}
+        </div>
+        <div className="card stack">
+          <h3 style={{ margin: 0 }}>{t('life.trackNow', { track: L.track(child.track) })}</h3>
+          {!graduated && <button className="btn secondary" onClick={() => setDialog(true)}>{t('fund.changeTrack')}</button>}
+          <p className="small muted" style={{ margin: 0 }}>{t('track.switchRule')}</p>
+          <label className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
+            <input type="checkbox" checked={lc.parentView} onChange={(e) => run(() => api('/kid/privacy', { body: { parentView: e.target.checked } }))} style={{ width: 'auto', marginTop: 4 }} />
+            <span><b>{t('life.parentView')}</b><div className="small muted">{t('life.parentViewDesc')}</div></span>
+          </label>
+        </div>
+      </div>
+      <div className="card stack">
+        <h3 style={{ margin: 0 }}>🎉 {t('life.events.title')}</h3>
+        <p className="small muted" style={{ margin: 0 }}>{t('life.events.desc')}</p>
+        {d.events.length === 0 && <p className="small muted">{t('life.events.none')}</p>}
+        {d.events.map((e) => (
+          <div key={e.id} className="list-row">
+            <span style={{ flex: 1 }}><b>{e.title}</b><div className="small muted">{L.event(e.type)} · {fmtDate(e.date)}{e.goal_amount ? ` · ${fmtMoney(e.goal_amount)}` : ''}</div></span>
+            <button className="btn ghost sm" onClick={() => run(() => api(`/kid/events/${e.id}`, { method: 'DELETE' }))}>{t('plan.remove')}</button>
+          </div>
+        ))}
+        <form className="row" onSubmit={async (e) => { e.preventDefault(); if (await run(() => api('/kid/events', { body: ev }))) setEv({ type: 'graduation', title: '', date: '' }); }}>
+          <select value={ev.type} onChange={(e) => setEv({ ...ev, type: e.target.value })} style={{ width: 150 }} aria-label={t('events.type')}>{ADULT_EVENT_TYPES.map((x) => <option key={x} value={x}>{L.event(x)}</option>)}</select>
+          <input value={ev.title} onChange={(e) => setEv({ ...ev, title: e.target.value })} placeholder={t('events.titleField')} required style={{ flex: 2, minWidth: 140 }} />
+          <input type="date" value={ev.date} onChange={(e) => setEv({ ...ev, date: e.target.value })} required style={{ flex: 1, minWidth: 130 }} />
+          <button className="btn secondary">{t('life.events.add')}</button>
+        </form>
+      </div>
+      {dialog && <TrackDialog value={child.track} coreOnly={false} years={10} onClose={() => setDialog(false)} onPick={(tr) => { setDialog(false); if (tr !== child.track) run(() => api('/kid/track', { body: { track: tr } })); }} />}
+    </div>
+  );
+}

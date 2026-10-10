@@ -10,6 +10,7 @@ import { PAYOUT_METHODS } from '../adapters/payments.js';
 import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef } from '../lib/fund.js';
 import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
 import { linkReports } from '../lib/employer.js';
+import { phaseOf, lifecycleView } from '../lib/lifecycle.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 
 const r = Router();
@@ -21,6 +22,12 @@ function loadChild(req) {
   const c = req.ctx.db.prepare('SELECT * FROM children WHERE id=?').get(Number(req.params.id));
   if (!c) throw notFound();
   if (c.guardian_id !== req.user.id && req.user.role !== 'admin') throw notFound();
+  if (req.user.role !== 'admin' && phaseOf(c) !== 'minor') {
+    // From 18 the fund is the young adult's. Parents can still give (like any giver),
+    // and see it only if the young adult agreed.
+    if (req.method !== 'GET' && !/\/deposits$/.test(req.path)) throw new HttpError(403, 'managed_by_child');
+    if (req.method === 'GET' && !lifecycleView(c).parentView) throw new HttpError(403, 'private_by_child');
+  }
   return c;
 }
 
@@ -29,6 +36,7 @@ r.get('/', h((req, res) => {
   const rows = db.prepare('SELECT * FROM children WHERE guardian_id=? ORDER BY birth_date').all(req.user.id);
   res.json({
     children: rows.map((c) => {
+      if (phaseOf(c) !== 'minor' && !lifecycleView(c).parentView) return { ...childView(c), hidden: true, value: null, deposited: null, held: 0, earned: null, docsMissing: 0, pendingWithdrawals: 0, monthly: 0 };
       const p = portfolioSummary(db, partner, c);
       return {
         ...childView(c), value: p.value, deposited: p.deposited, held: p.held, earned: p.earned,

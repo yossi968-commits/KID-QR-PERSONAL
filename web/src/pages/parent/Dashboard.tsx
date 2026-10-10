@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FundPill } from '../../components/Lifecycle';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
 import { api, type Child } from '../../lib/api';
@@ -65,13 +66,20 @@ export default function Dashboard() {
                 <th className="num">{t('dash.col.value')}</th><th className="num">{t('dash.col.gain')}</th><th className="num">{t('dash.col.monthly')}</th>
               </tr></thead>
               <tbody>
-                {kids.map((k) => (
+                {kids.map((k) => k.hidden ? (
+                  <tr key={k.id}>
+                    <td><span aria-hidden>{k.avatar}</span> <b>{k.firstName}</b><div className="small muted">{t('dash.ageGrade', { age: k.age, grade: gradeLabel(t, k.grade) })}</div></td>
+                    <td>{k.providerName}</td><td className="num small">—</td><td>—</td>
+                    <td><FundPill child={k} /></td>
+                    <td colSpan={3} className="small muted">🔒 {t('life.hiddenRow')}</td>
+                  </tr>
+                ) : (
                   <tr key={k.id}>
                     <td><Link className="rowlink" to={`/parent/child/${k.id}`}><span aria-hidden>{k.avatar}</span> {k.firstName}</Link><div className="small muted">{t('dash.ageGrade', { age: k.age, grade: gradeLabel(t, k.grade) })}</div></td>
                     <td>{k.providerName}</td>
                     <td className="num small">{k.partnerAccountId || '—'}</td>
                     <td>{L.track(k.track)}</td>
-                    <td><AccountPill status={k.accountStatus} /></td>
+                    <td><FundPill child={k} /></td>
                     <td className="num"><b>{fmtMoney(k.value || 0)}</b>{k.held > 0 && <div className="small muted">+{fmtMoney(k.held)} {t('dash.waiting')}</div>}</td>
                     <td className="num"><Signed value={(k.value || 0) - (k.deposited || 0)} /></td>
                     <td className="num">{k.monthly ? fmtMoney(k.monthly) : '—'}</td>

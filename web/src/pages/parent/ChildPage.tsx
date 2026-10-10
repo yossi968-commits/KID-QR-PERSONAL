@@ -4,25 +4,33 @@ import { useI18n } from '../../i18n';
 import { api, type ChildData } from '../../lib/api';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
 import QrPanel from '../../components/QrPanel';
-import { AccountPill, Kpis, Loading, Signed, useLabels } from '../../components/ui';
+import { Kpis, Loading, Signed, useLabels } from '../../components/ui';
 import { gradeLabel } from './Dashboard';
 import Money from './Money';
 import PlannerTab from './PlannerTab';
 import FundTab from './FundTab';
 import { EventsTab, LearnTab, SettingsTab } from './MoreTabs';
+import { FundPill, LifeTimeline } from '../../components/Lifecycle';
+import { ApiError } from '../../lib/api';
 
 const TABS = ['overview', 'money', 'planner', 'fund', 'qr', 'events', 'learn', 'settings'] as const;
+/** From 18 the fund is the young adult's: parents see it (if allowed) and can still give. */
+const ADULT_TABS = ['overview', 'money', 'qr'] as const;
 
 export default function ChildPage() {
   const { id } = useParams();
-  const { t, fmtMoney } = useI18n();
+  const { t, fmtMoney, fmtDate } = useI18n();
   const [sp, setSp] = useSearchParams();
-  const tab = (TABS as readonly string[]).includes(sp.get('tab') || '') ? sp.get('tab')! : 'overview';
   const [data, setData] = useState<ChildData | null>(null);
-  const load = useCallback(() => api<ChildData>(`/children/${id}`).then(setData), [id]);
+  const [hidden, setHidden] = useState(false);
+  const load = useCallback(() => api<ChildData>(`/children/${id}`).then(setData).catch((e) => { if (e instanceof ApiError && e.code === 'private_by_child') setHidden(true); else throw e; }), [id]);
   useEffect(() => { load(); }, [load]);
+  if (hidden) return <div className="container page-head"><div className="small muted"><Link to="/parent">{t('parent.nav.portfolio')}</Link></div><div className="banner" style={{ marginTop: 16 }}>🔒 {t('err.private_by_child')}</div></div>;
   if (!data) return <Loading />;
   const { child, portfolio } = data;
+  const adult = child.lifecycle.phase !== 'minor';
+  const tabs: readonly string[] = adult ? ADULT_TABS : TABS;
+  const tab = tabs.includes(sp.get('tab') || '') ? sp.get('tab')! : 'overview';
 
   return (
     <div className="container page-head">
@@ -34,17 +42,22 @@ export default function ChildPage() {
           <div className="muted small">{t('dash.ageGrade', { age: child.age, grade: gradeLabel(t, child.grade) })} · {child.providerName} · <span className="num">{child.partnerAccountId || child.giftCode}</span></div>
         </div>
         <span className="spacer" />
-        <AccountPill status={child.accountStatus} />
+        <FundPill child={child} />
         <div className="stat" style={{ textAlign: 'end' }}><div className="label">{t('child.value')}</div><div className="value num">{fmtMoney(portfolio.value)}</div></div>
       </div>
-      {child.accountStatus !== 'active' && (
+      {adult && (
+        <div className="banner" style={{ marginBottom: 16 }}>
+          {child.lifecycle.phase === 'graduated' ? `🎓 ${t('life.graduatedBanner', { name: child.firstName, house: child.providerName })}` : `🔑 ${t('life.handedBanner', { name: child.firstName, date: fmtDate(child.lifecycle.handedOverAt || child.lifecycle.handoverDate) })}`}
+        </div>
+      )}
+      {!adult && child.accountStatus !== 'active' && (
         <div className="banner" style={{ marginBottom: 16 }}>
           📄 {child.accountStatus === 'pending_docs' ? t('fund.bannerDocs', { n: data.documents.missing.length, amount: fmtMoney(portfolio.held) }) : t('fund.bannerReview', { house: child.providerName })}
           {tab !== 'fund' && <button className="btn sm" onClick={() => setSp({ tab: 'fund' })}>{t('fund.toChecklist')}</button>}
         </div>
       )}
       <div className="tabs" role="tablist">
-        {TABS.map((k) => (
+        {tabs.map((k) => (
           <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setSp({ tab: k }, { replace: true })}>
             {t(`ctab.${k}` as any)}{k === 'fund' && data.documents.missing.length > 0 && <span className="pill gold num" style={{ marginInlineStart: 6 }}>{data.documents.missing.length}</span>}
           </button>
@@ -69,11 +82,12 @@ function Overview({ data }: { data: ChildData }) {
   const goalPct = child.goalAmount ? Math.min(100, (p.value / child.goalAmount) * 100) : 0;
   return (
     <div className="stack">
+      <LifeTimeline child={child} />
       <Kpis items={[
         { label: t('child.value'), value: fmtMoney(p.value) },
         { label: t('dash.deposited'), value: fmtMoney(p.deposited), sub: p.earned ? t('child.earnedSub', { amount: fmtMoney(p.earned) }) : undefined },
         { label: t('child.gain'), value: <Signed value={p.gain} />, sub: `${(p.gainPct * 100).toFixed(1)}%` },
-        { label: t('child.projected'), value: fmtMoney(p.projection.finals.mid), sub: t('child.projectedSub', { date: fmtDate(p.projection.payoutDate) }) },
+        { label: t('child.projected', { age: p.projection.payoutAge }), value: fmtMoney(p.projection.finals.mid), sub: t('child.projectedSub', { date: fmtDate(p.projection.payoutDate) }) },
       ]} />
       <div className="grid grid-2">
         <div className="card">
@@ -81,7 +95,7 @@ function Overview({ data }: { data: ChildData }) {
           <GrowthChart data={p.history} />
         </div>
         <div className="card">
-          <div className="card-head"><h3>{t('child.projTitle')}</h3><span className="small muted">{t('child.projNote', { amount: fmtMoney(p.projection.annualAssumed) })}</span></div>
+          <div className="card-head"><h3>{t('child.projTitle', { age: p.projection.payoutAge })}</h3><span className="small muted">{t('child.projNote', { amount: fmtMoney(p.projection.annualAssumed) })}</span></div>
           <ProjectionChart points={p.projection.points} />
           <div className="grid" style={{ gap: 8, marginTop: 10, gridTemplateColumns: 'repeat(3, 1fr)' }}>
             {(['low', 'mid', 'high'] as const).map((k) => (
@@ -102,7 +116,7 @@ function Overview({ data }: { data: ChildData }) {
             <dt>{t('fund.accountNo')}</dt><dd className="num">{child.partnerAccountId || '—'}</dd>
             <dt>{t('onb.track')}</dt><dd>{L.track(child.track)}</dd>
             {p.holdings.map((h) => [<dt key={h.track + 'd'}>{t('child.holding')}</dt>, <dd key={h.track} className="num">{L.track(h.track)} · {fmtMoney(h.value)}</dd>])}
-            <dt>{t('fund.payoutAt')}</dt><dd>{fmtDate(p.projection.payoutDate)}</dd>
+            <dt>{t('fund.payoutAt', { age: p.projection.payoutAge })}</dt><dd>{fmtDate(p.projection.payoutDate)}</dd>
           </dl>
         </div>
         {child.goalAmount ? (

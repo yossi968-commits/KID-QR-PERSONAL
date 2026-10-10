@@ -105,7 +105,7 @@ const en: Dict = {
   'child.chartTitle': 'Growth over time',
   'child.chartValue': 'Value',
   'child.chartDeposited': 'Deposits',
-  'child.projTitle': 'Projection to 21',
+  'child.projTitle': 'Projection to {age}',
   'child.projLow': 'Cautious',
   'child.projMid': 'Expected',
   'child.projHigh': 'Optimistic',

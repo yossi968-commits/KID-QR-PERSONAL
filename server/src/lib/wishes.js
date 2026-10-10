@@ -1,6 +1,7 @@
 import { tx } from '../db.js';
 import { today, ageOn, addYears, nextBirthday } from './dates.js';
 import { holdings, PAYOUT_AGE } from './portfolio.js';
+import { phaseOf } from './lifecycle.js';
 
 export const CAPITAL_GAINS_TAX = 0.25;
 
@@ -24,6 +25,8 @@ export function withdrawalBudget(db, partner, child) {
   const used = db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM withdrawals WHERE child_id=? AND status IN ('requested','paid') AND date(created_at) >= ?`).get(child.id, since).s;
   const allowed = Math.round((yearGifts * child.withdraw_pct) / 100);
   const value = Math.round(currentValue(db, partner, child.id));
+  // From 18 the young adult decides; the yearly share no longer applies.
+  if (phaseOf(child) !== 'minor') return { pct: 100, since, resetsOn: nextBirthday(child.birth_date), yearGifts, allowed: value, used, available: value, value, selfManaged: true };
   return { pct: child.withdraw_pct, since, resetsOn: nextBirthday(child.birth_date), yearGifts, allowed, used, available: Math.max(0, Math.min(value, allowed - used)), value };
 }
 

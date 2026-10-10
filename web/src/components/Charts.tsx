@@ -62,7 +62,7 @@ export function ProjectionChart({ points }: { points: { age: number; low: number
   const band = path('high') + points.slice().reverse().map((p, i) => `L${x(points.length - 1 - i).toFixed(1)},${y(p.low).toFixed(1)}`).join('') + 'Z';
   return (
     <div>
-      <svg className="chart" viewBox={`0 0 ${W} ${H}`} style={{ direction: "ltr" }} role="img" aria-label={t('child.projTitle')}>
+      <svg className="chart" viewBox={`0 0 ${W} ${H}`} style={{ direction: "ltr" }} role="img" aria-label={t('child.projTitle', { age: points[points.length - 1]?.age ?? 21 })}>
         {yt.map((v) => (
           <g key={v}>
             <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="var(--line)" />

@@ -97,8 +97,11 @@ export function portfolioSummary(db, partner, child) {
 
   // Projection to payout age, three scenarios around the track's expected return (net of fees).
   const track = partner.listTracks().find((t) => t.id === child.track);
-  const payoutDate = addYears(child.birth_date, PAYOUT_AGE);
-  const yearsLeft = Math.max(0, PAYOUT_AGE - ageOn(child.birth_date));
+  // Past 21 the savings keep going in the young adult's own fund: look ten years ahead.
+  const ageNow = ageOn(child.birth_date);
+  const horizon = ageNow >= PAYOUT_AGE ? ageNow + 10 : PAYOUT_AGE;
+  const payoutDate = addYears(child.birth_date, horizon);
+  const yearsLeft = horizon - ageNow;
   const annual = last12 || 250000;
   const scenarios = { low: -0.02, mid: 0, high: 0.02 };
   const projection = [];
@@ -124,6 +127,6 @@ export function portfolioSummary(db, partner, child) {
     held,
     holdings: hs.map((h) => ({ ...h, value: Math.round(h.units * partner.navOn(h.track, now) * 100) })),
     history,
-    projection: { payoutDate, payoutAge: PAYOUT_AGE, annualAssumed: annual, points: projection, finals },
+    projection: { payoutDate, payoutAge: horizon, annualAssumed: annual, points: projection, finals },
   };
 }
