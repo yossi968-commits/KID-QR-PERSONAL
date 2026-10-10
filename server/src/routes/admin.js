@@ -3,6 +3,7 @@ import { h } from '../lib/http.js';
 import { requireAdmin } from '../lib/guards.js';
 import { holdings } from '../lib/portfolio.js';
 import { today } from '../lib/dates.js';
+import { runDuePledges } from '../lib/pledges.js';
 
 const r = Router();
 r.use(requireAdmin);
@@ -32,6 +33,11 @@ r.get('/stats', h((req, res) => {
     aum: Math.round(aum),
     monthly,
     byTrack,
+    withdrawalsPaid: one(`SELECT COALESCE(SUM(amount),0) AS s FROM withdrawals WHERE status='paid'`).s,
+    withdrawalsPending: one(`SELECT COUNT(*) AS n FROM withdrawals WHERE status='requested'`).n,
+    activePledges: one(`SELECT COUNT(*) AS n FROM pledges WHERE status='active'`).n,
+    monthlyRecurring: one(`SELECT COALESCE(SUM(amount),0) AS s FROM pledges WHERE status='active'`).s,
+    byMethod: db.prepare(`SELECT COALESCE(method,'card') AS method, COUNT(*) AS gifts, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
   });
 }));
 
@@ -45,7 +51,7 @@ r.get('/users', h((req, res) => {
 
 r.get('/contributions', h((req, res) => {
   const rows = req.ctx.db
-    .prepare(`SELECT x.id, x.giver_name, x.amount, x.status, x.payment_ref, x.created_at, x.paid_at, c.first_name AS child, c.partner_account_id
+    .prepare(`SELECT x.id, x.giver_name, x.amount, x.status, x.payment_ref, x.method, x.pledge_id, x.created_at, x.paid_at, c.first_name AS child, c.partner_account_id
               FROM contributions x JOIN children c ON c.id=x.child_id ORDER BY x.id DESC LIMIT 200`)
     .all();
   res.json({ contributions: rows });
@@ -58,5 +64,17 @@ r.get('/outbox', h((req, res) => {
 r.get('/audit', h((req, res) => {
   res.json({ entries: req.ctx.db.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT 200').all() });
 }));
+
+r.get('/pledges', h((req, res) => {
+  res.json({
+    pledges: req.ctx.db
+      .prepare(`SELECT p.*, c.first_name AS child FROM pledges p JOIN children c ON c.id=p.child_id ORDER BY p.id DESC LIMIT 200`)
+      .all()
+      .map((p) => ({ id: p.id, child: p.child, giverName: p.giver_name, amount: p.amount, method: p.method, status: p.status, nextDate: p.next_date, charges: p.charges })),
+  });
+}));
+
+/** Run the monthly-gift scheduler now (it also runs automatically every few hours). */
+r.post('/pledges/run', h((req, res) => res.json(runDuePledges(req.ctx))));
 
 export default r;

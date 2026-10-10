@@ -27,6 +27,9 @@ r.post('/login', h((req, res) => {
   const { db } = req.ctx;
   const user = db.prepare('SELECT * FROM users WHERE email=?').get(String(req.body.email || '').toLowerCase());
   if (!user || !verifyPassword(String(req.body.password || ''), user.password_hash)) throw new HttpError(401, 'bad_credentials');
+  // Each entry point admits its own role only.
+  if (req.body.portal === 'admin' && user.role !== 'admin') throw new HttpError(403, 'wrong_portal');
+  if (req.body.portal === 'parent' && user.role !== 'parent') throw new HttpError(403, 'wrong_portal');
   audit(db, user.id, 'login');
   res.json({ token: issueToken(user), user: publicUser(user) });
 }));

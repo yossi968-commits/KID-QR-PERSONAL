@@ -63,6 +63,53 @@ CREATE TABLE IF NOT EXISTS contributions (
   paid_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS pledges (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  giver_name TEXT NOT NULL,
+  giver_email TEXT,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  method TEXT NOT NULL CHECK (method IN ('card','masav')),
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','active','cancelled')),
+  card_token TEXT,
+  institution_code TEXT,
+  mandate_ref TEXT,
+  next_date TEXT,
+  charges INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  cancelled_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS wishes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  icon TEXT NOT NULL DEFAULT '🎁',
+  target_amount INTEGER NOT NULL CHECK (target_amount > 0),
+  target_date TEXT,
+  status TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned','done','cancelled')),
+  created_by TEXT NOT NULL DEFAULT 'parent' CHECK (created_by IN ('parent','child')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS withdrawals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  wish_id INTEGER REFERENCES wishes(id) ON DELETE SET NULL,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  method TEXT,
+  destination TEXT,
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'requested' CHECK (status IN ('requested','paid','rejected')),
+  requested_by TEXT NOT NULL CHECK (requested_by IN ('parent','child')),
+  tax_estimate INTEGER NOT NULL DEFAULT 0,
+  payout_ref TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  decided_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
@@ -111,11 +158,28 @@ export function openDb(file = process.env.DB_PATH || path.resolve('data/kfq.db')
   if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec(SCHEMA);
+  migrate(db);
   return db;
 }
 
-/** Run fn inside a transaction; rolls back on throw. */
+/** Additive migrations for databases created before a column existed. */
+function migrate(db) {
+  const cols = new Set(db.prepare('PRAGMA table_info(children)').all().map((c) => c.name));
+  if (!cols.has('kid_username')) db.exec('ALTER TABLE children ADD COLUMN kid_username TEXT');
+  const ccols = new Set(db.prepare('PRAGMA table_info(contributions)').all().map((c) => c.name));
+  if (!ccols.has('method')) db.exec('ALTER TABLE contributions ADD COLUMN method TEXT');
+  if (!ccols.has('pledge_id')) db.exec('ALTER TABLE contributions ADD COLUMN pledge_id INTEGER REFERENCES pledges(id)');
+  if (!cols.has('withdraw_pct')) db.exec('ALTER TABLE children ADD COLUMN withdraw_pct INTEGER NOT NULL DEFAULT 25');
+  if (!cols.has('kid_pin_hash')) db.exec('ALTER TABLE children ADD COLUMN kid_pin_hash TEXT');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
+}
+
+const inTx = new WeakSet();
+
+/** Run fn inside a transaction; rolls back on throw. Nested calls join the outer transaction. */
 export function tx(db, fn) {
+  if (inTx.has(db)) return fn();
+  inTx.add(db);
   db.exec('BEGIN');
   try {
     const out = fn();
@@ -124,5 +188,7 @@ export function tx(db, fn) {
   } catch (e) {
     db.exec('ROLLBACK');
     throw e;
+  } finally {
+    inTx.delete(db);
   }
 }

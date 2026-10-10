@@ -1,33 +1,18 @@
 import { Router } from 'express';
-import { newGiftCode } from '../lib/auth.js';
+import { newGiftCode, hashPassword } from '../lib/auth.js';
 import { h, bad, notFound, requireString, requireDate, toAgorot, HttpError } from '../lib/http.js';
 import { requireUser, audit } from '../lib/guards.js';
 import { ageOn, nextBirthday, today } from '../lib/dates.js';
 import { portfolioSummary, switchTrack } from '../lib/portfolio.js';
-import { lessonsFor, gradeLesson, AGE_BANDS } from '../content/lessons.js';
+import { pledgeView } from '../lib/pledges.js';
+import { plannerPayload, withdrawalBudget, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
+import { PAYOUT_METHODS } from '../adapters/payments.js';
+import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 
 const r = Router();
 r.use(requireUser);
 
 const AVATARS = ['🦁', '🐻', '🦊', '🐼', '🐨', '🐯', '🦄', '🐬', '🦋', '🐢', '🚀', '⭐'];
-
-export function childView(c) {
-  return {
-    id: c.id,
-    firstName: c.first_name,
-    lastName: c.last_name,
-    birthDate: c.birth_date,
-    age: ageOn(c.birth_date),
-    nextBirthday: nextBirthday(c.birth_date),
-    avatar: c.avatar,
-    giftCode: c.gift_code,
-    track: c.track,
-    partnerAccountId: c.partner_account_id,
-    goalText: c.goal_text,
-    goalAmount: c.goal_amount,
-    publicMessage: c.public_message,
-  };
-}
 
 function loadChild(req) {
   const c = req.ctx.db.prepare('SELECT * FROM children WHERE id=?').get(Number(req.params.id));
@@ -110,22 +95,7 @@ r.post('/:id/track', h((req, res) => {
 }));
 
 r.get('/:id/contributions', h((req, res) => {
-  const { db } = req.ctx;
-  const c = loadChild(req);
-  const age = ageOn(c.birth_date);
-  const rows = db
-    .prepare(`SELECT c.*, e.title AS event_title FROM contributions c LEFT JOIN events e ON e.id=c.event_id
-              WHERE c.child_id=? AND c.status IN ('paid','invested') ORDER BY c.paid_at DESC`)
-    .all(c.id);
-  res.json({
-    contributions: rows.map((x) => ({
-      id: x.id, giverName: x.giver_name, giverEmail: x.giver_email, amount: x.amount, status: x.status,
-      eventTitle: x.event_title, paidAt: x.paid_at, thankedAt: x.thanked_at, unlockAge: x.unlock_age,
-      // Time-capsule messages stay sealed until the child reaches the chosen age.
-      sealed: x.unlock_age ? age < x.unlock_age : false,
-      message: x.unlock_age && age < x.unlock_age ? null : x.message,
-    })),
-  });
+  res.json({ contributions: giftsFor(req.ctx.db, loadChild(req), { withEmail: true }) });
 }));
 
 r.post('/:id/contributions/:cid/thank', h((req, res) => {
@@ -137,6 +107,84 @@ r.post('/:id/contributions/:cid/thank', h((req, res) => {
   notifier.send({ to: x.giver_email, subject: `תודה מ${c.first_name}!`, body: text });
   db.prepare(`UPDATE contributions SET thanked_at=datetime('now') WHERE id=?`).run(x.id);
   res.json({ ok: true, delivered: Boolean(x.giver_email) });
+}));
+
+r.get('/:id/pledges', h((req, res) => {
+  const c = loadChild(req);
+  res.json({ pledges: req.ctx.db.prepare('SELECT * FROM pledges WHERE child_id=? ORDER BY id DESC').all(c.id).map(pledgeView) });
+}));
+
+// ---- Planned gifts and withdrawals (parent side) ----
+
+export function validWish(body) {
+  return {
+    title: requireString(body.title, 'title', { max: 40 }),
+    icon: typeof body.icon === 'string' && body.icon.length <= 8 ? body.icon : '🎁',
+    targetAmount: toAgorot(body.targetAmount, 'target_amount'),
+    targetDate: body.targetDate ? requireDate(body.targetDate, 'target_date') : null,
+  };
+}
+
+r.get('/:id/planner', h((req, res) => res.json(plannerPayload(req.ctx.db, req.ctx.partner, loadChild(req)))));
+
+r.post('/:id/wishes', h((req, res) => {
+  const c = loadChild(req);
+  const w = validWish(req.body);
+  req.ctx.db.prepare('INSERT INTO wishes (child_id, title, icon, target_amount, target_date, created_by) VALUES (?,?,?,?,?,?)').run(c.id, w.title, w.icon, w.targetAmount, w.targetDate, 'parent');
+  res.status(201).json(plannerPayload(req.ctx.db, req.ctx.partner, c));
+}));
+
+r.delete('/:id/wishes/:wid', h((req, res) => {
+  const c = loadChild(req);
+  req.ctx.db.prepare(`UPDATE wishes SET status='cancelled' WHERE id=? AND child_id=?`).run(Number(req.params.wid), c.id);
+  res.json(plannerPayload(req.ctx.db, req.ctx.partner, c));
+}));
+
+r.post('/:id/withdraw-pct', h((req, res) => {
+  const c = loadChild(req);
+  const pct = Number(req.body.pct);
+  if (!Number.isInteger(pct) || pct < 0 || pct > 50) throw bad('invalid_pct');
+  req.ctx.db.prepare('UPDATE children SET withdraw_pct=? WHERE id=?').run(pct, c.id);
+  audit(req.ctx.db, req.user.id, 'withdraw_pct_set', { childId: c.id, pct });
+  res.json(plannerPayload(req.ctx.db, req.ctx.partner, req.ctx.db.prepare('SELECT * FROM children WHERE id=?').get(c.id)));
+}));
+
+function payoutTarget(body) {
+  if (!PAYOUT_METHODS.includes(body.method)) throw bad('invalid_payout_method');
+  return { method: body.method, destination: requireString(body.destination, 'destination', { max: 60 }) };
+}
+
+/** Parent withdraws directly (within the yearly budget); pays out to the parent's own app, card or account. */
+r.post('/:id/withdrawals', h((req, res) => {
+  const { db, partner } = req.ctx;
+  const c = loadChild(req);
+  const amount = toAgorot(req.body.amount);
+  const target = payoutTarget(req.body);
+  if (amount > withdrawalBudget(db, partner, c).available) throw bad('over_budget');
+  const wishId = req.body.wishId ? Number(req.body.wishId) : null;
+  const { lastInsertRowid } = db
+    .prepare('INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, tax_estimate, note) VALUES (?,?,?,?,?,?)')
+    .run(c.id, wishId, amount, 'parent', taxEstimate(db, partner, c.id, amount), req.body.note || null);
+  executeWithdrawal(req.ctx, c, db.prepare('SELECT * FROM withdrawals WHERE id=?').get(lastInsertRowid), target);
+  audit(db, req.user.id, 'withdrawal', { childId: c.id, amount });
+  res.status(201).json(plannerPayload(db, partner, c));
+}));
+
+/** Approve a child's request: the parent picks where the money goes. */
+r.post('/:id/withdrawals/:wid/approve', h((req, res) => {
+  const { db, partner } = req.ctx;
+  const c = loadChild(req);
+  const w = db.prepare(`SELECT * FROM withdrawals WHERE id=? AND child_id=? AND status='requested'`).get(Number(req.params.wid), c.id);
+  if (!w) throw notFound();
+  executeWithdrawal(req.ctx, c, w, payoutTarget(req.body));
+  audit(db, req.user.id, 'withdrawal_approved', { childId: c.id, withdrawalId: w.id });
+  res.json(plannerPayload(db, partner, c));
+}));
+
+r.post('/:id/withdrawals/:wid/reject', h((req, res) => {
+  const c = loadChild(req);
+  req.ctx.db.prepare(`UPDATE withdrawals SET status='rejected', decided_at=datetime('now') WHERE id=? AND child_id=? AND status='requested'`).run(Number(req.params.wid), c.id);
+  res.json(plannerPayload(req.ctx.db, req.ctx.partner, c));
 }));
 
 r.post('/:id/events', h((req, res) => {
@@ -157,25 +205,26 @@ r.delete('/:id/events/:eid', h((req, res) => {
 }));
 
 r.get('/:id/lessons', h((req, res) => {
-  const { db } = req.ctx;
-  const c = loadChild(req);
-  const done = new Map(db.prepare('SELECT lesson_id, score FROM lesson_progress WHERE child_id=?').all(c.id).map((p) => [p.lesson_id, p.score]));
-  const age = ageOn(c.birth_date);
-  const band = AGE_BANDS.find((b) => age >= b.from && age <= b.to)?.id || (age < 4 ? 'little' : 'young');
-  const lessons = lessonsFor(req.query.locale || req.user.locale).map((l) => ({ ...l, completed: done.has(l.id), starsEarned: done.get(l.id) || 0 }));
-  res.json({ band, bands: AGE_BANDS, lessons, totalStars: [...done.values()].reduce((a, b) => a + b, 0) });
+  res.json(lessonsPayload(req.ctx.db, loadChild(req), req.query.locale || req.user.locale));
 }));
 
 r.post('/:id/lessons/:lid/complete', h((req, res) => {
+  const g = completeLesson(req.ctx.db, loadChild(req), req.params.lid, req.body.answers);
+  if (!g) throw notFound();
+  res.json(g);
+}));
+
+/** Parent sets the child's own login (username + 4–6 digit PIN) for the kids' portal. */
+r.post('/:id/kid-login', h((req, res) => {
   const { db } = req.ctx;
   const c = loadChild(req);
-  const g = gradeLesson(req.params.lid, req.body.answers);
-  if (!g) throw notFound();
-  if (g.passed) {
-    db.prepare(`INSERT INTO lesson_progress (child_id, lesson_id, score) VALUES (?,?,?)
-                ON CONFLICT(child_id, lesson_id) DO UPDATE SET score=excluded.score, completed_at=datetime('now')`).run(c.id, req.params.lid, g.stars);
-  }
-  res.json(g);
+  const username = requireString(req.body.username, 'username', { min: 3, max: 30 }).toLowerCase();
+  if (!/^[a-z0-9._-]+$/.test(username)) throw bad('invalid_username');
+  if (!/^\d{4,6}$/.test(String(req.body.pin || ''))) throw bad('invalid_pin');
+  if (db.prepare('SELECT 1 FROM children WHERE kid_username=? AND id<>?').get(username, c.id)) throw new HttpError(409, 'username_taken');
+  db.prepare('UPDATE children SET kid_username=?, kid_pin_hash=? WHERE id=?').run(username, hashPassword(String(req.body.pin)), c.id);
+  audit(db, req.user.id, 'kid_login_set', { childId: c.id });
+  res.json({ child: childView(db.prepare('SELECT * FROM children WHERE id=?').get(c.id)) });
 }));
 
 r.get('/:id/statement', h((req, res) => {

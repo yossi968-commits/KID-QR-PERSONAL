@@ -23,6 +23,12 @@ export function issueToken(user) {
   return `${payload}.${sign(payload)}`;
 }
 
+/** Child session: limited to the child's own read-only portal and lessons. */
+export function issueChildToken(child) {
+  const payload = b64(JSON.stringify({ cid: child.id, role: 'child', exp: Date.now() + TOKEN_TTL_MS }));
+  return `${payload}.${sign(payload)}`;
+}
+
 export function readToken(token) {
   if (!token) return null;
   const [payload, sig] = token.split('.');

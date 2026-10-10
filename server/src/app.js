@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js';
 import childRoutes from './routes/children.js';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
+import kidRoutes from './routes/kid.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,7 +27,8 @@ export function createApp({ db, partner, payments, notifier = new OutboxNotifier
   app.use((req, _res, next) => {
     const raw = req.get('authorization')?.replace(/^Bearer /, '');
     const t = readToken(raw);
-    req.user = t ? db.prepare('SELECT * FROM users WHERE id=?').get(t.uid) || null : null;
+    req.user = t?.uid ? db.prepare('SELECT * FROM users WHERE id=?').get(t.uid) || null : null;
+    req.child = t?.cid ? db.prepare('SELECT * FROM children WHERE id=?').get(t.cid) || null : null;
     req.ctx = ctx;
     next();
   });
@@ -34,6 +36,7 @@ export function createApp({ db, partner, payments, notifier = new OutboxNotifier
   app.get('/api/health', (_req, res) => res.json({ ok: true, partner: partner.name, payments: payments.name }));
   app.use('/api/auth', authRoutes);
   app.use('/api/children', childRoutes);
+  app.use('/api/kid', kidRoutes);
   app.use('/api', publicRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'not_found')));
