@@ -32,6 +32,7 @@ export function lifecycleView(c, on = today()) {
     graduatedAt: c.graduated_at || null,
     minorAccountId: c.minor_account_id || null,
     parentView: c.parent_view == null ? true : Boolean(c.parent_view),
+    openedAsAdult: Boolean(c.opened_as_adult),
   };
 }
 

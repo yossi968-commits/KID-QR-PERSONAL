@@ -41,19 +41,28 @@ export const DOCUMENTS = [
   { id: 'application_signed', kind: 'sign' },     // טופס הצטרפות חתום ע"י שני ההורים
 ];
 
+/** Opened from 18: the fund is in the saver's own name, and only they sign. */
+export const ADULT_DOCUMENTS = [
+  { id: 'holder_id', kind: 'upload' },            // ת"ז של בעל/ת הקופה כולל ספח
+  { id: 'bank_confirmation', kind: 'upload' },
+  { id: 'kyc_form', kind: 'form' },
+  { id: 'application_signed', kind: 'sign' },     // טופס הצטרפות חתום ע"י בעל/ת הקופה
+];
+export const documentsFor = (child) => (child.opened_as_adult ? ADULT_DOCUMENTS : DOCUMENTS);
+
 export function docsStatus(db, child) {
   const rows = new Map(db.prepare('SELECT * FROM child_documents WHERE child_id=?').all(child.id).map((d) => [d.doc_type, d]));
-  const items = DOCUMENTS.map((d) => {
+  const items = documentsFor(child).map((d) => {
     const r = rows.get(d.id);
     return { id: d.id, kind: d.kind, status: r?.status || 'missing', fileName: r?.file_name || null, uploadedAt: r?.uploaded_at || null };
   });
   const missing = items.filter((i) => i.status === 'missing').map((i) => i.id);
-  return { items, missing, done: items.length - missing.length, total: items.length, accountStatus: child.account_status, applicationRef: child.application_ref };
+  return { items, missing, done: items.length - missing.length, total: items.length, accountStatus: child.account_status, applicationRef: child.application_ref, adult: Boolean(child.opened_as_adult) };
 }
 
 /** Record one checklist item; when the last one lands, the application goes to the investment house. */
 export function submitDocument({ db, notifier }, child, docId, body) {
-  const d = DOCUMENTS.find((x) => x.id === docId);
+  const d = documentsFor(child).find((x) => x.id === docId);
   if (!d) return null;
   let fileName = null, data = null;
   if (d.kind === 'upload') {
@@ -65,6 +74,9 @@ export function submitDocument({ db, notifier }, child, docId, body) {
     const f = body.answers || {};
     if (!f.occupation || !f.sourceOfFunds || f.pep === undefined) return { error: 'kyc_incomplete' };
     data = JSON.stringify({ occupation: String(f.occupation).slice(0, 80), sourceOfFunds: String(f.sourceOfFunds).slice(0, 80), pep: Boolean(f.pep), usPerson: Boolean(f.usPerson) });
+  } else if (child.opened_as_adult) {
+    if (!body.signerName || !body.agree) return { error: 'signature_required' };
+    data = JSON.stringify({ signer: String(body.signerName).slice(0, 60) });
   } else if (!body.signerName || !body.secondSignerName || !body.agree) return { error: 'both_signatures_required' };
   else data = JSON.stringify({ signer: String(body.signerName).slice(0, 60), secondSigner: String(body.secondSignerName).slice(0, 60) });
 

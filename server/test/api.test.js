@@ -409,3 +409,28 @@ test('driving lessons: from 16 a teen takes part of the savings beyond the yearl
   const ok = await api(`/children/${id}/withdrawals/${r.body.withdrawals[0].id}/approve`, { method: 'POST', body: { method: 'bank', destination: 'בית ספר לנהיגה', coSigned: true } });
   assert.equal(ok.body.withdrawals[0].status, 'paid');
 });
+
+test('a QR can be opened at any age: from 18 the saver signs their own documents and runs the fund', async () => {
+  const parentToken = token;
+  assert.equal((await api('/children', { method: 'POST', body: { firstName: 'x', birthDate: '2099-01-01' } })).body.error, 'child_age_out_of_range');
+  const made = await api('/children', { method: 'POST', body: { firstName: 'דנה', birthDate: '2001-03-01', provider: 'analyst' } });
+  assert.equal(made.status, 201);
+  const id = made.body.child.id;
+  assert.equal(made.body.child.lifecycle.managedBy, 'self');
+  assert.equal(made.body.child.lifecycle.openedAsAdult, true);
+  assert.deepEqual(made.body.documents.items.map((d) => d.id), ['holder_id', 'bank_confirmation', 'kyc_form', 'application_signed']);
+  // Before the fund opens the parent can still help: set the sign-in and upload.
+  assert.equal((await api(`/children/${id}/kid-login`, { method: 'POST', body: { username: 'dana', pin: '4321' } })).status, 200);
+  assert.equal((await api(`/children/${id}/documents/holder_id`, { method: 'POST', body: { fileName: 'id.pdf', size: 1000 } })).status, 200);
+
+  token = (await api('/kid/login', { method: 'POST', auth: false, body: { username: 'dana', pin: '4321' } })).body.token;
+  await api('/kid/documents/bank_confirmation', { method: 'POST', body: { fileName: 'bank.pdf', size: 1000 } });
+  await api('/kid/documents/kyc_form', { method: 'POST', body: { answers: { occupation: 'סטודנטית', sourceOfFunds: 'עבודה', pep: false } } });
+  const signed = await api('/kid/documents/application_signed', { method: 'POST', body: { signerName: 'דנה', agree: true } });
+  assert.equal(signed.body.accountStatus, 'in_review', 'one signature is enough for an adult');
+  activateFund(ctx, db.prepare('SELECT * FROM children WHERE id=?').get(id));
+  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'analyst' } })).body.error, 'already_graduated', 'already a fund in her own name');
+
+  token = parentToken;
+  assert.equal((await api(`/children/${id}/track`, { method: 'POST', body: { track: 'solid', coSigned: true } })).body.error, 'managed_by_child');
+});

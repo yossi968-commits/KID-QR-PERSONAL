@@ -268,7 +268,7 @@ const he = {
   'err.consent_required': 'יש לאשר את התנאים',
   'err.amount_out_of_range': 'הסכום מחוץ לטווח המותר',
   'err.invalid_giver_name': 'נא לכתוב שם',
-  'err.child_age_out_of_range': 'אפשר לפתוח קוד לילדים עד גיל 18',
+  'err.child_age_out_of_range': 'בדקו את תאריך הלידה',
   'err.kyc_required': 'צריך לאמת זהות קודם',
 };
 export default he;

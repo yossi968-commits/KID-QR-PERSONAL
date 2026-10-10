@@ -45,7 +45,7 @@ export type Child = {
 /** Birth → 18 (young adult takes over) → 21 (moves to a regular fund in their own name). */
 export type Lifecycle = {
   phase: 'minor' | 'adult' | 'graduated'; managedBy: 'guardians' | 'self'; handoverDate: string; handedOverAt: string | null;
-  graduateFrom: string; canGraduate: boolean; graduatedAt: string | null; minorAccountId: string | null; parentView: boolean;
+  graduateFrom: string; canGraduate: boolean; graduatedAt: string | null; minorAccountId: string | null; parentView: boolean; openedAsAdult: boolean;
 };
 export type Track = { id: string; core: boolean; risk: number; expectedReturn: number; annualVol: number; mgmtFee: number; equityShare: number };
 export type Portfolio = {
@@ -56,7 +56,7 @@ export type Portfolio = {
 };
 export type EventRow = { id: number; type: string; title: string; date: string; goal_amount: number | null; active: number };
 export type DocItem = { id: string; kind: 'upload' | 'form' | 'sign'; status: 'missing' | 'received' | 'verified' | 'rejected'; fileName: string | null; uploadedAt: string | null };
-export type Docs = { items: DocItem[]; missing: string[]; done: number; total: number; accountStatus: AccountStatus; applicationRef: string };
+export type Docs = { items: DocItem[]; missing: string[]; done: number; total: number; accountStatus: AccountStatus; applicationRef: string; adult?: boolean };
 export type ChildData = { child: Child; portfolio: Portfolio; events: EventRow[]; documents: Docs };
 export type Gift = {
   id: number; giverName: string; giverEmail?: string; amount: number; status: string; source: string; method?: string; monthly: boolean;

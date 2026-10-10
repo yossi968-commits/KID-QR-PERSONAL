@@ -22,7 +22,8 @@ function loadChild(req) {
   const c = req.ctx.db.prepare('SELECT * FROM children WHERE id=?').get(Number(req.params.id));
   if (!c) throw notFound();
   if (c.guardian_id !== req.user.id && req.user.role !== 'admin') throw notFound();
-  if (req.user.role !== 'admin' && phaseOf(c) !== 'minor') {
+  // Until the fund opens a parent may help set it up (documents, sign-in) at any age.
+  if (req.user.role !== 'admin' && phaseOf(c) !== 'minor' && c.account_status === 'active') {
     // From 18 the fund is the young adult's. Parents can still give (like any giver),
     // and see it only if the young adult agreed.
     if (req.method !== 'GET' && !/\/deposits$/.test(req.path)) throw new HttpError(403, 'managed_by_child');
@@ -54,21 +55,23 @@ r.post('/', h((req, res) => {
   const firstName = requireString(req.body.firstName, 'first_name', { max: 40 });
   const birthDate = requireDate(req.body.birthDate, 'birth_date');
   const age = ageOn(birthDate);
-  if (age < 0 || age >= 18) throw bad('child_age_out_of_range');
+  // There is no age to start saving. From 18 the fund opens in the saver's own name.
+  if (age < 0 || age > 120) throw bad('child_age_out_of_range');
+  const adult = age >= 18;
   const track = partner.listTracks().some((t) => t.id === req.body.track && t.core) ? req.body.track : 'equity';
   const provider = PROVIDERS.some((p) => p.id === req.body.provider) ? req.body.provider : DEFAULT_PROVIDER;
   const avatar = AVATARS.includes(req.body.avatar) ? req.body.avatar : AVATARS[0];
   let code;
   do code = newGiftCode(); while (db.prepare('SELECT 1 FROM children WHERE gift_code=?').get(code));
   const { lastInsertRowid } = db
-    .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message, provider, account_status, application_ref)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message, provider, account_status, application_ref, opened_as_adult, handed_over_at, graduated_at)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(
       req.user.id, firstName, req.body.lastName?.trim() || null, birthDate, avatar, code, track,
       req.body.goalText?.trim()?.slice(0, 120) || null,
       req.body.goalAmount ? toAgorot(req.body.goalAmount, 'goal_amount') : null,
       req.body.publicMessage?.trim()?.slice(0, 280) || null,
-      provider, 'pending_docs', newApplicationRef()
+      provider, 'pending_docs', newApplicationRef(), adult ? 1 : 0, adult ? today() : null, adult ? today() : null
     );
   // The QR works from now on; the fund opens once the document checklist is complete.
   const child = db.prepare('SELECT * FROM children WHERE id=?').get(lastInsertRowid);

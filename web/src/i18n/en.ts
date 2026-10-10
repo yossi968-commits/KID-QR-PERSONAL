@@ -270,7 +270,7 @@ const en: Dict = {
   'err.consent_required': 'Please accept the terms',
   'err.amount_out_of_range': 'Amount is outside the allowed range',
   'err.invalid_giver_name': 'Please enter a name',
-  'err.child_age_out_of_range': 'Codes can be opened for children under 18',
+  'err.child_age_out_of_range': 'Check the birth date',
   'err.kyc_required': 'Verify your identity first',
 };
 export default en;

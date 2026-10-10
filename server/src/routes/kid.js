@@ -5,7 +5,7 @@ import { portfolioSummary } from '../lib/portfolio.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 import { plannerPayload, withdrawalLimit, taxEstimate, executeWithdrawal } from '../lib/wishes.js';
 import { phaseOf, graduate } from '../lib/lifecycle.js';
-import { nextSwitchDate } from '../lib/fund.js';
+import { nextSwitchDate, docsStatus, submitDocument } from '../lib/fund.js';
 import { switchTrack } from '../lib/portfolio.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
 import { EVENT_TYPES } from '../lib/contribute.js';
@@ -132,6 +132,16 @@ r.post('/events', selfManaged, h((req, res) => {
 r.delete('/events/:eid', selfManaged, h((req, res) => {
   req.ctx.db.prepare('UPDATE events SET active=0 WHERE id=? AND child_id=?').run(Number(req.params.eid), req.child.id);
   res.json({ ok: true });
+}));
+
+/** An adult saver completes the opening checklist of their own fund. */
+r.get('/documents', selfManaged, h((req, res) => res.json(docsStatus(req.ctx.db, req.child))));
+
+r.post('/documents/:doc', selfManaged, h((req, res) => {
+  const out = submitDocument(req.ctx, req.child, req.params.doc, req.body);
+  if (!out) throw notFound();
+  if (out.error) throw bad(out.error);
+  res.json(out);
 }));
 
 /** Whether the parents keep seeing the fund after 18. */

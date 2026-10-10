@@ -11,47 +11,19 @@ export default function FundTab({ data, reload, fresh }: { data: ChildData; relo
   const L = useLabels();
   const errText = useErr();
   const { child, documents } = data;
-  const [docs, setDocs] = useState<Docs>(documents);
-  const [open, setOpen] = useState<string | null>(null);
   const [dialog, setDialog] = useState(false);
   const [pick, setPick] = useState<string | null>(null);
   const [co, setCo] = useState(false);
   const [err, setErr] = useState('');
-  const submit = async (doc: string, body: unknown) => {
-    setErr('');
-    try { setDocs(await api(`/children/${child.id}/documents/${doc}`, { body })); setOpen(null); if (doc) reload(); } catch (x) { setErr(errText(x)); }
-  };
   const switchTrack = async () => {
     setErr('');
     try { await api(`/children/${child.id}/track`, { body: { track: pick, coSigned: co } }); setPick(null); setCo(false); reload(); } catch (x) { setErr(errText(x)); }
   };
   const locked = Boolean(child.nextTrackSwitch && child.nextTrackSwitch > new Date().toISOString().slice(0, 10));
-  const pct = Math.round((docs.done / docs.total) * 100);
 
   return (
     <div className="grid grid-2" style={{ alignItems: 'start' }}>
-      <div className="card">
-        <div className="card-head">
-          <div><h3 style={{ margin: 0 }}>{t('fund.checklist')}</h3><div className="small muted">{t('fund.checklistDesc')}</div></div>
-          <AccountPill status={docs.accountStatus} />
-        </div>
-        {fresh && docs.accountStatus === 'pending_docs' && <div className="banner small" style={{ marginBottom: 10 }}>🎉 {t('fund.freshBanner', { name: child.firstName })}</div>}
-        <div className="row between small"><span>{t('fund.progress', { done: docs.done, total: docs.total })}</span><span className="num">{pct}%</span></div>
-        <div className="progress" style={{ margin: '6px 0 6px' }}><div style={{ width: pct + '%', background: 'var(--brand)' }} /></div>
-        {docs.items.map((d) => (
-          <div key={d.id} className={'check-item' + (d.status !== 'missing' ? ' ok' : '')}>
-            <span className="ci-icon" aria-hidden>{d.status !== 'missing' ? '✓' : d.kind === 'upload' ? '⇪' : d.kind === 'form' ? '✎' : '✍'}</span>
-            <div className="ci-body">
-              <b>{t(`doc.${d.id}` as any)}</b>
-              <div className="small muted">{d.status === 'missing' ? t(`doc.${d.id}.hint` as any) : `${d.fileName || t('doc.done')} · ${t(`doc.status.${d.status}` as any)}`}</div>
-            </div>
-            {docs.accountStatus !== 'active' && <DocAction d={d} open={open === d.id} setOpen={(v) => setOpen(v ? d.id : null)} onSubmit={(b) => submit(d.id, b)} />}
-            {open === d.id && d.kind !== 'upload' && <DocForm d={d} onSubmit={(b) => submit(d.id, b)} onCancel={() => setOpen(null)} />}
-          </div>
-        ))}
-        {err && <div className="error" role="alert">{err}</div>}
-        <p className="small muted" style={{ margin: '10px 0 0' }}>🔔 {t('fund.reminders')}</p>
-      </div>
+      <DocChecklist initial={documents} base={`/children/${child.id}`} name={child.firstName} fresh={fresh} onComplete={reload} />
 
       <div className="stack">
         <div className="card">
@@ -59,7 +31,7 @@ export default function FundTab({ data, reload, fresh }: { data: ChildData; relo
           <dl className="kv">
             <dt>{t('open.house')}</dt><dd>{child.providerName}</dd>
             <dt>{t('fund.productLabel')}</dt><dd>{t('fund.product')}</dd>
-            <dt>{t('fund.appRef')}</dt><dd className="num">{docs.applicationRef || '—'}</dd>
+            <dt>{t('fund.appRef')}</dt><dd className="num">{documents.applicationRef || '—'}</dd>
             <dt>{t('fund.accountNo')}</dt><dd className="num">{child.partnerAccountId || t('fund.afterOpening')}</dd>
             <dt>{t('fund.openedAt')}</dt><dd>{child.accountOpenedAt ? fmtDate(child.accountOpenedAt) : '—'}</dd>
             <dt>{t('fund.held')}</dt><dd className="num">{fmtMoney(data.portfolio.held)}</dd>
@@ -85,6 +57,46 @@ export default function FundTab({ data, reload, fresh }: { data: ChildData; relo
   );
 }
 
+/** The opening checklist; parents use it for a child's fund, an adult saver for their own. */
+export function DocChecklist({ initial, base, name, fresh, onComplete }: { initial: Docs; base: string; name: string; fresh?: boolean; onComplete?: () => void }) {
+  const { t } = useI18n();
+  const errText = useErr();
+  const [docs, setDocs] = useState<Docs>(initial);
+  const [open, setOpen] = useState<string | null>(null);
+  const [err, setErr] = useState('');
+  const submit = async (doc: string, body: unknown) => {
+    setErr('');
+    try { setDocs(await api(`${base}/documents/${doc}`, { body })); setOpen(null); onComplete?.(); } catch (x) { setErr(errText(x)); }
+  };
+  const pct = Math.round((docs.done / docs.total) * 100);
+  const child = { firstName: name };
+  return (
+      <div className="card">
+        <div className="card-head">
+          <div><h3 style={{ margin: 0 }}>{t('fund.checklist')}</h3><div className="small muted">{t('fund.checklistDesc')}</div></div>
+          <AccountPill status={docs.accountStatus} />
+        </div>
+        {fresh && docs.accountStatus === 'pending_docs' && <div className="banner small" style={{ marginBottom: 10 }}>🎉 {t('fund.freshBanner', { name: child.firstName })}</div>}
+        <div className="row between small"><span>{t('fund.progress', { done: docs.done, total: docs.total })}</span><span className="num">{pct}%</span></div>
+        <div className="progress" style={{ margin: '6px 0 6px' }}><div style={{ width: pct + '%', background: 'var(--brand)' }} /></div>
+        {docs.items.map((d) => (
+          <div key={d.id} className={'check-item' + (d.status !== 'missing' ? ' ok' : '')}>
+            <span className="ci-icon" aria-hidden>{d.status !== 'missing' ? '✓' : d.kind === 'upload' ? '⇪' : d.kind === 'form' ? '✎' : '✍'}</span>
+            <div className="ci-body">
+              <b>{t(`doc.${d.id}` as any)}</b>
+              <div className="small muted">{d.status === 'missing' ? t(`doc.${d.id}.hint` as any) : `${d.fileName || t('doc.done')} · ${t(`doc.status.${d.status}` as any)}`}</div>
+            </div>
+            {docs.accountStatus !== 'active' && <DocAction d={d} open={open === d.id} setOpen={(v) => setOpen(v ? d.id : null)} onSubmit={(b) => submit(d.id, b)} />}
+            {open === d.id && d.kind !== 'upload' && <DocForm d={d} adult={docs.adult} onSubmit={(b) => submit(d.id, b)} onCancel={() => setOpen(null)} />}
+          </div>
+        ))}
+        {err && <div className="error" role="alert">{err}</div>}
+        <p className="small muted" style={{ margin: '10px 0 0' }}>🔔 {t('fund.reminders')}</p>
+      </div>
+
+  );
+}
+
 function DocAction({ d, open, setOpen, onSubmit }: { d: DocItem; open: boolean; setOpen: (v: boolean) => void; onSubmit: (b: unknown) => void }) {
   const { t } = useI18n();
   const label = d.status === 'missing' ? t(`doc.cta.${d.kind}` as any) : t('doc.replace');
@@ -99,7 +111,7 @@ function DocAction({ d, open, setOpen, onSubmit }: { d: DocItem; open: boolean; 
   return <button className={'btn sm ' + (d.status === 'missing' ? '' : 'ghost')} onClick={() => setOpen(!open)} aria-expanded={open}>{label}</button>;
 }
 
-function DocForm({ d, onSubmit, onCancel }: { d: DocItem; onSubmit: (b: unknown) => void; onCancel: () => void }) {
+function DocForm({ d, adult, onSubmit, onCancel }: { d: DocItem; adult?: boolean; onSubmit: (b: unknown) => void; onCancel: () => void }) {
   const { t } = useI18n();
   const [f, setF] = useState({ occupation: '', sourceOfFunds: 'family_gifts', pep: false, usPerson: false, signerName: '', secondSignerName: '', agree: false });
   return (
@@ -116,13 +128,13 @@ function DocForm({ d, onSubmit, onCancel }: { d: DocItem; onSubmit: (b: unknown)
         </>
       ) : (
         <>
-          <p className="small muted" style={{ margin: 0 }}>{t('sign.desc')}</p>
+          <p className="small muted" style={{ margin: 0 }}>{t(adult ? 'sign.descAdult' : 'sign.desc')}</p>
           <div className="grid grid-2" style={{ gap: 10 }}>
-            <label className="field"><span>{t('sign.parent1')}</span><input value={f.signerName} onChange={(e) => setF({ ...f, signerName: e.target.value })} /></label>
-            <label className="field"><span>{t('sign.parent2')}</span><input value={f.secondSignerName} onChange={(e) => setF({ ...f, secondSignerName: e.target.value })} /></label>
+            <label className="field"><span>{t(adult ? 'sign.holder' : 'sign.parent1')}</span><input value={f.signerName} onChange={(e) => setF({ ...f, signerName: e.target.value })} /></label>
+            {!adult && <label className="field"><span>{t('sign.parent2')}</span><input value={f.secondSignerName} onChange={(e) => setF({ ...f, secondSignerName: e.target.value })} /></label>}
           </div>
           <label className="check"><input type="checkbox" checked={f.agree} onChange={(e) => setF({ ...f, agree: e.target.checked })} />{t('sign.agree')}</label>
-          <div className="row"><button className="btn sm" disabled={!f.signerName || !f.secondSignerName || !f.agree} onClick={() => onSubmit({ signerName: f.signerName, secondSignerName: f.secondSignerName, agree: true })}>{t('sign.cta')}</button><button className="btn ghost sm" onClick={onCancel}>{t('common.cancel')}</button></div>
+          <div className="row"><button className="btn sm" disabled={!f.signerName || (!adult && !f.secondSignerName) || !f.agree} onClick={() => onSubmit({ signerName: f.signerName, secondSignerName: f.secondSignerName, agree: true })}>{t('sign.cta')}</button><button className="btn ghost sm" onClick={onCancel}>{t('common.cancel')}</button></div>
         </>
       )}
     </div>

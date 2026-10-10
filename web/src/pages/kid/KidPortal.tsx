@@ -5,6 +5,8 @@ import { useAuth } from '../../lib/auth';
 import { api, ADULT_EVENT_TYPES, PAYOUT_METHODS, type Child, type EventRow, type Pledge, type Planner, type Portfolio, type Provider } from '../../lib/api';
 import TrackDialog from '../../components/TrackDialog';
 import { LifeTimeline } from '../../components/Lifecycle';
+import { DocChecklist } from '../parent/FundTab';
+import type { Docs } from '../../lib/api';
 import MoneyTree from '../../components/MoneyTree';
 import QrPanel from '../../components/QrPanel';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
@@ -418,18 +420,21 @@ function MyFund({ d }: { d: KidData }) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [house, setHouse] = useState(child.provider);
   const [ev, setEv] = useState({ type: 'graduation', title: '', date: '' });
+  const [docs, setDocs] = useState<Docs | null>(null);
   useEffect(() => { api<{ providers: Provider[] }>('/providers').then((r) => setProviders(r.providers)); }, []);
+  useEffect(() => { if (child.accountStatus !== 'active') api<Docs>('/kid/documents').then(setDocs); }, [child.accountStatus]);
   const run = async (fn: () => Promise<unknown>) => { setErr(''); try { await fn(); d.reload(); return true; } catch (x) { setErr(errText(x)); return false; } };
   const graduated = lc.phase === 'graduated';
   return (
     <div className="stack">
       <div className="sen-hero"><div><div className="eyebrow">🔑 {t('life.selfPill')}</div><h2 style={{ margin: '4px 0' }}>{t('life.mine.title')}</h2><p className="small muted" style={{ margin: 0 }}>{t('life.mine.desc')}</p></div></div>
       {err && <div className="error">{err}</div>}
+      {docs && <><div className="banner small">📄 {t('life.finishDocs')}</div><DocChecklist initial={docs} base="/kid" name={child.firstName} onComplete={d.reload} /></>}
       <div className="grid grid-2">
         <div className="card stack">
           <h3 style={{ margin: 0 }}>🎓 {t('life.grad.title')}</h3>
           <p className="small muted" style={{ margin: 0 }}>{t('life.grad.desc')}</p>
-          {graduated ? (
+          {lc.openedAsAdult ? <div className="banner small">✓ {t('life.grad.direct')}</div> : graduated ? (
             <>
               <div className="banner small">✓ {t('life.grad.done', { date: fmtDate(lc.graduatedAt!), account: child.partnerAccountId || '', house: child.providerName })}</div>
               {lc.minorAccountId && <div className="small muted">{t('life.grad.prev', { account: lc.minorAccountId })}</div>}

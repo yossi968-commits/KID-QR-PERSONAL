@@ -231,6 +231,7 @@ function migrate(db) {
   if (!cols.has('minor_account_id')) db.exec('ALTER TABLE children ADD COLUMN minor_account_id TEXT');
   const wcols = new Set(db.prepare('PRAGMA table_info(withdrawals)').all().map((c) => c.name));
   if (!wcols.has('purpose')) db.exec(`ALTER TABLE withdrawals ADD COLUMN purpose TEXT NOT NULL DEFAULT 'general'`);
+  if (!cols.has('opened_as_adult')) db.exec('ALTER TABLE children ADD COLUMN opened_as_adult INTEGER NOT NULL DEFAULT 0');
   if (!cols.has('parent_view')) db.exec('ALTER TABLE children ADD COLUMN parent_view INTEGER NOT NULL DEFAULT 1');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
 }

@@ -28,7 +28,8 @@ export default function ChildPage() {
   if (hidden) return <div className="container page-head"><div className="small muted"><Link to="/parent">{t('parent.nav.portfolio')}</Link></div><div className="banner" style={{ marginTop: 16 }}>🔒 {t('err.private_by_child')}</div></div>;
   if (!data) return <Loading />;
   const { child, portfolio } = data;
-  const adult = child.lifecycle.phase !== 'minor';
+  // Once an adult's fund is open it is theirs; until then a parent may help set it up.
+  const adult = child.lifecycle.phase !== 'minor' && child.accountStatus === 'active';
   const tabs: readonly string[] = adult ? ADULT_TABS : TABS;
   const tab = tabs.includes(sp.get('tab') || '') ? sp.get('tab')! : 'overview';
 
@@ -47,7 +48,7 @@ export default function ChildPage() {
       </div>
       {adult && (
         <div className="banner" style={{ marginBottom: 16 }}>
-          {child.lifecycle.phase === 'graduated' ? `🎓 ${t('life.graduatedBanner', { name: child.firstName, house: child.providerName })}` : `🔑 ${t('life.handedBanner', { name: child.firstName, date: fmtDate(child.lifecycle.handedOverAt || child.lifecycle.handoverDate) })}`}
+          {child.lifecycle.openedAsAdult ? `🔑 ${t('life.directBanner', { name: child.firstName })}` : child.lifecycle.phase === 'graduated' ? `🎓 ${t('life.graduatedBanner', { name: child.firstName, house: child.providerName })}` : `🔑 ${t('life.handedBanner', { name: child.firstName, date: fmtDate(child.lifecycle.handedOverAt || child.lifecycle.handoverDate) })}`}
         </div>
       )}
       {!adult && child.accountStatus !== 'active' && (

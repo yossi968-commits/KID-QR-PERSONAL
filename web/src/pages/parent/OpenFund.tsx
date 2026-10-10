@@ -28,7 +28,7 @@ export default function OpenFund() {
   const [f, setF] = useState({ provider: '', firstName: '', lastName: '', birthDate: '', avatar: AVATARS[0], track: 'equity', goalText: '', publicMessage: '' });
   useEffect(() => { api<{ providers: Provider[]; defaultProvider: string }>('/providers').then((r) => { setProviders(r.providers); setF((x) => ({ ...x, provider: x.provider || r.defaultProvider })); }); }, []);
   const set = (k: keyof typeof f) => (e: any) => setF({ ...f, [k]: e.target.value });
-  const age = f.birthDate ? Math.max(0, new Date().getFullYear() - Number(f.birthDate.slice(0, 4))) : 0;
+  const age = f.birthDate ? Math.max(0, Math.floor((Date.now() - Date.parse(f.birthDate)) / (365.25 * 86400000))) : 0;
 
   const verify = async (e: FormEvent) => {
     e.preventDefault(); setErr('');
@@ -89,7 +89,8 @@ export default function OpenFund() {
             <label className="field"><span>{t('onb.lastName')}</span><input value={f.lastName} onChange={set('lastName')} /></label>
           </div>
           <label className="field"><span>{t('onb.birthDate')}</span><input type="date" value={f.birthDate} onChange={set('birthDate')} required max={new Date().toISOString().slice(0, 10)} /></label>
-          <p className="small muted" style={{ margin: 0 }}>{t('open.newbornHint')}</p>
+          <p className="small muted" style={{ margin: 0 }}>{t('open.newbornHint')} {t('open.anyAge')}</p>
+          {age >= 18 && <div className="banner small">🔑 {t('open.adultNote', { name: f.firstName || '…' })}</div>}
           <div>
             <span className="field-label">{t('onb.avatar')}</span>
             <div className="row" style={{ gap: 6 }}>
@@ -116,7 +117,7 @@ export default function OpenFund() {
           <div className="row"><button className="btn gold" disabled={busy} onClick={create}>{t('open.create')}</button><button className="btn ghost" onClick={() => setStep(2)}>{t('common.back')}</button></div>
         </div>
       )}
-      {dialog && <TrackDialog value={f.track} years={Math.max(1, 21 - age)} onClose={() => setDialog(false)} onPick={(track) => { setF({ ...f, track }); setDialog(false); }} />}
+      {dialog && <TrackDialog value={f.track} years={age >= 21 ? 10 : Math.max(1, 21 - age)} onClose={() => setDialog(false)} onPick={(track) => { setF({ ...f, track }); setDialog(false); }} />}
     </div>
   );
 }
