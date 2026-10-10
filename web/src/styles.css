@@ -414,3 +414,17 @@ footer.site { padding-block: 28px 40px; color: var(--muted); font-size: 0.82rem;
 .life li.now { opacity: 1; background: var(--accent-soft); outline: 2px solid var(--accent); }
 .life .dot { font-size: 20px; line-height: 1; }
 @media (max-width: 720px) { .life { grid-template-columns: 1fr; } }
+
+/* SMS code boxes */
+.otp { display: flex; gap: 8px; justify-content: center; }
+.otp input { width: 46px; height: 54px; text-align: center; font-size: 1.5rem; font-weight: 700; padding: 0; border-radius: 10px; }
+@media (max-width: 380px) { .otp input { width: 40px; height: 48px; } }
+.linklike { background: none; border: 0; padding: 0; color: var(--brand); font: inherit; cursor: pointer; text-decoration: underline; }
+
+/* App install: portal section and home-screen banner */
+.app-head { display: flex; gap: 16px; align-items: center; }
+.app-icon { border-radius: 18px; box-shadow: 0 6px 18px rgba(14,28,51,.25); flex: none; }
+.app-way { background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px; }
+.app-way h3 { margin: 0 0 6px; }
+.install-banner { background: var(--surface-2); border-bottom: 1px solid var(--line); padding: 8px 0; }
+.install-banner .container { gap: 12px; align-items: center; }

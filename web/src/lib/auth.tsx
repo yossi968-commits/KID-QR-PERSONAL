@@ -8,9 +8,13 @@ type Ctx = {
   loginEmployer: (email: string, password: string) => Promise<Employer>;
   login: (email: string, password: string, portal?: 'parent' | 'admin') => Promise<User>;
   loginKid: (username: string, pin: string) => Promise<Child>;
-  register: (b: Record<string, string>) => Promise<User>;
+  register: (b: Record<string, string>) => Promise<OtpSent>;
+  requestCode: (nationalId: string, phone: string) => Promise<OtpSent>;
+  loginOtp: (nationalId: string, phone: string, code: string) => Promise<User>;
   logout: () => void; refresh: () => Promise<void>; setUser: (u: User) => void;
 };
+/** The SMS went out; the sandbox also returns the code so it can be shown on screen. */
+export type OtpSent = { codeSent: boolean; phone: string; devCode?: string };
 const AuthCtx = createContext<Ctx>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -66,7 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setKid(r.child);
       return r.child;
     },
-    register: async (b) => finish(await api('/auth/register', { body: b })),
+    register: (b) => api<OtpSent>('/auth/register', { body: b }),
+    requestCode: (nationalId, phone) => api<OtpSent>('/auth/otp/request', { body: { nationalId, phone } }),
+    loginOtp: async (nationalId, phone, code) => finish(await api('/auth/otp/verify', { body: { nationalId, phone, code } })),
     logout: () => { setToken(null); setUser(null); setKid(null); setEmployer(null); },
   };
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

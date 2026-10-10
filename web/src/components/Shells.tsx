@@ -2,6 +2,7 @@ import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAuth } from '../lib/auth';
 import iconUrl from '../../public/icon.svg';
+import { InstallBanner } from './InstallPrompt';
 
 export function LangButton({ className = 'lang' }: { className?: string }) {
   const { t, locale, setLocale } = useI18n();
@@ -57,6 +58,7 @@ export function ParentShell() {
           </nav>
         </div>
       </header>
+      <InstallBanner />
       <main><Outlet /></main>
       <footer className="site"><div className="container">{t('footer.regulatory')}</div></footer>
     </div>

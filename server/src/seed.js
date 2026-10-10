@@ -1,7 +1,7 @@
 /**
  * Demo data: one verified parent with two children whose birthday gifts have been
  * invested every year since birth (back-dated against sandbox prices), plus an admin.
- *   parent: demo@kfq.app / demo1234     admin: admin@kfq.app / admin1234
+ *   parent: ID 000000018 + phone 050-1234567 (SMS code), or demo@kfq.app / demo1234     admin: admin@kfq.app / admin1234
  *   kids (username / PIN): noa, itay, omer, shira (21, self-managed) / 1234
  *   employer HR: hr@alpha.example / demo1234
  *   newborn אלה: fund documents still missing; רוני (yael@example.com): waiting for the investment house
@@ -21,11 +21,11 @@ import { addYears, today, nextBirthday, ageOn } from './lib/dates.js';
 
 
 export function seed(db, partner = new SandboxInvestmentPartner()) {
-  const addUser = (email, pw, name, role, kyc) =>
-    db.prepare('INSERT INTO users (email, password_hash, name, role, kyc_status, national_id) VALUES (?,?,?,?,?,?)').run(email, hashPassword(pw), name, role, kyc, kyc === 'verified' ? '000000018' : null).lastInsertRowid;
+  const addUser = (email, pw, name, role, kyc, nationalId = null, phone = null) =>
+    db.prepare('INSERT INTO users (email, password_hash, name, role, kyc_status, national_id, phone) VALUES (?,?,?,?,?,?,?)').run(email, hashPassword(pw), name, role, kyc, nationalId, phone).lastInsertRowid;
 
   addUser('admin@kfq.app', 'admin1234', 'מנהל מערכת', 'admin', 'none');
-  const parent = addUser('demo@kfq.app', 'demo1234', 'מיכל לוי', 'parent', 'verified');
+  const parent = addUser('demo@kfq.app', 'demo1234', 'מיכל לוי', 'parent', 'verified', '000000018', '0501234567');
 
   const givers = [
     ['סבתא רחל', 'rachel@example.com', 'לנכדה/נכד האהוב, שתגדל/י בשמחה ❤️'],
@@ -151,7 +151,7 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   const zb = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(ella.id, 'brita', 'הבריתה של אלה', daysAgo(30)).lastInsertRowid;
   db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, status, payment_ref, paid_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(ella.id, zb, 'מיכל לוי', 'demo@kfq.app', 400000, 'מתנות מהבריתה', 0, 'paid', 'SEED-ZB', daysAgo(28) + ' 10:00:00', 'bank_transfer', 'event_gifts');
-  const yael = addUser('yael@example.com', 'demo1234', 'יעל כהן', 'parent', 'verified');
+  const yael = addUser('yael@example.com', 'demo1234', 'יעל כהן', 'parent', 'verified', '000000026', '0527654321');
   newborn(yael, 'רוני', daysAgo(12), '🐥', 'more', 'roni2026demo', DOCUMENTS.length, 'in_review');
 
   // An employer (fictional) that swapped its school-bag gift for a deposit into the newborn's QR.

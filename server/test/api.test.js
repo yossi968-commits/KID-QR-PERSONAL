@@ -11,7 +11,7 @@ import { OutboxNotifier } from '../src/adapters/notifier.js';
 
 let server, base, token, childId, giftCode;
 const db = openDb(':memory:');
-const ctx = { db, partner: new SandboxInvestmentPartner(), payments: new SandboxPayments(), notifier: new OutboxNotifier(db) };
+const ctx = { db, partner: new SandboxInvestmentPartner(), payments: new SandboxPayments(), notifier: new OutboxNotifier(db), exposeOtp: true };
 
 const DOCS = {
   guardian_id: { fileName: 'id.jpg', size: 200000 },
@@ -433,4 +433,39 @@ test('a QR can be opened at any age: from 18 the saver signs their own documents
 
   token = parentToken;
   assert.equal((await api(`/children/${id}/track`, { method: 'POST', body: { track: 'solid', coSigned: true } })).body.error, 'managed_by_child');
+});
+
+test('parent signs in with ID + registered phone and a 6-digit SMS code', async () => {
+  const saved = token; token = null;
+  assert.equal((await api('/auth/register', { method: 'POST', body: { name: 'אבא', email: 'abba@x.com', nationalId: '123456789', phone: '0501111111' } })).body.error, 'invalid_national_id');
+  const reg = await api('/auth/register', { method: 'POST', body: { name: 'אבא', email: 'abba@x.com', nationalId: '012345674', phone: '+972-50-111-1111' } });
+  assert.equal(reg.status, 201);
+  assert.equal(reg.body.token, undefined, 'no session until the phone is confirmed');
+  assert.match(reg.body.devCode, /^\d{6}$/);
+  assert.equal(reg.body.phone, '050-•••-1111');
+  const sms = db.prepare(`SELECT * FROM outbox WHERE channel='sms' ORDER BY id DESC LIMIT 1`).get();
+  assert.equal(sms.recipient, '0501111111');
+  assert.ok(sms.body.includes(reg.body.devCode));
+
+  const who = { nationalId: '12345674', phone: '050-1111111' };
+  assert.equal((await api('/auth/otp/verify', { method: 'POST', body: { ...who, code: '000000' === reg.body.devCode ? '111111' : '000000' } })).body.error, 'bad_code');
+  const ok = await api('/auth/otp/verify', { method: 'POST', body: { ...who, code: reg.body.devCode } });
+  assert.equal(ok.status, 200);
+  assert.ok(ok.body.token);
+  assert.equal(ok.body.user.name, 'אבא');
+  assert.equal((await api('/auth/otp/verify', { method: 'POST', body: { ...who, code: reg.body.devCode } })).body.error, 'code_expired', 'a code works once');
+
+  // A wrong phone gets the same answer and no code; five wrong tries lock the code.
+  const other = await api('/auth/otp/request', { method: 'POST', body: { nationalId: '012345674', phone: '0509999999' } });
+  assert.equal(other.body.codeSent, true);
+  assert.equal(other.body.devCode, undefined);
+  const req2 = await api('/auth/otp/request', { method: 'POST', body: who });
+  assert.ok(req2.body.devCode);
+  let last;
+  for (let i = 0; i < 5; i++) last = await api('/auth/otp/verify', { method: 'POST', body: { ...who, code: req2.body.devCode === '123456' ? '654321' : '123456' } });
+  assert.equal(last.body.error, 'code_locked');
+  assert.equal((await api('/auth/otp/verify', { method: 'POST', body: { ...who, code: req2.body.devCode } })).body.error, 'code_locked');
+  await api('/auth/otp/request', { method: 'POST', body: who });
+  assert.equal((await api('/auth/otp/request', { method: 'POST', body: who })).body.error, 'too_many_codes', 'at most 3 codes per 10 minutes');
+  token = saved;
 });

@@ -56,7 +56,7 @@ export default function OpenFund() {
         <form className="card stack" onSubmit={verify}>
           <h3>{t('onb.kycTitle')}</h3>
           <p className="muted small" style={{ margin: 0 }}>{t('onb.kycDesc')}</p>
-          <label className="field"><span>{t('onb.nationalId')}</span><input inputMode="numeric" dir="ltr" value={nationalId} onChange={(e) => setNationalId(e.target.value)} required maxLength={9} /></label>
+          {!user?.hasNationalId && <label className="field"><span>{t('onb.nationalId')}</span><input inputMode="numeric" dir="ltr" value={nationalId} onChange={(e) => setNationalId(e.target.value)} required maxLength={9} /></label>}
           <label className="check"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />{t('onb.consent')}</label>
           {err && <div className="error">{err}</div>}
           <button className="btn">{t('onb.verify')}</button>

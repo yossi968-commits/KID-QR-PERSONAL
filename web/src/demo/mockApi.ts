@@ -40,7 +40,8 @@ const boot = ready.then(() => {
   const db = openDb(':memory:');
   const partner = new SandboxInvestmentPartner();
   seed(db, partner);
-  return { db, partner, payments: new SandboxPayments(), notifier: new OutboxNotifier(db) };
+  // The demo shows the SMS code on screen, since no SMS is sent.
+  return { db, partner, payments: new SandboxPayments(), notifier: new OutboxNotifier(db), exposeOtp: true };
 });
 
 export async function mockApi(path: string, opts: { method?: string; body?: unknown }, token: string | null) {

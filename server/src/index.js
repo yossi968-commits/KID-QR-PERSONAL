@@ -9,7 +9,7 @@ import { remindMissingDocs } from './lib/fund.js';
 import { runHandovers } from './lib/lifecycle.js';
 
 const db = openDb();
-const ctx = { db, partner: new SandboxInvestmentPartner(), payments: new SandboxPayments(), notifier: new OutboxNotifier(db) };
+const ctx = { db, partner: new SandboxInvestmentPartner(), payments: new SandboxPayments(), notifier: new OutboxNotifier(db), exposeOtp: process.env.OTP_DEV === '1' };
 const app = createApp(ctx);
 
 // Monthly gifts: charge whatever is due at start-up and every six hours.

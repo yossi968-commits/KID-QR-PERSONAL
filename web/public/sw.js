@@ -1,6 +1,6 @@
 // App-shell service worker: cache-first for static assets, network-only for the API.
-const CACHE = 'kfq-v1';
-const SHELL = ['/', '/index.html', '/icon.svg', '/manifest.webmanifest'];
+const CACHE = 'kfq-v2';
+const SHELL = ['/', '/index.html', '/icon.svg', '/icon-192.png', '/apple-touch-icon.png', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

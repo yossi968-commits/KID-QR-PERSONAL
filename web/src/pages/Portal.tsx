@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { api, type Provider } from '../lib/api';
+import { AppSection } from '../components/InstallPrompt';
 
 function fvAnnuity(perYear: number, years: number, r: number) {
   let v = 0;
@@ -96,6 +97,8 @@ export default function Portal() {
             </div>
           </section>
         )}
+
+        <AppSection />
       </div>
       <footer className="site"><div className="container">{t('footer.regulatory')}</div></footer>
     </>

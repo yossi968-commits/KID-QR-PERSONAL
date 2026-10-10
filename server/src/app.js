@@ -14,7 +14,7 @@ import employerRoutes, { workRoutes } from './routes/employer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-export function createApp({ db, partner, payments, notifier = new OutboxNotifier(db) }) {
+export function createApp({ db, partner, payments, notifier = new OutboxNotifier(db), exposeOtp = false }) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
@@ -24,7 +24,7 @@ export function createApp({ db, partner, payments, notifier = new OutboxNotifier
     next();
   });
 
-  const ctx = { db, partner, payments, notifier };
+  const ctx = { db, partner, payments, notifier, exposeOtp };
   app.use((req, _res, next) => {
     const raw = req.get('authorization')?.replace(/^Bearer /, '');
     const t = readToken(raw);
