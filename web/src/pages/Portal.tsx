@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { api, type Provider } from '../lib/api';
 import { AppSection } from '../components/InstallPrompt';
+import { QrScanner } from '../components/QrScanner';
 
 function fvAnnuity(perYear: number, years: number, r: number) {
   let v = 0;
@@ -15,6 +16,7 @@ export default function Portal() {
   const { t, fmtMoney, locale } = useI18n();
   const nav = useNavigate();
   const [code, setCode] = useState('');
+  const [scanning, setScanning] = useState(false);
   const [givers, setGivers] = useState(15);
   const [amount, setAmount] = useState(150);
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -59,6 +61,9 @@ export default function Portal() {
               <input value={code} onChange={(e) => setCode(e.target.value)} placeholder={t('land.scanPlaceholder')} dir="ltr" aria-label={t('land.scanPlaceholder')} />
               <button className="btn">{t('land.scanGo')}</button>
             </form>
+            <div className="scan-or small muted"><span>{t('scan.or')}</span></div>
+            <button type="button" className="btn gold block" onClick={() => setScanning(true)}>📷 {t('scan.button')}</button>
+            {scanning && <QrScanner onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); nav('/g/' + c); }} />}
           </div>
           <div className="card">
             <div className="card-head"><h3>{t('land.calcTitle')}</h3><span className="pill brand num">{fmtMoney(yearly)} {t('common.perYear')}</span></div>

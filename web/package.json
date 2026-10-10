@@ -10,17 +10,18 @@
     "build:pages": "VITE_PAGES=1 vite build --mode demo --outDir dist-pages"
   },
   "dependencies": {
+    "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
-    "sql.js": "^1.11.0",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "sql.js": "^1.11.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }
