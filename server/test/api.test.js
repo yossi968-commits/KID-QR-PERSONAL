@@ -294,3 +294,13 @@ test('kid deposits own earnings: tagged by source, private, counted as earned', 
   assert.ok(!wall.body.wall.some((w) => w.amount === 12000), 'earnings stay off the public wall');
   token = parentToken;
 });
+
+test('parent deposits part of the bar mitzvah gifts, tagged to the event', async () => {
+  const r = await api(`/children/${childId}/deposits`, { method: 'POST', body: { amount: 2500, method: 'bank_transfer', eventType: 'bar_mitzvah', eventTitle: 'בר המצווה של דני', eventDate: '2026-09-01', message: 'חצי מהצ\'קים' } });
+  assert.equal(r.status, 201);
+  await api(`/payments/${r.body.checkoutId}/complete`, { method: 'POST', auth: false, body: {} });
+  const g = (await api(`/children/${childId}/contributions`)).body.contributions.find((x) => x.source === 'event_gifts');
+  assert.equal(g.amount, 250000);
+  assert.equal(g.eventTitle, 'בר המצווה של דני');
+  assert.equal((await api(`/children/${childId}/deposits`, { method: 'POST', body: { amount: 82000, method: 'card' } })).body.error, 'annual_ceiling');
+});

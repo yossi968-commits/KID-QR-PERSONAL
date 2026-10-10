@@ -8,6 +8,7 @@ import { pledgeView } from '../lib/pledges.js';
 import { plannerPayload, withdrawalBudget, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
 import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef } from '../lib/fund.js';
+import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 
 const r = Router();
@@ -197,6 +198,26 @@ r.post('/:id/withdrawals/:wid/reject', h((req, res) => {
   res.json(plannerPayload(req.ctx.db, req.ctx.partner, c));
 }));
 
+/**
+ * The parent deposits part of the cash and checks received at a brit, naming, bar or
+ * bat mitzvah (or any family event). Tagged to the event; paid by the parent's chosen method.
+ */
+r.post('/:id/deposits', h((req, res) => {
+  const { db } = req.ctx;
+  const c = loadChild(req);
+  let eventId = req.body.eventId ? Number(req.body.eventId) : null;
+  if (eventId && !db.prepare('SELECT 1 FROM events WHERE id=? AND child_id=?').get(eventId, c.id)) throw bad('invalid_event');
+  if (!eventId && req.body.eventType) {
+    const type = EVENT_TYPES.includes(req.body.eventType) ? req.body.eventType : 'other';
+    const title = requireString(req.body.eventTitle, 'title', { max: 60 });
+    const date = requireDate(req.body.eventDate, 'date');
+    eventId = Number(db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(c.id, type, title, date).lastInsertRowid);
+  }
+  const out = startContribution(req.ctx, c, { ...req.body, source: 'event_gifts', giverName: req.user.name, giverEmail: req.user.email, eventId, isPublic: false, frequency: 'once', unlockAge: undefined });
+  audit(db, req.user.id, 'event_deposit', { childId: c.id, eventId, amount: req.body.amount });
+  res.status(201).json(out);
+}));
+
 // Fund opening checklist: the parent can finish it any time after the QR was created.
 r.get('/:id/documents', h((req, res) => res.json(docsStatus(req.ctx.db, loadChild(req)))));
 
@@ -212,7 +233,7 @@ r.post('/:id/documents/:doc', h((req, res) => {
 r.post('/:id/events', h((req, res) => {
   const { db } = req.ctx;
   const c = loadChild(req);
-  const type = ['birthday', 'bar_mitzvah', 'holiday', 'other'].includes(req.body.type) ? req.body.type : 'other';
+  const type = EVENT_TYPES.includes(req.body.type) ? req.body.type : 'other';
   const title = requireString(req.body.title, 'title', { max: 60 });
   const date = requireDate(req.body.date, 'date');
   const goal = req.body.goalAmount ? toAgorot(req.body.goalAmount, 'goal_amount') : null;

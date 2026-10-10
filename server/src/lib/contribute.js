@@ -9,8 +9,10 @@ import { ANNUAL_CEILING, depositedThisYear } from './fund.js';
  * money: pocket money and earnings paid straight to their QR instead of cash, and
  * part of a soldier's or young worker's salary.
  */
-export const SOURCES = ['gift', 'pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
-export const isEarning = (source) => source && source !== 'gift';
+export const SOURCES = ['gift', 'event_gifts', 'pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
+/** event_gifts: a parent depositing part of the cash gifts from a brit, naming, bar or bat mitzvah. */
+export const isEarning = (source) => Boolean(source) && source !== 'gift' && source !== 'event_gifts';
+export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'holiday', 'other'];
 
 /**
  * Start a deposit. One-time deposits open a checkout for the chosen method. Monthly
@@ -19,19 +21,21 @@ export const isEarning = (source) => source && source !== 'gift';
  */
 export function startContribution({ db, payments }, c, body) {
   const amount = toAgorot(body.amount);
-  if (amount < GIFT_MIN || amount > GIFT_MAX) throw bad('amount_out_of_range');
+  const source0 = SOURCES.includes(body.source) ? body.source : 'gift';
+  // A parent's deposit from event gifts can be large; guests stay within the gift limit.
+  if (amount < GIFT_MIN || amount > (source0 === 'event_gifts' ? ANNUAL_CEILING : GIFT_MAX)) throw bad('amount_out_of_range');
   if (depositedThisYear(db, c.id) + amount > ANNUAL_CEILING) throw bad('annual_ceiling');
   const giverName = requireString(body.giverName, 'giver_name', { max: 60 });
   const giverEmail = body.giverEmail ? requireString(body.giverEmail, 'giver_email', { max: 120 }) : null;
   const message = body.message ? String(body.message).trim().slice(0, 500) : null;
-  const source = SOURCES.includes(body.source) ? body.source : 'gift';
+  const source = source0;
   const method = String(body.method || 'card');
   const m = payments.methods.find((x) => x.id === method);
   if (!m) throw bad('invalid_method');
   const monthly = body.frequency === 'monthly';
   if (monthly && !m.recurring) throw bad('method_not_recurring');
   if (!monthly && m.recurringOnly) throw bad('method_recurring_only');
-  const label = source === 'gift' ? `מתנה לעתיד של ${c.first_name}` : `הפקדה לחיסכון של ${c.first_name}`;
+  const label = source === 'gift' ? `מתנה לעתיד של ${c.first_name}` : source === 'event_gifts' ? `הפקדת מתנות האירוע של ${c.first_name}` : `הפקדה לחיסכון של ${c.first_name}`;
 
   if (monthly) {
     const token = newPledgeToken();
@@ -57,7 +61,7 @@ export function startContribution({ db, payments }, c, body) {
   if (eventId && !db.prepare('SELECT 1 FROM events WHERE id=? AND child_id=?').get(eventId, c.id)) eventId = null;
   const { lastInsertRowid } = db
     .prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, unlock_age, method, source) VALUES (?,?,?,?,?,?,?,?,?,?)`)
-    .run(c.id, eventId, giverName, giverEmail, amount, message, body.isPublic === false || isEarning(source) ? 0 : 1, unlockAge, method, source);
+    .run(c.id, eventId, giverName, giverEmail, amount, message, body.isPublic === false || source !== 'gift' ? 0 : 1, unlockAge, method, source);
   const checkout = payments.createCheckout({ amount, description: label, reference: lastInsertRowid, method });
   db.prepare('UPDATE contributions SET checkout_id=? WHERE id=?').run(checkout.checkoutId, lastInsertRowid);
   return { contributionId: lastInsertRowid, checkoutId: checkout.checkoutId, redirectUrl: checkout.redirectUrl };

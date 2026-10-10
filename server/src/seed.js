@@ -136,6 +136,16 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   };
   const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
   newborn(parent, 'אלה', daysAgo(40), '🐣', 'altshuler', 'ella2026demo', 3, 'pending_docs');
+  // Parents deposit part of the event gifts: Omer's bar mitzvah, Ella's naming ceremony.
+  const omerRow = db.prepare("SELECT * FROM children WHERE kid_username='omer'").get();
+  const bm = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(omerRow.id, 'bar_mitzvah', 'בר המצווה של עומר', '2022-03-24').lastInsertRowid;
+  const bmc = db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, status, payment_ref, paid_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(omerRow.id, bm, 'מיכל לוי', 'demo@kfq.app', 1200000, 'חצי ממתנות הבר מצווה', 0, 'paid', 'SEED-BM', '2022-03-28 10:00:00', 'bank_transfer', 'event_gifts').lastInsertRowid;
+  investContribution(db, partner, omerRow, db.prepare('SELECT * FROM contributions WHERE id=?').get(bmc), '2022-03-28');
+  const ella = db.prepare("SELECT * FROM children WHERE gift_code='ella2026demo'").get();
+  const zb = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(ella.id, 'brita', 'הבריתה של אלה', daysAgo(30)).lastInsertRowid;
+  db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, status, payment_ref, paid_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(ella.id, zb, 'מיכל לוי', 'demo@kfq.app', 400000, 'מתנות מהבריתה', 0, 'paid', 'SEED-ZB', daysAgo(28) + ' 10:00:00', 'bank_transfer', 'event_gifts');
   const yael = addUser('yael@example.com', 'demo1234', 'יעל כהן', 'parent', 'verified');
   newborn(yael, 'רוני', daysAgo(12), '🐥', 'more', 'roni2026demo', DOCUMENTS.length, 'in_review');
 
