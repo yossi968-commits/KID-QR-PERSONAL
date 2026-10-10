@@ -1,9 +1,9 @@
-import { useI18n } from '../i18n';
+import { useI18n, INTL, type Locale } from '../i18n';
 
 const W = 640, H = 240, P = { l: 56, r: 12, t: 12, b: 28 };
 
 function compact(agorot: number, locale: string) {
-  return new Intl.NumberFormat(locale === 'he' ? 'he-IL' : 'en-IL', { notation: 'compact', maximumFractionDigits: 1 }).format(agorot / 100);
+  return new Intl.NumberFormat(INTL[locale as Locale], { notation: 'compact', maximumFractionDigits: 1 }).format(agorot / 100);
 }
 
 function ticks(max: number, n = 4) {

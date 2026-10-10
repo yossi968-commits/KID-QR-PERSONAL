@@ -93,9 +93,9 @@ r.post('/deposits', h((req, res) => {
 r.get('/deposits', h((req, res) => {
   const { db } = req.ctx;
   res.json({
-    pledges: db.prepare(`SELECT * FROM pledges WHERE child_id=? AND source NOT IN ('gift','employer_gift','event_gifts','provider_gift') ORDER BY id DESC`).all(req.child.id).map(pledgeView),
+    pledges: db.prepare(`SELECT * FROM pledges WHERE child_id=? AND source NOT IN ('gift','employer_gift','event_gifts','provider_gift','partner_gift') ORDER BY id DESC`).all(req.child.id).map(pledgeView),
     deposits: db
-      .prepare(`SELECT id, amount, source, method, pledge_id, paid_at, giver_name FROM contributions WHERE child_id=? AND status IN ('paid','invested') AND source NOT IN ('gift','employer_gift','event_gifts','provider_gift') ORDER BY paid_at DESC LIMIT 50`)
+      .prepare(`SELECT id, amount, source, method, pledge_id, paid_at, giver_name FROM contributions WHERE child_id=? AND status IN ('paid','invested') AND source NOT IN ('gift','employer_gift','event_gifts','provider_gift','partner_gift') ORDER BY paid_at DESC LIMIT 50`)
       .all(req.child.id)
       .map((x) => ({ id: x.id, amount: x.amount, source: x.source, method: x.method, monthly: Boolean(x.pledge_id), paidAt: x.paid_at, payer: x.giver_name })),
   });

@@ -1,12 +1,23 @@
 import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
-import { useI18n } from '../i18n';
+import { useI18n, LOCALES, type Locale } from '../i18n';
 import { useAuth } from '../lib/auth';
+import { api, type User } from '../lib/api';
 import iconUrl from '../../public/icon.svg';
 import { InstallBanner } from './InstallPrompt';
 
 export function LangButton({ className = 'lang' }: { className?: string }) {
   const { t, locale, setLocale } = useI18n();
-  return <button className={className} onClick={() => setLocale(locale === 'he' ? 'en' : 'he')} aria-label="language">{t('lang.toggle')}</button>;
+  const { user, setUser } = useAuth();
+  const change = (l: Locale) => {
+    setLocale(l);
+    // Signed-in parents keep the language on their account, so the next login opens in it.
+    if (user) api<{ user: User }>('/auth/me', { method: 'PATCH', body: { locale: l } }).then((r) => setUser(r.user)).catch(() => {});
+  };
+  return (
+    <select className={className + ' lang-select'} value={locale} onChange={(e) => change(e.target.value as Locale)} aria-label={t('lang.label')}>
+      {LOCALES.map((l) => <option key={l} value={l} lang={l}>{t(`lang.${l}` as const)}</option>)}
+    </select>
+  );
 }
 
 export function Logo({ sub, to = '/' }: { sub?: string; to?: string }) {
@@ -73,7 +84,7 @@ export function AdminShell() {
   if (loading) return null;
   if (!user || user.role !== 'admin') return <Navigate to="/login/admin" replace />;
   const items: [string, string, string][] = [
-    ['/admin', '▦', 'admin.nav.overview'], ['/admin/analytics', '📈', 'admin.nav.analytics'], ['/admin/applications', '🗂', 'admin.nav.applications'], ['/admin/payments', '⇄', 'admin.nav.payments'],
+    ['/admin', '▦', 'admin.nav.overview'], ['/admin/analytics', '📈', 'admin.nav.analytics'], ['/admin/partners', '🤝', 'admin.nav.partners'], ['/admin/applications', '🗂', 'admin.nav.applications'], ['/admin/payments', '⇄', 'admin.nav.payments'],
     ['/admin/users', '👥', 'admin.nav.users'], ['/admin/outbox', '✉', 'admin.nav.outbox'],
   ];
   return (

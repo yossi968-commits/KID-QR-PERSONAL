@@ -8,7 +8,7 @@ import { useErr } from '../pages/Auth';
  * is, no tax and no withdrawal. Until 18 the second parent co-signs.
  */
 export function MoveFund({ child, url, coSign, onDone }: { child: Child; url: string; coSign: boolean; onDone: () => void }) {
-  const { t, locale, fmtDate } = useI18n();
+  const { t, fmtDate, name: nm } = useI18n();
   const errText = useErr();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [open, setOpen] = useState(false);
@@ -19,7 +19,7 @@ export function MoveFund({ child, url, coSign, onDone }: { child: Child; url: st
   const [done, setDone] = useState('');
   useEffect(() => { api<{ providers: Provider[] }>('/providers').then((r) => setProviders(r.providers)).catch(() => {}); }, []);
   const active = child.accountStatus === 'active';
-  const name = (p: Provider) => (locale === 'he' ? p.name : p.nameEn);
+  const name = (p: Provider) => nm(p);
   const submit = async () => {
     setErr(''); setBusy(true);
     try {
@@ -30,7 +30,7 @@ export function MoveFund({ child, url, coSign, onDone }: { child: Child; url: st
   };
   return (
     <div className="card stack" id="move-fund">
-      <div className="card-head"><h3 style={{ margin: 0 }}>🏦 {t('move.title')}</h3><span className="pill brand">{child.providerName}</span></div>
+      <div className="card-head"><h3 style={{ margin: 0 }}>🏦 {t('move.title')}</h3><span className="pill brand">{t(`provider.${child.provider}` as any)}</span></div>
       {child.prevProviderName && child.providerChangedAt && <p className="small muted" style={{ margin: 0 }}>{t('move.history', { house: child.prevProviderName, date: fmtDate(child.providerChangedAt) })}</p>}
       {done && <div className="banner small" role="status">✓ {done}</div>}
       {!open ? (

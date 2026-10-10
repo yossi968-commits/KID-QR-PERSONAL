@@ -7,6 +7,7 @@ import { SandboxPayments } from '../src/adapters/payments.js';
 import { validIsraeliId } from '../src/routes/auth.js';
 import { activateFund, remindMissingDocs, WELCOME_GIFT } from '../src/lib/fund.js';
 import { analytics } from '../src/lib/analytics.js';
+import { runPregnancyReminders } from '../src/lib/pregnancy.js';
 import { portfolioSummary } from '../src/lib/portfolio.js';
 import { runHandovers, phaseOf } from '../src/lib/lifecycle.js';
 import { OutboxNotifier } from '../src/adapters/notifier.js';
@@ -516,4 +517,61 @@ test('admin analytics: savers by age, joins, split by house and track, invested 
   assert.ok(Math.abs(a.aum - values) <= n, 'AUM is the sum of the savers’ portfolios');
   assert.deepEqual(a.projection.at.map((p) => p.years), [1, 5, 10]);
   for (const p of a.projection.at) assert.ok(p.withNew >= p.existing && p.existing >= a.aum);
+});
+
+test('partners, expecting parents and siblings: first gifts, reminders that stop at birth, family documents reused', async () => {
+  db.prepare(`UPDATE partners SET active=1 WHERE slug IN ('maccabi','formula')`).run();
+  const fam = (await api('/family')).body;
+  const maccabi = fam.partners.find((p) => p.slug === 'maccabi'), formula = fam.partners.find((p) => p.slug === 'formula');
+  assert.ok(maccabi && formula && !fam.partners.some((p) => p.slug === 'clalit'), 'only partners that are switched on');
+
+  // Expecting: reminders before and after the due date, once per stage, then stop when the QR opens.
+  const due = new Date(Date.now() + 20 * 86400000).toISOString().slice(0, 10);
+  assert.equal((await api('/family/expecting', { method: 'POST', body: { dueDate: '2020-01-01' } })).body.error, 'due_date_out_of_range');
+  const g = (await api('/family/expecting', { method: 'POST', body: { dueDate: due, partnerId: maccabi.id } })).body.pregnancy;
+  db.prepare('UPDATE pregnancies SET phone=? WHERE id=?').run('0501112222', g.id);
+  const sms = () => db.prepare(`SELECT COUNT(*) AS n FROM outbox WHERE channel='sms' AND body LIKE '%QR%' AND recipient=(SELECT phone FROM pregnancies WHERE id=?)`).get(g.id).n;
+  const before = sms();
+  runPregnancyReminders(ctx);
+  runPregnancyReminders(ctx);
+  assert.equal(sms(), before + 1, 'the week-36 reminder, once');
+  const pub = await api('/expecting', { method: 'POST', auth: false, body: { name: 'נוי', phone: '052-3334444', dueDate: due, partner: 'maccabi' } });
+  assert.equal(pub.body.error, 'consent_required');
+  assert.equal((await api('/expecting', { method: 'POST', auth: false, body: { name: 'נוי', phone: '052-3334444', dueDate: due, partner: 'maccabi', consent: true } })).status, 201);
+
+  // The baby arrives: QR with the health fund's and (consented) formula brand's gifts.
+  const born = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+  const first = await api('/children', { method: 'POST', body: { firstName: 'אורי', birthDate: born, healthFund: maccabi.id, partnerConsents: [formula.id] } });
+  assert.deepEqual(first.body.partnerGifts, ['maccabi', 'formula']);
+  assert.equal(first.body.pregnancyId, g.id, 'the sign-up is closed by the birth');
+  const sources = (await api(`/children/${first.body.child.id}/contributions`)).body.contributions.map((x) => x.source).sort();
+  assert.deepEqual(sources, ['partner_gift', 'partner_gift', 'provider_gift']);
+  const after = sms();
+  runPregnancyReminders(ctx, new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
+  assert.equal(db.prepare('SELECT child_id FROM pregnancies WHERE id=?').get(g.id).child_id, first.body.child.id);
+  assert.equal(sms(), after, 'no more reminders after the QR opened');
+
+  // An older sibling: no formula gift; the parents' documents come from the first child.
+  await openFund(first.body.child.id);
+  const sib = await api('/children', { method: 'POST', body: { firstName: 'נועם', birthDate: '2022-05-05', siblingOf: first.body.child.id, healthFund: maccabi.id, partnerConsents: [formula.id] } });
+  assert.deepEqual(sib.body.partnerGifts, ['maccabi'], 'formula gift only for babies');
+  assert.deepEqual(sib.body.reusedDocuments.sort(), ['bank_confirmation', 'guardian_id', 'kyc_form', 'second_guardian_id']);
+  assert.deepEqual(sib.body.documents.missing.sort(), ['application_signed', 'child_birth']);
+});
+
+test('community: goals, occasions and a values-based track follow the family’s choice', async () => {
+  assert.equal((await api('/family', { method: 'PATCH', body: { community: 'x' } })).body.error, 'invalid_community');
+  const h = (await api('/family', { method: 'PATCH', body: { community: 'haredi' } })).body;
+  assert.equal(h.user.community, 'haredi');
+  assert.equal(h.community.track, 'halacha');
+  assert.ok(h.community.goals.some((x) => x.key === 'tefillin'));
+  assert.ok(h.community.events.includes('upsherin'));
+  const c = await api('/children', { method: 'POST', body: { firstName: 'יוסף', birthDate: '2021-01-01', track: 'halacha' } });
+  assert.equal(c.body.child.track, 'halacha');
+  const ar = (await api('/community/arab', { auth: false })).body;
+  assert.equal(ar.track, 'sharia');
+  assert.ok(ar.events.includes('eid') && ar.events.includes('aqiqa'));
+  const ev = await api(`/children/${c.body.child.id}/events`, { method: 'POST', body: { type: 'tefillin', title: 'הנחת תפילין', date: '2034-01-01' } });
+  assert.ok(ev.status === 201 || ev.status === 200, 'community occasions are valid events');
+  await api('/family', { method: 'PATCH', body: { community: 'general' } });
 });

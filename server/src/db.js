@@ -226,6 +226,7 @@ function migrate(db) {
   if (!ccols.has('source')) db.exec(`ALTER TABLE contributions ADD COLUMN source TEXT NOT NULL DEFAULT 'gift'`);
   const pcols = new Set(db.prepare('PRAGMA table_info(pledges)').all().map((c) => c.name));
   if (!pcols.has('source')) db.exec(`ALTER TABLE pledges ADD COLUMN source TEXT NOT NULL DEFAULT 'gift'`);
+  if (!ccols.has('partner_id')) db.exec('ALTER TABLE contributions ADD COLUMN partner_id INTEGER');
   if (!ccols.has('pledge_id')) db.exec('ALTER TABLE contributions ADD COLUMN pledge_id INTEGER REFERENCES pledges(id)');
   if (!cols.has('withdraw_pct')) db.exec('ALTER TABLE children ADD COLUMN withdraw_pct INTEGER NOT NULL DEFAULT 25');
   if (!cols.has('kid_pin_hash')) db.exec('ALTER TABLE children ADD COLUMN kid_pin_hash TEXT');
@@ -243,9 +244,45 @@ function migrate(db) {
   if (!wcols.has('purpose')) db.exec(`ALTER TABLE withdrawals ADD COLUMN purpose TEXT NOT NULL DEFAULT 'general'`);
   if (!cols.has('opened_as_adult')) db.exec('ALTER TABLE children ADD COLUMN opened_as_adult INTEGER NOT NULL DEFAULT 0');
   if (!cols.has('parent_view')) db.exec('ALTER TABLE children ADD COLUMN parent_view INTEGER NOT NULL DEFAULT 1');
+  if (!cols.has('health_fund_id')) db.exec('ALTER TABLE children ADD COLUMN health_fund_id INTEGER');
   if (!cols.has('prev_provider')) db.exec('ALTER TABLE children ADD COLUMN prev_provider TEXT');
   if (!cols.has('provider_changed_at')) db.exec('ALTER TABLE children ADD COLUMN provider_changed_at TEXT');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
+  const ucols = new Set(db.prepare('PRAGMA table_info(users)').all().map((c) => c.name));
+  if (!ucols.has('community')) db.exec(`ALTER TABLE users ADD COLUMN community TEXT NOT NULL DEFAULT 'general'`);
+  // First-gift partners and expecting parents (see lib/partners.js, lib/pregnancy.js).
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS partners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      kind TEXT NOT NULL CHECK (kind IN ('health_fund','formula','other')),
+      name TEXT NOT NULL, name_en TEXT, name_ar TEXT, logo TEXT,
+      welcome_amount INTEGER NOT NULL DEFAULT 5000 CHECK (welcome_amount > 0),
+      max_child_age INTEGER,
+      message TEXT,
+      active INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS pregnancies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      name TEXT NOT NULL, phone TEXT, email TEXT,
+      due_date TEXT NOT NULL,
+      partner_id INTEGER REFERENCES partners(id),
+      reminders TEXT NOT NULL DEFAULT '[]',
+      child_id INTEGER REFERENCES children(id) ON DELETE SET NULL,
+      cancelled_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );`);
+  // Partners start switched off until an agreement is signed; the admin turns each one on.
+  if (!db.prepare('SELECT COUNT(*) AS n FROM partners').get().n) {
+    const add = db.prepare('INSERT INTO partners (slug, kind, name, name_en, name_ar, logo, welcome_amount, max_child_age) VALUES (?,?,?,?,?,?,?,?)');
+    add.run('clalit', 'health_fund', 'כללית', 'Clalit', 'كلاليت', '🏥', 5000, null);
+    add.run('maccabi', 'health_fund', 'מכבי', 'Maccabi', 'مكابي', '🏥', 5000, null);
+    add.run('meuhedet', 'health_fund', 'מאוחדת', 'Meuhedet', 'مئوحيدت', '🏥', 5000, null);
+    add.run('leumit', 'health_fund', 'לאומית', 'Leumit', 'لئوميت', '🏥', 5000, null);
+    add.run('formula', 'formula', 'חברת תחליפי חלב (שותף לדוגמה)', 'Baby formula brand (sample partner)', 'شركة بدائل حليب (شريك تجريبي)', '🍼', 5000, 1);
+  }
 }
 
 const inTx = new WeakSet();

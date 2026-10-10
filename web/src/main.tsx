@@ -15,6 +15,8 @@ import ChildPage from './pages/parent/ChildPage';
 import KidPortal from './pages/kid/KidPortal';
 import { AdminApplications, AdminOutbox, AdminOverview, AdminPayments, AdminUsers } from './pages/admin/Admin';
 import { AdminAnalytics } from './pages/admin/Analytics';
+import { AdminPartners } from './pages/admin/Partners';
+import Expecting from './pages/Expecting';
 import { EmployerHome, EmployerSettings, EmployerShell, WorkReport } from './pages/employer/Employer';
 import GiftPage from './pages/GiftPage';
 import PayPage from './pages/PayPage';
@@ -44,6 +46,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/admin" element={<AdminShell />}>
               <Route index element={<AdminOverview />} />
               <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="partners" element={<AdminPartners />} />
               <Route path="applications" element={<AdminApplications />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="users" element={<AdminUsers />} />
@@ -57,6 +60,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/login/admin" element={<Login portal="admin" />} />
               <Route path="/login" element={<Navigate to="/login/parent" replace />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/expecting" element={<Expecting />} />
               <Route path="/g/:code" element={<GiftPage />} />
               <Route path="/g/:code/thanks/:cid" element={<Thanks />} />
               <Route path="/pay/:id" element={<PayPage />} />

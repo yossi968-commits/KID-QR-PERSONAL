@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { h, bad, notFound, requireString, toAgorot, HttpError } from '../lib/http.js';
+import { listPartners } from '../lib/partners.js';
+import { communityView } from '../lib/community.js';
+import { registerPregnancy } from '../lib/pregnancy.js';
+import { normalizePhone } from '../lib/otp.js';
+import { addDays } from '../lib/dates.js';
+import { h, bad, notFound, requireString, requireDate, toAgorot, HttpError } from '../lib/http.js';
 import { ageOn, nextBirthday, today, daysBetween } from '../lib/dates.js';
 import { addMonth } from '../lib/pledges.js';
 
@@ -15,6 +20,25 @@ const r = Router();
 r.get('/tracks', (req, res) => res.json({ tracks: req.ctx.partner.listTracks(), partner: req.ctx.partner.name }));
 
 r.get('/providers', (req, res) => res.json({ providers: PROVIDERS, defaultProvider: DEFAULT_PROVIDER, welcomeGift: WELCOME_GIFT, documents: DOCUMENTS.map((d) => d.id), annualCeiling: ANNUAL_CEILING }));
+
+/** Partners that give a first gift (health funds; brands only with consent). */
+r.get('/partners', (req, res) => res.json({ partners: listPartners(req.ctx.db) }));
+
+r.get('/community/:id', (req, res) => res.json(communityView(req.params.id)));
+
+/** Sign-up for expecting parents, e.g. from a health fund's link (/expecting?p=maccabi). */
+r.post('/expecting', h((req, res) => {
+  const { db } = req.ctx;
+  const name = requireString(req.body.name, 'name', { max: 80 });
+  const phone = normalizePhone(req.body.phone);
+  if (!phone) throw bad('invalid_phone');
+  const dueDate = requireDate(req.body.dueDate, 'due_date');
+  if (dueDate < addDays(today(), -30) || dueDate > addDays(today(), 300)) throw bad('due_date_out_of_range');
+  if (req.body.consent !== true) throw bad('consent_required');
+  const partnerRow = req.body.partner ? db.prepare(`SELECT id FROM partners WHERE slug=? AND active=1`).get(String(req.body.partner)) : null;
+  const g = registerPregnancy(db, { name, phone, email: req.body.email ? String(req.body.email).slice(0, 120) : null, dueDate, partnerId: partnerRow?.id ?? null });
+  res.status(201).json({ ok: true, id: g.id });
+}));
 
 r.get('/payment-methods', (req, res) => res.json({ methods: req.ctx.payments.methods }));
 
@@ -43,9 +67,9 @@ r.get('/gift/:code', h((req, res) => {
       sealedUntil: w.unlock_age && age < w.unlock_age ? w.unlock_age : null,
       message: w.unlock_age && age < w.unlock_age ? null : w.message,
       date: w.paid_at?.slice(0, 10),
-      fromHouse: w.source === 'provider_gift',
+      fromHouse: w.source === 'provider_gift' || w.source === 'partner_gift',
     }));
-  const giverCount = db.prepare(`SELECT COUNT(*) AS n FROM contributions WHERE child_id=? AND status IN ('paid','invested') AND COALESCE(source,'gift') <> 'provider_gift'`).get(c.id).n;
+  const giverCount = db.prepare(`SELECT COUNT(*) AS n FROM contributions WHERE child_id=? AND status IN ('paid','invested') AND COALESCE(source,'gift') NOT IN ('provider_gift','partner_gift')`).get(c.id).n;
   const nb = nextBirthday(c.birth_date);
   res.json({
     child: { firstName: c.first_name, avatar: c.avatar, age, turning: age + 1, nextBirthday: nb, daysToBirthday: daysBetween(today(), nb), publicMessage: c.public_message, goalText: c.goal_text },
@@ -62,7 +86,7 @@ r.get('/gift/:code', h((req, res) => {
 r.post('/gift/:code/contribute', h((req, res) => {
   const c = childByCode(req.ctx.db, req.params.code);
   // Guests give gifts or pay the child for work; employer and event deposits have their own flows.
-  const source = ['employer_gift', 'event_gifts', 'provider_gift'].includes(req.body.source) ? 'gift' : req.body.source;
+  const source = ['employer_gift', 'event_gifts', 'provider_gift', 'partner_gift'].includes(req.body.source) ? 'gift' : req.body.source;
   res.status(201).json(startContribution(req.ctx, c, { ...req.body, source }));
 }));
 

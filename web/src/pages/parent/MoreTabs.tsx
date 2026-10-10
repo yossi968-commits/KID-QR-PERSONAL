@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useI18n } from '../../i18n';
-import { api, EVENT_TYPES, type ChildData, type Gift } from '../../lib/api';
+import { api, eventsFor, type ChildData, type Gift } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { useLessons, LessonModal, type Lesson } from '../../components/Lessons';
 import { useLabels } from '../../components/ui';
 import { AVATARS } from './OpenFund';
@@ -8,6 +9,7 @@ import { useErr } from '../Auth';
 
 export function EventsTab({ data, reload }: { data: ChildData; reload: () => void }) {
   const { t, fmtMoney, fmtDate } = useI18n();
+  const { user } = useAuth();
   const L = useLabels();
   const { child, events } = data;
   const [f, setF] = useState({ type: 'birthday', title: '', date: '', goalAmount: '' });
@@ -47,7 +49,7 @@ export function EventsTab({ data, reload }: { data: ChildData; reload: () => voi
       </div>
       <form className="card stack" onSubmit={submit}>
         <h3>{t('events.new')}</h3>
-        <label className="field"><span>{t('events.type')}</span><select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>{EVENT_TYPES.map((k) => <option key={k} value={k}>{L.event(k)}</option>)}</select></label>
+        <label className="field"><span>{t('events.type')}</span><select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>{eventsFor(user?.community).map((k) => <option key={k} value={k}>{L.event(k)}</option>)}</select></label>
         <label className="field"><span>{t('events.titleField')}</span><input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required /></label>
         <label className="field"><span>{t('events.date')}</span><input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} required /></label>
         <label className="field"><span>{t('events.goal')}</span><input type="number" min={0} value={f.goalAmount} onChange={(e) => setF({ ...f, goalAmount: e.target.value })} dir="ltr" /></label>

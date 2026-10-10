@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { normalizeCommunity } from '../lib/community.js';
 import { hashPassword, verifyPassword, issueToken } from '../lib/auth.js';
 import { h, bad, requireString, HttpError } from '../lib/http.js';
 import { requireUser, audit, publicUser } from '../lib/guards.js';
@@ -30,10 +31,10 @@ r.post('/register', h((req, res) => {
     if (!phone) throw bad('invalid_phone');
     if (db.prepare('SELECT 1 FROM users WHERE national_id=?').get(nationalId)) throw new HttpError(409, 'id_taken');
   } else if (password === undefined) throw bad('weak_password');
-  const locale = ['he', 'en'].includes(req.body.locale) ? req.body.locale : 'he';
+  const locale = ['he', 'en', 'ar'].includes(req.body.locale) ? req.body.locale : 'he';
   const { lastInsertRowid } = db
-    .prepare('INSERT INTO users (email, password_hash, name, phone, locale, national_id) VALUES (?,?,?,?,?,?)')
-    .run(email, hashPassword(password || crypto.randomBytes(24).toString('hex')), name, phone, locale, nationalId);
+    .prepare('INSERT INTO users (email, password_hash, name, phone, locale, national_id, community) VALUES (?,?,?,?,?,?,?)')
+    .run(email, hashPassword(password || crypto.randomBytes(24).toString('hex')), name, phone, locale, nationalId, normalizeCommunity(req.body.community || (locale === 'ar' ? 'arab' : 'general')));
   const user = db.prepare('SELECT * FROM users WHERE id=?').get(lastInsertRowid);
   audit(db, user.id, 'register');
   if (byPhone) {
@@ -86,7 +87,7 @@ r.patch('/me', requireUser, h((req, res) => {
   const { db } = req.ctx;
   const name = req.body.name !== undefined ? requireString(req.body.name, 'name', { max: 80 }) : req.user.name;
   const phone = req.body.phone !== undefined ? String(req.body.phone).slice(0, 30) : req.user.phone;
-  const locale = ['he', 'en'].includes(req.body.locale) ? req.body.locale : req.user.locale;
+  const locale = ['he', 'en', 'ar'].includes(req.body.locale) ? req.body.locale : req.user.locale;
   db.prepare('UPDATE users SET name=?, phone=?, locale=? WHERE id=?').run(name, phone, locale, req.user.id);
   res.json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(req.user.id)) });
 }));

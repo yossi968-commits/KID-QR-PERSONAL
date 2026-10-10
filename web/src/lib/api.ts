@@ -33,12 +33,12 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
 }
 
 export type Stage = 'young' | 'middle' | 'senior';
-export type User = { id: number; email: string; name: string; phone?: string; role: 'parent' | 'admin'; locale: 'he' | 'en'; kycStatus: string; hasNationalId?: boolean };
+export type User = { id: number; email: string; name: string; phone?: string; role: 'parent' | 'admin'; locale: 'he' | 'en' | 'ar'; community?: string; kycStatus: string; hasNationalId?: boolean };
 export type AccountStatus = 'pending_docs' | 'in_review' | 'active';
 export type Child = {
   id: number; firstName: string; lastName?: string; birthDate: string; age: number; grade: number; stage: Stage; nextBirthday: string; avatar: string;
   giftCode: string; track: string; partnerAccountId?: string; goalText?: string; goalAmount?: number; publicMessage?: string; kidUsername?: string | null;
-  provider: string; providerName: string; prevProvider?: string | null; prevProviderName?: string | null; providerChangedAt?: string | null; accountStatus: AccountStatus; accountOpenedAt?: string | null; nextTrackSwitch?: string | null;
+  healthFundId?: number | null; provider: string; providerName: string; prevProvider?: string | null; prevProviderName?: string | null; providerChangedAt?: string | null; accountStatus: AccountStatus; accountOpenedAt?: string | null; nextTrackSwitch?: string | null;
   value?: number; deposited?: number; hidden?: boolean;
   lifecycle: Lifecycle;
 };
@@ -71,7 +71,7 @@ export type Planner = {
   growthRate: number; yearsTo21: number; wishes: Wish[]; withdrawals: Withdrawal[]; taxRate: number;
 };
 export type Method = { id: string; kind: string; recurring: boolean; recurringOnly?: boolean };
-export type Provider = { id: string; name: string; nameEn: string };
+export type Provider = { id: string; name: string; nameEn: string; nameAr?: string };
 
 export type Employer = {
   id: number; slug: string; name: string; kind: 'employer' | 'committee'; email?: string; contactName?: string; logo: string;
@@ -86,9 +86,25 @@ export const OCCASIONS = ['birth', 'bar_mitzvah', 'bat_mitzvah', 'enlistment'];
 
 export const EARN_SOURCES = ['pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
 export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'driving', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'];
+/** Occasions offered first for each community (mirrors the server's list). */
+const COMMUNITY_EVENTS: Record<string, string[]> = {
+  general: EVENT_TYPES,
+  dati_leumi: ['birthday', 'brit', 'brita', 'siddur', 'chumash', 'bar_mitzvah', 'tefillin', 'bat_mitzvah', 'mechina', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'],
+  haredi: ['brit', 'upsherin', 'siddur', 'chumash', 'tefillin', 'bar_mitzvah', 'bat_mitzvah', 'yeshiva', 'wedding', 'holiday', 'birthday', 'other'],
+  arab: ['birthday', 'aqiqa', 'eid', 'graduation', 'driving', 'university', 'wedding', 'holiday', 'other'],
+};
+export const eventsFor = (community?: string) => COMMUNITY_EVENTS[community || 'general'] || EVENT_TYPES;
 /** Occasions a young adult opens on their own QR. */
 export const ADULT_EVENT_TYPES = ['enlistment', 'graduation', 'wedding', 'birthday', 'other'];
 export const PAYOUT_METHODS = ['bit', 'paybox', 'card', 'bank'];
 
 /** Future value of a lump sum after n years at rate r. */
 export const fv = (amount: number, years: number, r = 0.065) => amount * Math.pow(1 + r, Math.max(0, years));
+
+export type Partner = { id: number; slug: string; kind: 'health_fund' | 'formula' | 'other'; name: string; nameEn: string; nameAr?: string | null; logo: string; amount: number; maxChildAge: number | null; active: boolean };
+export type PartnerStats = Partner & { gifts: number; total: number; referrals: number; converted: number };
+export type CommunityId = 'general' | 'dati_leumi' | 'haredi' | 'arab';
+export const COMMUNITIES: CommunityId[] = ['general', 'dati_leumi', 'haredi', 'arab'];
+export type Community = { id: CommunityId; events: string[]; goals: { key: string; icon: string; amount: number; age: number }[]; track: string | null };
+export type Pregnancy = { id: number; name: string; dueDate: string; partnerId: number | null; remindersSent: string[]; childId: number | null; createdAt: string };
+export type Family = { community: Community; pregnancies: Pregnancy[]; partners: Partner[] };

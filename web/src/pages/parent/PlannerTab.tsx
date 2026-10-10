@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useI18n } from '../../i18n';
-import { api, type ChildData, type Planner, type Withdrawal } from '../../lib/api';
+import { api, type ChildData, type Community, type Planner, type Withdrawal } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
+import { GoalIdeas } from './OpenFund';
 import { Kpis, useLabels } from '../../components/ui';
 import { useErr } from '../Auth';
 
@@ -22,6 +24,16 @@ export default function PlannerTab({ data }: { data: ChildData }) {
   const [wish, setWish] = useState({ title: '', icon: '🎁', targetAmount: '', targetDate: '' });
   const [err, setErr] = useState('');
   useEffect(() => { api<Planner>(`${base}/planner`).then((r) => { setP(r); setPct(r.budget.pct); }); }, [base]);
+  const { user } = useAuth();
+  const [community, setCommunity] = useState<Community | null>(null);
+  useEffect(() => { api<Community>(`/community/${user?.community || 'general'}`).then(setCommunity).catch(() => {}); }, [user?.community]);
+  // Goal ideas still ahead of the child, with the date they reach that age.
+  const ideas = (community?.goals || []).filter((g) => g.age > child.age);
+  const pickIdea = (title: string, amount: number, age: number) => {
+    const g = community!.goals.find((x) => x.age === age && x.amount === amount);
+    const d = new Date(child.birthDate); d.setFullYear(d.getFullYear() + age);
+    setWish({ title, icon: g?.icon || '🎁', targetAmount: String(amount / 100), targetDate: d.toISOString().slice(0, 10) });
+  };
   if (!p) return null;
   const b = p.budget;
   const run = async (fn: () => Promise<Planner>) => { setErr(''); try { setP(await fn()); } catch (x) { setErr(errText(x)); } };
@@ -80,8 +92,9 @@ export default function PlannerTab({ data }: { data: ChildData }) {
             </tbody>
           </table>
         </div>
-        <form className="row" style={{ padding: 16, borderTop: 'var(--border)' }} onSubmit={addWish}>
-          <select value={wish.icon} onChange={(e) => setWish({ ...wish, icon: e.target.value })} style={{ width: 70 }} aria-label="icon">{['🎁', '🚲', '💻', '📱', '✈️', '🎸', '🚗', '🎓', '⚽'].map((i) => <option key={i}>{i}</option>)}</select>
+        {ideas.length > 0 && <div style={{ padding: '12px 16px 0', borderTop: 'var(--border)' }}><GoalIdeas goals={ideas} onPick={pickIdea} /></div>}
+        <form className="row" style={{ padding: 16, borderTop: ideas.length ? undefined : 'var(--border)' }} onSubmit={addWish}>
+          <select value={wish.icon} onChange={(e) => setWish({ ...wish, icon: e.target.value })} style={{ width: 70 }} aria-label="icon">{[...new Set(['🎁', '🚲', '💻', '📱', '✈️', '🎸', '🚗', '🎓', '⚽', ...(community?.goals.map((g) => g.icon) || [])])].map((i) => <option key={i}>{i}</option>)}</select>
           <input value={wish.title} onChange={(e) => setWish({ ...wish, title: e.target.value })} placeholder={t('plan.wishPh')} required style={{ flex: 2, minWidth: 140 }} />
           <input type="number" dir="ltr" value={wish.targetAmount} onChange={(e) => setWish({ ...wish, targetAmount: e.target.value })} placeholder="₪" required style={{ flex: 1, minWidth: 90 }} />
           <input type="date" value={wish.targetDate} onChange={(e) => setWish({ ...wish, targetDate: e.target.value })} style={{ flex: 1, minWidth: 140 }} aria-label={t('plan.col.when')} />

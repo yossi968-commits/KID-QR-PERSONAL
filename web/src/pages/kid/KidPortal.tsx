@@ -229,7 +229,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
           <>
             <div className="sen-hero">
               <div>
-                <div className="eyebrow">{t('sen.portfolio')} · {child.providerName} · {L.track(child.track)}</div>
+                <div className="eyebrow">{t('sen.portfolio')} · {t(`provider.${child.provider}` as any)} · {L.track(child.track)}</div>
                 <div className="value num">{fmtMoney(p.value)}</div>
                 <div className="small"><span className={p.gain >= 0 ? 'pos' : 'neg'}>{p.gain >= 0 ? '+' : ''}{fmtMoney(p.gain)} ({(p.gainPct * 100).toFixed(1)}%)</span> <span className="muted">{t('sen.allTime')}</span></div>
               </div>
@@ -437,7 +437,7 @@ function MyFund({ d }: { d: KidData }) {
           <p className="small muted" style={{ margin: 0 }}>{t('life.grad.desc')}</p>
           {lc.openedAsAdult ? <div className="banner small">✓ {t('life.grad.direct')}</div> : graduated ? (
             <>
-              <div className="banner small">✓ {t('life.grad.done', { date: fmtDate(lc.graduatedAt!), account: child.partnerAccountId || '', house: child.providerName })}</div>
+              <div className="banner small">✓ {t('life.grad.done', { date: fmtDate(lc.graduatedAt!), account: child.partnerAccountId || '', house: t(`provider.${child.provider}` as any) })}</div>
               {lc.minorAccountId && <div className="small muted">{t('life.grad.prev', { account: lc.minorAccountId })}</div>}
             </>
           ) : lc.canGraduate ? (

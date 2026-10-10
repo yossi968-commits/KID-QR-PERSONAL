@@ -40,3 +40,7 @@ export function stageOf(birthDate, onDate = today()) {
   const g = schoolGrade(birthDate, onDate);
   return g <= 6 ? 'young' : g <= 9 ? 'middle' : 'senior';
 }
+
+export function addDays(date, days) {
+  return new Date(Date.parse(date.slice(0, 10) + 'T00:00:00Z') + days * 86400000).toISOString().slice(0, 10);
+}

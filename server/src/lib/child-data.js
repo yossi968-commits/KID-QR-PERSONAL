@@ -8,6 +8,7 @@ export function childView(c) {
     id: c.id,
     firstName: c.first_name,
     lastName: c.last_name,
+    healthFundId: c.health_fund_id ?? null,
     birthDate: c.birth_date,
     age: ageOn(c.birth_date),
     grade: schoolGrade(c.birth_date),

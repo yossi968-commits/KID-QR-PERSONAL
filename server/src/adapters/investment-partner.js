@@ -28,6 +28,9 @@ export const TRACKS = [
   { id: 'equity', core: true, risk: 5, expectedReturn: 0.075, annualVol: 0.16, mgmtFee: 0.006, equityShare: 1 },
   { id: 'sp500', core: false, risk: 5, expectedReturn: 0.08, annualVol: 0.17, mgmtFee: 0.005, equityShare: 1 },
   { id: 'solid', core: true, risk: 1, expectedReturn: 0.03, annualVol: 0.02, mgmtFee: 0.006, equityShare: 0 },
+  // Values-based tracks some houses run: under rabbinical supervision (היתר עסקה), and Sharia-compliant.
+  { id: 'halacha', values: true, risk: 3, expectedReturn: 0.055, annualVol: 0.1, mgmtFee: 0.007, equityShare: 0.5 },
+  { id: 'sharia', values: true, risk: 4, expectedReturn: 0.065, annualVol: 0.14, mgmtFee: 0.007, equityShare: 0.8 },
 ];
 
 const START = Date.UTC(2004, 0, 1);

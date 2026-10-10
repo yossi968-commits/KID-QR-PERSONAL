@@ -9,12 +9,14 @@ import { ANNUAL_CEILING, depositedThisYear } from './fund.js';
  * money: pocket money and earnings paid straight to their QR instead of cash, and
  * part of a soldier's or young worker's salary.
  */
-export const SOURCES = ['gift', 'employer_gift', 'provider_gift', 'event_gifts', 'pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
+export const SOURCES = ['gift', 'employer_gift', 'provider_gift', 'partner_gift', 'event_gifts', 'pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
 /** event_gifts: a parent depositing part of the cash gifts from a brit, naming, bar or bat mitzvah.
  *  provider_gift: the investment house's welcome gift when the QR opens (never paid through checkout). */
-export const GIFT_SOURCES = ['gift', 'employer_gift', 'event_gifts', 'provider_gift'];
+export const GIFT_SOURCES = ['gift', 'employer_gift', 'event_gifts', 'provider_gift', 'partner_gift'];
 export const isEarning = (source) => Boolean(source) && !GIFT_SOURCES.includes(source);
-export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'driving', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'];
+export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'driving', 'enlistment', 'graduation', 'wedding', 'holiday', 'other',
+  // Community occasions: religious milestones, and Arab-sector customs (aqiqa, Eid money).
+  'upsherin', 'siddur', 'chumash', 'tefillin', 'mechina', 'yeshiva', 'aqiqa', 'eid', 'university'];
 
 /**
  * Start a deposit. One-time deposits open a checkout for the chosen method. Monthly
@@ -23,7 +25,7 @@ export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mit
  */
 export function startContribution({ db, payments }, c, body) {
   const amount = toAgorot(body.amount);
-  const source0 = SOURCES.includes(body.source) && body.source !== 'provider_gift' ? body.source : 'gift';
+  const source0 = SOURCES.includes(body.source) && !['provider_gift', 'partner_gift'].includes(body.source) ? body.source : 'gift';
   // A parent's deposit from event gifts can be large; guests stay within the gift limit.
   if (amount < GIFT_MIN || amount > (source0 === 'event_gifts' ? ANNUAL_CEILING : GIFT_MAX)) throw bad('amount_out_of_range');
   if (depositedThisYear(db, c.id) + amount > ANNUAL_CEILING) throw bad('annual_ceiling');

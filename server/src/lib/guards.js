@@ -16,5 +16,5 @@ export function audit(db, userId, action, details) {
 }
 
 export function publicUser(u) {
-  return { id: u.id, email: u.email, name: u.name, phone: u.phone, role: u.role, locale: u.locale, kycStatus: u.kyc_status, hasNationalId: Boolean(u.national_id) };
+  return { id: u.id, email: u.email, name: u.name, phone: u.phone, role: u.role, locale: u.locale, kycStatus: u.kyc_status, hasNationalId: Boolean(u.national_id), community: u.community || 'general' };
 }

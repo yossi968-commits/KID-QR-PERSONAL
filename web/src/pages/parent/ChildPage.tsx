@@ -40,20 +40,21 @@ export default function ChildPage() {
         <div className="avatar lg">{child.avatar}</div>
         <div>
           <h1 style={{ margin: 0 }}>{child.firstName} {child.lastName}</h1>
-          <div className="muted small">{t('dash.ageGrade', { age: child.age, grade: gradeLabel(t, child.grade) })} · {child.providerName} · <span className="num">{child.partnerAccountId || child.giftCode}</span></div>
+          <div className="muted small">{t('dash.ageGrade', { age: child.age, grade: gradeLabel(t, child.grade) })} · {t(`provider.${child.provider}` as any)} · <span className="num">{child.partnerAccountId || child.giftCode}</span></div>
         </div>
         <span className="spacer" />
         <FundPill child={child} />
+        {!adult && <Link className="btn sm secondary" to={`/parent/new?sibling=${child.id}`}>👶 {t('sib.button')}</Link>}
         <div className="stat" style={{ textAlign: 'end' }}><div className="label">{t('child.value')}</div><div className="value num">{fmtMoney(portfolio.value)}</div></div>
       </div>
       {adult && (
         <div className="banner" style={{ marginBottom: 16 }}>
-          {child.lifecycle.openedAsAdult ? `🔑 ${t('life.directBanner', { name: child.firstName })}` : child.lifecycle.phase === 'graduated' ? `🎓 ${t('life.graduatedBanner', { name: child.firstName, house: child.providerName })}` : `🔑 ${t('life.handedBanner', { name: child.firstName, date: fmtDate(child.lifecycle.handedOverAt || child.lifecycle.handoverDate) })}`}
+          {child.lifecycle.openedAsAdult ? `🔑 ${t('life.directBanner', { name: child.firstName })}` : child.lifecycle.phase === 'graduated' ? `🎓 ${t('life.graduatedBanner', { name: child.firstName, house: t(`provider.${child.provider}` as any) })}` : `🔑 ${t('life.handedBanner', { name: child.firstName, date: fmtDate(child.lifecycle.handedOverAt || child.lifecycle.handoverDate) })}`}
         </div>
       )}
       {!adult && child.accountStatus !== 'active' && (
         <div className="banner" style={{ marginBottom: 16 }}>
-          📄 {child.accountStatus === 'pending_docs' ? t('fund.bannerDocs', { n: data.documents.missing.length, amount: fmtMoney(portfolio.held) }) : t('fund.bannerReview', { house: child.providerName })}
+          📄 {child.accountStatus === 'pending_docs' ? t('fund.bannerDocs', { n: data.documents.missing.length, amount: fmtMoney(portfolio.held) }) : t('fund.bannerReview', { house: t(`provider.${child.provider}` as any) })}
           {tab !== 'fund' && <button className="btn sm" onClick={() => setSp({ tab: 'fund' })}>{t('fund.toChecklist')}</button>}
         </div>
       )}
@@ -67,6 +68,12 @@ export default function ChildPage() {
       {tab === 'overview' && <Overview data={data} />}
       {tab === 'money' && <Money data={data} reload={load} />}
       {tab === 'planner' && <PlannerTab data={data} />}
+      {tab === 'fund' && sp.get('new') === '1' && (Number(sp.get('gifts')) > 0 || Number(sp.get('reused')) > 0) && (
+        <div className="stack" style={{ gap: 8, marginBottom: 12 }}>
+          {Number(sp.get('gifts')) > 0 && <div className="banner small">{t('fund.partnerGifts', { n: Number(sp.get('gifts')) })}</div>}
+          {Number(sp.get('reused')) > 0 && <div className="banner small">{t('sib.reused', { n: Number(sp.get('reused')) })}</div>}
+        </div>
+      )}
       {tab === 'fund' && <FundTab data={data} reload={load} fresh={sp.get('new') === '1'} />}
       {tab === 'qr' && <QrPanel child={child} />}
       {tab === 'events' && <EventsTab data={data} reload={load} />}
@@ -112,7 +119,7 @@ function Overview({ data }: { data: ChildData }) {
         <div className="card">
           <h3>{t('child.account')}</h3>
           <dl className="kv">
-            <dt>{t('open.house')}</dt><dd>{child.providerName}</dd>
+            <dt>{t('open.house')}</dt><dd>{t(`provider.${child.provider}` as any)}</dd>
             <dt>{t('fund.productLabel')}</dt><dd>{t('fund.product')}</dd>
             <dt>{t('fund.accountNo')}</dt><dd className="num">{child.partnerAccountId || '—'}</dd>
             <dt>{t('onb.track')}</dt><dd>{L.track(child.track)}</dd>

@@ -10,6 +10,7 @@ import childRoutes from './routes/children.js';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
 import kidRoutes from './routes/kid.js';
+import familyRoutes from './routes/family.js';
 import employerRoutes, { workRoutes } from './routes/employer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -39,6 +40,7 @@ export function createApp({ db, partner, payments, notifier = new OutboxNotifier
   app.use('/api/auth', authRoutes);
   app.use('/api/children', childRoutes);
   app.use('/api/kid', kidRoutes);
+  app.use('/api/family', familyRoutes);
   app.use('/api/employer', employerRoutes);
   app.use('/api/work', workRoutes);
   app.use('/api', publicRoutes);

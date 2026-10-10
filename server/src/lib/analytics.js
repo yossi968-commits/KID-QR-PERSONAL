@@ -100,3 +100,15 @@ export function analytics({ db, partner }, on = today()) {
     },
   };
 }
+
+/** Communities, first-gift partners and expecting parents, for the admin outlook. */
+export function growthChannels({ db }, on = today()) {
+  const communities = db.prepare(`SELECT u.community AS id, COUNT(c.id) AS savers FROM children c JOIN users u ON u.id=c.guardian_id GROUP BY u.community ORDER BY 2 DESC`).all();
+  const families = db.prepare(`SELECT COUNT(*) AS families, SUM(n>1) AS multi, SUM(n) AS kids FROM (SELECT guardian_id, COUNT(*) AS n FROM children GROUP BY guardian_id)`).get();
+  const preg = db.prepare(`SELECT COUNT(*) AS total, SUM(child_id IS NOT NULL) AS converted, SUM(child_id IS NULL AND cancelled_at IS NULL AND due_date >= ?) AS upcoming FROM pregnancies`).get(on);
+  return {
+    communities,
+    siblings: { families: families.families || 0, withSiblings: families.multi || 0, kidsPerFamily: families.families ? families.kids / families.families : 0 },
+    expecting: { total: preg.total || 0, converted: preg.converted || 0, upcoming: preg.upcoming || 0 },
+  };
+}

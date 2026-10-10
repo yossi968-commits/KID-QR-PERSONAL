@@ -1,12 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../../i18n';
-import { api, EVENT_TYPES, type ChildData, type Gift, type Pledge } from '../../lib/api';
+import { api, eventsFor, type ChildData, type Gift, type Pledge } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { MethodPicker, goPay, useMethods } from '../../components/Pay';
 import { useLabels } from '../../components/ui';
 import { useErr } from '../Auth';
 
-const FAMILY_EVENTS = ['brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'birthday', 'other'];
+/** Family occasions whose gift money can be deposited, in the community's order. */
+const NOT_FAMILY = ['driving', 'enlistment', 'graduation', 'university', 'mechina', 'holiday'];
 
 /** Every shekel in: guest gifts, employer gifts, event deposits, the child's own money; plus monthly gifts. */
 export default function Money({ data }: { data: ChildData; reload: () => void }) {
@@ -87,6 +89,7 @@ export default function Money({ data }: { data: ChildData; reload: () => void })
 /** A parent deposits part of the cash and checks from a brit, naming, bar or bat mitzvah. */
 function EventDeposit({ data }: { data: ChildData }) {
   const { t, fmtMoney } = useI18n();
+  const { user } = useAuth();
   const L = useLabels();
   const nav = useNavigate();
   const errText = useErr();
@@ -117,7 +120,7 @@ function EventDeposit({ data }: { data: ChildData }) {
       {!f.eventId && (
         <div className="grid grid-2" style={{ gap: 10 }}>
           <label className="field"><span>{t('events.type')}</span>
-            <select value={f.eventType} onChange={(e) => setF({ ...f, eventType: e.target.value })}>{FAMILY_EVENTS.filter((x) => EVENT_TYPES.includes(x)).map((x) => <option key={x} value={x}>{L.event(x)}</option>)}</select>
+            <select value={f.eventType} onChange={(e) => setF({ ...f, eventType: e.target.value })}>{eventsFor(user?.community).filter((x) => !NOT_FAMILY.includes(x)).map((x) => <option key={x} value={x}>{L.event(x)}</option>)}</select>
           </label>
           <label className="field"><span>{t('events.date')}</span><input type="date" value={f.eventDate} onChange={(e) => setF({ ...f, eventDate: e.target.value })} required /></label>
         </div>

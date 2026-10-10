@@ -13,7 +13,7 @@ function fvAnnuity(perYear: number, years: number, r: number) {
 
 /** Entry portal: three doors (kids, parents, admin) plus the gift-code box for guests. */
 export default function Portal() {
-  const { t, fmtMoney, locale } = useI18n();
+  const { t, fmtMoney, name } = useI18n();
   const nav = useNavigate();
   const [code, setCode] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -39,6 +39,7 @@ export default function Portal() {
             <Link className="btn gold" to="/register">{t('portal.open')}</Link>
             <Link className="btn secondary" to="/g/itay2013demo" style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.3)' }}>{t('portal.sample')}</Link>
           </div>
+          <p style={{ marginTop: 14 }}><Link to="/expecting" style={{ color: 'var(--accent)' }}>🤰 {t('expPub.link')}</Link></p>
         </div>
       </section>
       <div className="container">
@@ -96,7 +97,7 @@ export default function Portal() {
             <div className="card">
               <div className="card-head"><h3>{t('portal.providersTitle')}</h3><span className="pill gold">{t('fund.example')}</span></div>
               <div className="row" style={{ gap: 8 }}>
-                {providers.map((p) => <span key={p.id} className="pill">{locale === 'he' ? p.name : p.nameEn}</span>)}
+                {providers.map((p) => <span key={p.id} className="pill">{name(p)}</span>)}
               </div>
               <p className="small muted" style={{ margin: '10px 0 0' }}>{t('portal.providersNote')}</p>
             </div>

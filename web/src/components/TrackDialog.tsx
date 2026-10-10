@@ -7,7 +7,7 @@ import Modal from './Modal';
  * Guided choice of the long-term track: three core tracks (solid, conservative,
  * equities), with the more tracks the investment house may add listed separately.
  */
-export default function TrackDialog({ value, years, onPick, onClose, coreOnly = true }: { value: string; years: number; onPick: (id: string) => void; onClose: () => void; coreOnly?: boolean }) {
+export default function TrackDialog({ value, years, onPick, onClose, coreOnly = true, communityTrack }: { value: string; years: number; onPick: (id: string) => void; onClose: () => void; coreOnly?: boolean; communityTrack?: string | null }) {
   const { t } = useI18n();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [pick, setPick] = useState(value);
@@ -15,6 +15,8 @@ export default function TrackDialog({ value, years, onPick, onClose, coreOnly = 
   const order = ['solid', 'conservative', 'equity'];
   const core = tracks.filter((x) => x.core).sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   const more = tracks.filter((x) => !x.core);
+  // A values-based track for the family's community (kosher, Sharia-compliant), offered even when only core tracks are.
+  const fit = communityTrack ? tracks.find((x) => x.id === communityTrack && !x.core) : undefined;
   const recommended = years >= 10 ? 'equity' : years >= 4 ? 'conservative' : 'solid';
   const at = (tr: Track) => Math.round(10000 * Math.pow(1 + tr.expectedReturn - tr.mgmtFee, years)) / 100;
   const Card = ({ tr }: { tr: Track }) => (
@@ -23,6 +25,7 @@ export default function TrackDialog({ value, years, onPick, onClose, coreOnly = 
         <strong>{t(`track.${tr.id}` as any)}</strong>
         <span className="row" style={{ gap: 6 }}>
           {tr.id === recommended && <span className="pill gold">{t('track.recommended')}</span>}
+          {tr.id === communityTrack && <span className="pill good">{t('track.communityPick')}</span>}
           <span className="pill" aria-label={t('track.risk')}>{'●'.repeat(tr.risk)}{'○'.repeat(5 - tr.risk)}</span>
         </span>
       </div>
@@ -41,6 +44,7 @@ export default function TrackDialog({ value, years, onPick, onClose, coreOnly = 
           <h2 style={{ margin: '4px 0 0' }}>{t('track.dialogTitle')}</h2>
         </div>
         <p className="muted small" style={{ margin: 0 }}>{t('track.dialogDesc', { n: years })}</p>
+        {coreOnly && fit && <Card tr={fit} />}
         {core.map((tr) => <Card key={tr.id} tr={tr} />)}
         {!coreOnly && more.length > 0 && (<><div className="eyebrow">{t('track.more')}</div>{more.map((tr) => <Card key={tr.id} tr={tr} />)}</>)}
         {coreOnly && <p className="small muted" style={{ margin: 0 }}>➕ {t('track.moreSoon')}</p>}

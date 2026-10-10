@@ -10,16 +10,16 @@ import { investContribution } from './portfolio.js';
  * partnership is signed with each one.
  */
 export const PROVIDERS = [
-  { id: 'altshuler', name: 'אלטשולר שחם', nameEn: 'Altshuler Shaham' },
-  { id: 'meitav', name: 'מיטב', nameEn: 'Meitav' },
-  { id: 'more', name: 'מור', nameEn: 'More' },
-  { id: 'analyst', name: 'אנליסט', nameEn: 'Analyst' },
-  { id: 'yelin', name: 'ילין לפידות', nameEn: 'Yelin Lapidot' },
-  { id: 'harel', name: 'הראל', nameEn: 'Harel' },
-  { id: 'migdal', name: 'מגדל', nameEn: 'Migdal' },
-  { id: 'clal', name: 'כלל', nameEn: 'Clal' },
-  { id: 'phoenix', name: 'הפניקס', nameEn: 'The Phoenix' },
-  { id: 'menora', name: 'מנורה מבטחים', nameEn: 'Menora Mivtachim' },
+  { id: 'altshuler', name: 'אלטשולר שחם', nameEn: 'Altshuler Shaham', nameAr: 'ألتشولر شاحام' },
+  { id: 'meitav', name: 'מיטב', nameEn: 'Meitav', nameAr: 'ميتاف' },
+  { id: 'more', name: 'מור', nameEn: 'More', nameAr: 'مور' },
+  { id: 'analyst', name: 'אנליסט', nameEn: 'Analyst', nameAr: 'أناليست' },
+  { id: 'yelin', name: 'ילין לפידות', nameEn: 'Yelin Lapidot', nameAr: 'يلين لبيدوت' },
+  { id: 'harel', name: 'הראל', nameEn: 'Harel', nameAr: 'هرئيل' },
+  { id: 'migdal', name: 'מגדל', nameEn: 'Migdal', nameAr: 'مجدال' },
+  { id: 'clal', name: 'כלל', nameEn: 'Clal', nameAr: 'كلال' },
+  { id: 'phoenix', name: 'הפניקס', nameEn: 'The Phoenix', nameAr: 'هفينيكس' },
+  { id: 'menora', name: 'מנורה מבטחים', nameEn: 'Menora Mivtachim', nameAr: 'منوراه مفطحيم' },
 ];
 export const DEFAULT_PROVIDER = 'altshuler';
 export const providerName = (id) => PROVIDERS.find((p) => p.id === id)?.name || id;
@@ -79,6 +79,16 @@ export const DOCUMENTS = [
   { id: 'kyc_form', kind: 'form' },               // שאלון הכרת לקוח
   { id: 'application_signed', kind: 'sign' },     // טופס הצטרפות חתום ע"י שני ההורים
 ];
+
+/** Documents about the family rather than the child; a sibling's QR reuses them. */
+export const FAMILY_DOCUMENTS = ['guardian_id', 'second_guardian_id', 'bank_confirmation', 'kyc_form'];
+
+export function copySiblingDocs(db, sibling, child) {
+  const rows = db.prepare(`SELECT * FROM child_documents WHERE child_id=? AND status IN ('received','verified')`).all(sibling.id).filter((d) => FAMILY_DOCUMENTS.includes(d.doc_type));
+  for (const d of rows)
+    db.prepare(`INSERT INTO child_documents (child_id, doc_type, status, file_name, data, uploaded_at) VALUES (?,?,?,?,?,datetime('now'))`).run(child.id, d.doc_type, 'received', d.file_name, d.data ?? null);
+  return rows.map((d) => d.doc_type);
+}
 
 /** Opened from 18: the fund is in the saver's own name, and only they sign. */
 export const ADULT_DOCUMENTS = [

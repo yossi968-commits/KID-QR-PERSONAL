@@ -7,7 +7,9 @@ import { portfolioSummary, switchTrack } from '../lib/portfolio.js';
 import { pledgeView } from '../lib/pledges.js';
 import { plannerPayload, withdrawalLimit, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
-import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef, addWelcomeGift, transferProvider } from '../lib/fund.js';
+import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef, addWelcomeGift, transferProvider, copySiblingDocs } from '../lib/fund.js';
+import { addPartnerGifts, investNow } from '../lib/partners.js';
+import { linkBirth } from '../lib/pregnancy.js';
 import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
 import { linkReports } from '../lib/employer.js';
 import { phaseOf, lifecycleView } from '../lib/lifecycle.js';
@@ -58,7 +60,8 @@ r.post('/', h((req, res) => {
   // There is no age to start saving. From 18 the fund opens in the saver's own name.
   if (age < 0 || age > 120) throw bad('child_age_out_of_range');
   const adult = age >= 18;
-  const track = partner.listTracks().some((t) => t.id === req.body.track && t.core) ? req.body.track : 'equity';
+  // Core tracks, plus the values-based ones (halacha, sharia) a family may choose.
+  const track = partner.listTracks().some((t) => t.id === req.body.track && (t.core || t.values)) ? req.body.track : 'equity';
   const provider = PROVIDERS.some((p) => p.id === req.body.provider) ? req.body.provider : DEFAULT_PROVIDER;
   const avatar = AVATARS.includes(req.body.avatar) ? req.body.avatar : AVATARS[0];
   let code;
@@ -75,13 +78,18 @@ r.post('/', h((req, res) => {
     );
   // The QR works from now on; the fund opens once the document checklist is complete.
   const child = db.prepare('SELECT * FROM children WHERE id=?').get(lastInsertRowid);
-  // The first gift on every new QR comes from the investment house.
+  // The first gifts on every new QR: the investment house, then the partners the parent chose.
   addWelcomeGift(db, partner, child);
+  const partnerGifts = addPartnerGifts(db, investNow(db, partner, child), child, { healthFund: req.body.healthFund, consents: Array.isArray(req.body.partnerConsents) ? req.body.partnerConsents : [] }, age);
+  // A brother or sister: the family's documents are already with the investment house.
+  const sibling = req.body.siblingOf ? db.prepare('SELECT * FROM children WHERE id=? AND guardian_id=?').get(Number(req.body.siblingOf), req.user.id) : null;
+  const reused = sibling && !adult ? copySiblingDocs(db, sibling, child) : [];
+  const pregnancyId = linkBirth(db, req.user.id, child);
   // Every child gets a standing birthday campaign from day one.
   db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(child.id, 'birthday', `יום הולדת ${age + 1}`, nextBirthday(birthDate));
   audit(db, req.user.id, 'child_created', { childId: child.id, provider });
   linkReports(db); // an employer may already be waiting to send a birth gift
-  res.status(201).json({ child: childView(child), documents: docsStatus(db, child) });
+  res.status(201).json({ child: childView(child), documents: docsStatus(db, child), partnerGifts, reusedDocuments: reused, pregnancyId });
 }));
 
 r.get('/:id', h((req, res) => {

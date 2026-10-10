@@ -3,7 +3,9 @@ import { h, notFound } from '../lib/http.js';
 import { requireAdmin, audit } from '../lib/guards.js';
 import { holdings } from '../lib/portfolio.js';
 import { today } from '../lib/dates.js';
-import { analytics } from '../lib/analytics.js';
+import { analytics, growthChannels } from '../lib/analytics.js';
+import { partnerStats, PARTNER_KINDS } from '../lib/partners.js';
+import { bad, toAgorot, requireString } from '../lib/http.js';
 import { runDuePledges } from '../lib/pledges.js';
 import { docsStatus, activateFund, remindMissingDocs, providerName } from '../lib/fund.js';
 
@@ -48,7 +50,34 @@ r.get('/stats', h((req, res) => {
   });
 }));
 
-r.get('/analytics', h((req, res) => res.json(analytics(req.ctx))));
+r.get('/analytics', h((req, res) => res.json({ ...analytics(req.ctx), channels: growthChannels(req.ctx), partners: partnerStats(req.ctx.db) })));
+
+/** First-gift partners: amounts, on/off, and what each brought in (gifts, expecting sign-ups). */
+r.get('/partners', h((req, res) => res.json({ partners: partnerStats(req.ctx.db) })));
+
+r.post('/partners', h((req, res) => {
+  const { db } = req.ctx;
+  if (!PARTNER_KINDS.includes(req.body.kind)) throw bad('invalid_kind');
+  const kind = req.body.kind;
+  const name = requireString(req.body.name, 'name', { max: 80 });
+  const slug = String(req.body.slug || name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'p' + Date.now();
+  const amount = toAgorot(req.body.amount ?? 50, 'amount');
+  const { lastInsertRowid } = db.prepare('INSERT INTO partners (slug, kind, name, logo, welcome_amount, max_child_age, active) VALUES (?,?,?,?,?,?,1)')
+    .run(slug, kind, name, req.body.logo || (kind === 'health_fund' ? '🏥' : kind === 'formula' ? '🍼' : '🤝'), amount, kind === 'formula' ? 1 : null);
+  audit(db, req.user.id, 'partner_added', { id: lastInsertRowid, kind, name });
+  res.status(201).json({ partners: partnerStats(db) });
+}));
+
+r.patch('/partners/:id', h((req, res) => {
+  const { db } = req.ctx;
+  const p = db.prepare('SELECT * FROM partners WHERE id=?').get(Number(req.params.id));
+  if (!p) throw notFound();
+  const amount = req.body.amount !== undefined ? toAgorot(req.body.amount, 'amount') : p.welcome_amount;
+  const active = req.body.active !== undefined ? (req.body.active ? 1 : 0) : p.active;
+  db.prepare('UPDATE partners SET welcome_amount=?, active=? WHERE id=?').run(amount, active, p.id);
+  audit(db, req.user.id, 'partner_updated', { id: p.id, amount, active });
+  res.json({ partners: partnerStats(db) });
+}));
 
 r.get('/users', h((req, res) => {
   const rows = req.ctx.db

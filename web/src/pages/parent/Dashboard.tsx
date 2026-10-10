@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { FundPill } from '../../components/Lifecycle';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
-import { api, type Child } from '../../lib/api';
+import { api, type Child, type Family } from '../../lib/api';
+import { CommunityCard, ExpectingCard } from '../../components/Family';
 import { AccountPill, Kpis, Loading, Signed, useLabels } from '../../components/ui';
 
 type Row = Child & { held: number; earned: number; docsMissing: number; pendingWithdrawals: number; monthly: number };
@@ -14,13 +15,15 @@ export default function Dashboard() {
   const { user } = useAuth();
   const L = useLabels();
   const [kids, setKids] = useState<Row[] | null>(null);
+  const [family, setFamily] = useState<Family | null>(null);
   useEffect(() => { api<{ children: Row[] }>('/children').then((r) => setKids(r.children)); }, []);
+  useEffect(() => { api<Family>('/family').then(setFamily).catch(() => {}); }, []);
   if (!kids) return <Loading />;
   const sum = (k: keyof Row) => kids.reduce((s, c) => s + (Number(c[k]) || 0), 0);
   const value = sum('value'), dep = sum('deposited');
   const tasks = [
     ...kids.filter((k) => k.docsMissing > 0).map((k) => ({ key: 'd' + k.id, icon: '📄', text: t('dash.task.docs', { name: k.firstName, n: k.docsMissing }), to: `/parent/child/${k.id}?tab=fund`, cta: t('dash.task.docsCta') })),
-    ...kids.filter((k) => k.accountStatus === 'in_review').map((k) => ({ key: 'r' + k.id, icon: '⏳', text: t('dash.task.review', { name: k.firstName, house: k.providerName }), to: `/parent/child/${k.id}?tab=fund`, cta: t('dash.task.view') })),
+    ...kids.filter((k) => k.accountStatus === 'in_review').map((k) => ({ key: 'r' + k.id, icon: '⏳', text: t('dash.task.review', { name: k.firstName, house: t(`provider.${k.provider}` as any) }), to: `/parent/child/${k.id}?tab=fund`, cta: t('dash.task.view') })),
     ...kids.filter((k) => k.pendingWithdrawals > 0).map((k) => ({ key: 'w' + k.id, icon: '✋', text: t('dash.task.withdraw', { name: k.firstName, n: k.pendingWithdrawals }), to: `/parent/child/${k.id}?tab=planner`, cta: t('dash.task.decide') })),
   ];
 
@@ -69,14 +72,14 @@ export default function Dashboard() {
                 {kids.map((k) => k.hidden ? (
                   <tr key={k.id}>
                     <td><span aria-hidden>{k.avatar}</span> <b>{k.firstName}</b><div className="small muted">{t('dash.ageGrade', { age: k.age, grade: gradeLabel(t, k.grade) })}</div></td>
-                    <td>{k.providerName}</td><td className="num small">—</td><td>—</td>
+                    <td>{t(`provider.${k.provider}` as any)}</td><td className="num small">—</td><td>—</td>
                     <td><FundPill child={k} /></td>
                     <td colSpan={3} className="small muted">🔒 {t('life.hiddenRow')}</td>
                   </tr>
                 ) : (
                   <tr key={k.id}>
                     <td><Link className="rowlink" to={`/parent/child/${k.id}`}><span aria-hidden>{k.avatar}</span> {k.firstName}</Link><div className="small muted">{t('dash.ageGrade', { age: k.age, grade: gradeLabel(t, k.grade) })}</div></td>
-                    <td>{k.providerName}</td>
+                    <td>{t(`provider.${k.provider}` as any)}</td>
                     <td className="num small">{k.partnerAccountId || '—'}</td>
                     <td>{L.track(k.track)}</td>
                     <td><FundPill child={k} /></td>
@@ -90,6 +93,18 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      {kids.some((k) => !k.hidden && k.age < 18) && (
+        <div className="banner row between">
+          <span>👶 {t('sib.banner')}</span>
+          <Link className="btn sm" to={`/parent/new?sibling=${[...kids].filter((k) => !k.hidden && k.age < 18).sort((a, b) => a.age - b.age)[0].id}`}>{t('sib.button')}</Link>
+        </div>
+      )}
+      {family && (
+        <div className="grid grid-2" style={{ alignItems: 'start' }}>
+          <ExpectingCard family={family} onChange={setFamily} />
+          <CommunityCard family={family} onChange={setFamily} />
+        </div>
+      )}
       <div className="sandbox-tag">{t('dash.sandbox')}</div>
     </div>
   );

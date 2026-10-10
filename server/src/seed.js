@@ -17,7 +17,9 @@ import { runDuePledges, newPledgeToken } from './lib/pledges.js';
 import { executeWithdrawal } from './lib/wishes.js';
 import { DOCUMENTS, newApplicationRef, providerName, WELCOME_GIFT } from './lib/fund.js';
 import { linkReports, sendGifts } from './lib/employer.js';
-import { addYears, today, nextBirthday, ageOn } from './lib/dates.js';
+import { addYears, today, nextBirthday, ageOn, addDays } from './lib/dates.js';
+import { addPartnerGifts } from './lib/partners.js';
+import { registerPregnancy } from './lib/pregnancy.js';
 
 
 export function seed(db, partner = new SandboxInvestmentPartner()) {
@@ -221,6 +223,15 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
     for (const [lid, stars] of rows) db.prepare('INSERT INTO lesson_progress (child_id, lesson_id, score) VALUES (?,?,?)').run(id, lid, stars);
   }
 
+  // First-gift partners are on in the demo. Ella got gifts from her health fund and,
+  // with her parents' consent, from a formula brand; her parents expect another baby.
+  db.prepare(`UPDATE partners SET active=1`).run();
+  const ellaRow = db.prepare("SELECT * FROM children WHERE gift_code='ella2026demo'").get();
+  const pid = (slug) => db.prepare('SELECT id FROM partners WHERE slug=?').get(slug).id;
+  addPartnerGifts(db, () => {}, ellaRow, { healthFund: pid('maccabi'), consents: [pid('formula')] }, 0);
+  db.prepare(`UPDATE contributions SET paid_at=? WHERE child_id=? AND source='partner_gift'`).run(ellaRow.birth_date + ' 08:30:00', ellaRow.id);
+  registerPregnancy(db, { userId: parent, name: 'מיכל לוי', phone: '0501234567', email: 'demo@kfq.app', dueDate: addDays(today(), 26), partnerId: pid('maccabi') });
+
   // The story families joined with their QR from birth (or from opening, for the newborns).
   db.prepare(`UPDATE children SET created_at = COALESCE(account_opened_at, birth_date) || ' 09:00:00'`).run();
   seedPopulation(db, partner);
@@ -256,6 +267,8 @@ function seedPopulation(db, partner) {
   const insUser = db.prepare('INSERT INTO users (email, password_hash, name, role, kyc_status, created_at) VALUES (?,?,?,?,?,?)');
   const insChild = db.prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, provider, account_status, application_ref, account_opened_at, opened_as_adult, handed_over_at, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   const insGift = db.prepare(`INSERT INTO contributions (child_id, giver_name, amount, status, method, source, payment_ref, paid_at, created_at) VALUES (?,?,?,?,?,?,?,?,?)`);
+  const HF = db.prepare(`SELECT * FROM partners WHERE kind='health_fund'`).all();
+  const FORMULA = db.prepare(`SELECT * FROM partners WHERE kind='formula'`).get();
   tx(db, () => {
     let n = 0, guardian = null;
     const start = Date.UTC(2023, 0, 1);
@@ -272,7 +285,10 @@ function seedPopulation(db, partner) {
         const kind = pick([['newborn', 55], ['kid', 25], ['teen', 15], ['adult', 5]]);
         const ageDays = kind === 'newborn' ? Math.floor(rand() * 60) : kind === 'kid' ? 365 * (1 + Math.floor(rand() * 10)) : kind === 'teen' ? 365 * (11 + Math.floor(rand() * 7)) : 365 * (18 + Math.floor(rand() * 12));
         const birth = day(joinedMs - ageDays * DAY - Math.floor(rand() * 300) * DAY * (kind === 'newborn' ? 0 : 1));
-        if (!guardian || rand() < 0.75) guardian = insUser.run(`family${n}@example.com`, pw, `משפחת ${LAST[n % LAST.length]}`, 'parent', 'verified', joined + ' 08:00:00').lastInsertRowid;
+        if (!guardian || rand() < 0.75) {
+          guardian = insUser.run(`family${n}@example.com`, pw, `משפחת ${LAST[n % LAST.length]}`, 'parent', 'verified', joined + ' 08:00:00').lastInsertRowid;
+          db.prepare('UPDATE users SET community=?, locale=? WHERE id=?').run(...((c) => [c, c === 'arab' && rand() < 0.7 ? 'ar' : 'he'])(pick([['general', 55], ['dati_leumi', 18], ['haredi', 12], ['arab', 15]])), guardian);
+        }
         const provider = pick(PROV), track = pick(TRK);
         const opens = day(joinedMs + 14 * DAY);
         const active = opens <= now;
@@ -280,13 +296,21 @@ function seedPopulation(db, partner) {
         const id = insChild.run(guardian, FIRST[(n * 7) % FIRST.length], LAST[n % LAST.length], birth, AV[n % AV.length], 'fam' + n + 'x' + (1000 + Math.floor(rand() * 9000)), track, provider,
           active ? 'active' : 'pending_docs', newApplicationRef(), active ? opens : null, adult ? 1 : 0, ageOn(birth, now) >= 18 ? (adult ? joined : addYears(birth, 18)) : null, joined + ' 09:00:00').lastInsertRowid;
         const child = { id, track, provider, birth_date: birth };
+        const partnerGift = (p, date) => gift(p.name, p.welcome_amount, date, 'partner_gift', `POP-P-${p.slug}-${id}`, p.id);
         if (active) { child.partner_account_id = partner.openAccount({ child }).accountId; db.prepare('UPDATE children SET partner_account_id=? WHERE id=?').run(child.partner_account_id, id); }
-        const gift = (giver, amount, date, source, ref) => {
+        const gift = (giver, amount, date, source, ref, partnerId = null) => {
           if (date > now) return;
-          const cid = insGift.run(id, giver, amount, 'paid', source === 'provider_gift' ? 'provider' : 'bit', source, ref, date + ' 10:00:00', date + ' 10:00:00').lastInsertRowid;
+          const cid = insGift.run(id, giver, amount, 'paid', source === 'provider_gift' ? 'provider' : source === 'partner_gift' ? 'partner' : 'bit', source, ref, date + ' 10:00:00', date + ' 10:00:00').lastInsertRowid;
+          if (partnerId) db.prepare('UPDATE contributions SET partner_id=? WHERE id=?').run(partnerId, cid);
           if (active) investContribution(db, partner, child, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), date < opens ? opens : date);
         };
         gift(providerName(provider), WELCOME_GIFT, joined, 'provider_gift', 'POP-W-' + id);
+        // Partners' first gifts, and for newborns the expecting sign-up that led to the QR.
+        const fund = rand() < 0.7 ? HF[Math.floor(rand() * HF.length)] : null;
+        if (fund) { db.prepare('UPDATE children SET health_fund_id=? WHERE id=?').run(fund.id, id); partnerGift(fund, joined); }
+        if (kind === 'newborn' && rand() < 0.3) partnerGift(FORMULA, joined);
+        if (kind === 'newborn' && rand() < 0.45) db.prepare('INSERT INTO pregnancies (user_id, name, phone, due_date, partner_id, reminders, child_id, created_at) VALUES (?,?,?,?,?,?,?,?)')
+          .run(guardian, 'הורה', '0500000000', birth, fund?.id ?? null, '["week30","week36","birth"]', id, day(joinedMs - 90 * DAY) + ' 09:00:00');
         gift('משפחה וחברים', (kind === 'newborn' ? 150000 : 60000) + Math.floor(rand() * 300000), day(joinedMs + 3 * DAY), 'gift', 'POP-J-' + id);
         for (let a = ageOn(birth, joined) + 1; ; a++) {
           const bd = addYears(birth, a);
@@ -294,6 +318,11 @@ function seedPopulation(db, partner) {
           gift('משפחה וחברים', 40000 + Math.floor(rand() * 210000), bd, 'gift', `POP-B-${id}-${a}`);
         }
       }
+    }
+    // Families expecting now: some came from a health fund's link.
+    for (let i = 0; i < 38; i++) {
+      const dueDate = day(Date.parse(now + 'T00:00:00Z') + Math.floor(rand() * 200 - 20) * DAY);
+      db.prepare('INSERT INTO pregnancies (name, phone, due_date, partner_id, created_at) VALUES (?,?,?,?,?)').run('הורה מצפה', '0500000000', dueDate, rand() < 0.6 ? HF[Math.floor(rand() * HF.length)].id : null, day(Date.parse(now + 'T00:00:00Z') - Math.floor(rand() * 60) * DAY) + ' 09:00:00');
     }
   });
 }

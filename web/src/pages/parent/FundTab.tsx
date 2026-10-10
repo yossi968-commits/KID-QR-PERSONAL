@@ -30,7 +30,7 @@ export default function FundTab({ data, reload, fresh }: { data: ChildData; relo
         <div className="card">
           <h3>{t('fund.account')}</h3>
           <dl className="kv">
-            <dt>{t('open.house')}</dt><dd>{child.providerName}</dd>
+            <dt>{t('open.house')}</dt><dd>{t(`provider.${child.provider}` as any)}</dd>
             <dt>{t('fund.productLabel')}</dt><dd>{t('fund.product')}</dd>
             <dt>{t('fund.appRef')}</dt><dd className="num">{documents.applicationRef || '—'}</dd>
             <dt>{t('fund.accountNo')}</dt><dd className="num">{child.partnerAccountId || t('fund.afterOpening')}</dd>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useI18n } from '../../i18n';
+import { useI18n, INTL } from '../../i18n';
 import { api } from '../../lib/api';
 import { Kpis, useLabels } from '../../components/ui';
 
@@ -16,13 +16,19 @@ type A = {
     at: { years: number; date: string; existing: number; withNew: number }[];
     assumptions: { avgReturn: number; avgInflowPerSaver: number; newSaversPerYear: number };
   };
+  channels: {
+    communities: { id: string; savers: number }[];
+    siblings: { families: number; withSiblings: number; kidsPerFamily: number };
+    expecting: { total: number; converted: number; upcoming: number };
+  };
+  partners: { id: number; gifts: number; total: number }[];
 };
 
 const W = 640, H = 240, P = { l: 52, r: 16, t: 16, b: 28 };
 
 function useFmt() {
   const { locale } = useI18n();
-  const loc = locale === 'he' ? 'he-IL' : 'en-IL';
+  const loc = INTL[locale];
   return {
     compact: (agorot: number) => '₪' + new Intl.NumberFormat(loc, { notation: 'compact', maximumFractionDigits: 1 }).format(agorot / 100),
     pct: (x: number) => (x > 0 ? '+' : '') + new Intl.NumberFormat(loc, { style: 'percent', maximumFractionDigits: 0 }).format(x),
@@ -91,16 +97,16 @@ function ProjectionLines({ points, labels }: { points: A['projection']['points']
 }
 
 /** One horizontal bar per row: count of savers, invested amount and share. */
-function SplitList({ rows, label, shareLabel }: { rows: { key: string; name: string; savers: number; aum: number; share: number }[]; label: string; shareLabel: string }) {
+function SplitList({ rows, label, shareLabel, hideAum }: { rows: { key: string; name: string; savers: number; aum: number; share: number }[]; label: string; shareLabel: string; hideAum?: boolean }) {
   const f = useFmt();
   const { t } = useI18n();
   const max = Math.max(...rows.map((r) => r.share), 0.0001);
   return (
-    <div className="an-split" role="table" aria-label={label}>
-      <div className="an-row head" role="row"><span>{label}</span><span>{t('an.savers')}</span><span>{t('an.aum')}</span><span>{shareLabel}</span></div>
+    <div className={'an-split' + (hideAum ? ' no-aum' : '')} role="table" aria-label={label}>
+      <div className="an-row head" role="row"><span>{label}</span><span>{t('an.savers')}</span>{!hideAum && <span>{t('an.aum')}</span>}<span>{shareLabel}</span></div>
       {rows.map((r) => (
         <div key={r.key} className="an-row" role="row" title={`${r.name}: ${f.int(r.savers)} · ${f.compact(r.aum)} · ${f.share(r.share)}`}>
-          <span>{r.name}</span><span className="num">{f.int(r.savers)}</span><span className="num">{f.compact(r.aum)}</span>
+          <span>{r.name}</span><span className="num">{f.int(r.savers)}</span>{!hideAum && <span className="num">{f.compact(r.aum)}</span>}
           <span className="an-bar"><i style={{ width: `${(r.share / max) * 100}%` }} /><b className="num">{f.share(r.share)}</b></span>
         </div>
       ))}
@@ -155,6 +161,15 @@ export function AdminAnalytics() {
         <div className="grid grid-2" style={{ alignItems: 'start' }}>
           <div className="card"><h3>{t('an.byProvider')}</h3><SplitList label={t('open.house')} shareLabel={t('an.shareAum')} rows={a.byProvider.map((r) => ({ key: r.id, name: t(`provider.${r.id}` as any) || r.name || r.id, savers: r.savers, aum: r.aum, share: r.share }))} /></div>
           <div className="card"><h3>{t('an.byTrack')}</h3><SplitList label={t('fund.track')} shareLabel={t('an.shareAum')} rows={a.byTrack.map((r) => ({ key: r.id, name: L.track(r.id), savers: r.savers, aum: r.aum, share: r.share }))} /></div>
+        </div>
+        <div className="card stack">
+          <h3 style={{ margin: 0 }}>{t('an.channelsTitle')}</h3>
+          <Kpis items={[
+            { label: t('an.siblings'), value: f.int(a.channels.siblings.withSiblings), sub: t('an.siblingsSub', { pct: f.share(a.channels.siblings.families ? a.channels.siblings.withSiblings / a.channels.siblings.families : 0), n: a.channels.siblings.kidsPerFamily.toFixed(1) }) },
+            { label: t('an.expecting'), value: f.int(a.channels.expecting.total), sub: t('an.expectingSub', { converted: f.int(a.channels.expecting.converted), upcoming: f.int(a.channels.expecting.upcoming) }) },
+            { label: t('an.partnerGifts'), value: fmtMoney(a.partners.reduce((s, p) => s + p.total, 0)), sub: t('an.partnerGiftsSub', { n: f.int(a.partners.reduce((s, p) => s + p.gifts, 0)) }) },
+          ]} />
+          <div><b className="small">{t('an.byCommunity')}</b><SplitList label={t('an.community')} shareLabel={t('an.shareSavers')} rows={a.channels.communities.map((c) => ({ key: c.id, name: t(`community.${c.id}` as any), savers: c.savers, aum: 0, share: a.savers ? c.savers / a.savers : 0 }))} hideAum /></div>
         </div>
         <div className="card"><h3>{t('an.byAge')}</h3><SplitList label={t('an.ageBand')} shareLabel={t('an.shareSavers')} rows={a.ages.map((b) => ({ key: b.band, name: t(`an.age.${b.band}` as any), savers: b.savers, aum: b.aum, share: a.savers ? b.savers / a.savers : 0 }))} /></div>
       </div>

@@ -31,10 +31,12 @@ import employerRoutes, { workRoutes } from '../../../server/src/routes/employer.
 // @ts-ignore
 import publicRoutes from '../../../server/src/routes/public.js';
 // @ts-ignore
+import familyRoutes from '../../../server/src/routes/family.js';
+// @ts-ignore
 import adminRoutes from '../../../server/src/routes/admin.js';
 
 // Same mount order as server/src/app.js.
-const MOUNTS: [string, any][] = [['/auth', authRoutes], ['/children', childRoutes], ['/kid', kidRoutes], ['/employer', employerRoutes], ['/work', workRoutes], ['', publicRoutes], ['/admin', adminRoutes]];
+const MOUNTS: [string, any][] = [['/auth', authRoutes], ['/children', childRoutes], ['/kid', kidRoutes], ['/family', familyRoutes], ['/employer', employerRoutes], ['/work', workRoutes], ['', publicRoutes], ['/admin', adminRoutes]];
 
 const boot = ready.then(() => {
   const db = openDb(':memory:');
