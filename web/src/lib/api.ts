@@ -38,7 +38,7 @@ export type AccountStatus = 'pending_docs' | 'in_review' | 'active';
 export type Child = {
   id: number; firstName: string; lastName?: string; birthDate: string; age: number; grade: number; stage: Stage; nextBirthday: string; avatar: string;
   giftCode: string; track: string; partnerAccountId?: string; goalText?: string; goalAmount?: number; publicMessage?: string; kidUsername?: string | null;
-  provider: string; providerName: string; accountStatus: AccountStatus; accountOpenedAt?: string | null; nextTrackSwitch?: string | null;
+  provider: string; providerName: string; prevProvider?: string | null; prevProviderName?: string | null; providerChangedAt?: string | null; accountStatus: AccountStatus; accountOpenedAt?: string | null; nextTrackSwitch?: string | null;
   value?: number; deposited?: number; hidden?: boolean;
   lifecycle: Lifecycle;
 };

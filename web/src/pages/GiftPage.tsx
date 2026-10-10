@@ -10,7 +10,7 @@ import { useErr } from './Auth';
 type GiftInfo = {
   child: { firstName: string; avatar: string; age: number; turning: number; nextBirthday: string; daysToBirthday: number; publicMessage?: string; goalText?: string };
   events: { id: number; type: string; title: string; date: string; goal_amount: number | null }[];
-  wall: { giverName: string; message: string | null; sealedUntil: number | null; date: string }[];
+  wall: { giverName: string; message: string | null; sealedUntil: number | null; date: string; fromHouse?: boolean }[];
   giverCount: number; limits: { min: number; max: number }; suggested: number[]; methods: Method[]; sources: string[];
 };
 const WORK = ['babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'other_work'];
@@ -76,7 +76,7 @@ export default function GiftPage() {
             <div className="wall">
               {info.wall.slice(0, 6).map((w, i) => (
                 <div key={i} className="wall-item" style={{ flexDirection: 'column', gap: 2 }}>
-                  <span className="who">{w.giverName}</span>
+                  <span className="who">{w.fromHouse && '🏦 '}{w.giverName}{w.fromHouse && <span className="pill gold" style={{ marginInlineStart: 6 }}>{t('gift.fromHouse')}</span>}</span>
                   {w.sealedUntil ? <span className="sealed">🔒 {t('gifts.sealed', { age: w.sealedUntil })}</span> : w.message && <span className="muted">“{w.message}”</span>}
                 </div>
               ))}

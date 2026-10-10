@@ -23,6 +23,9 @@ export function childView(c) {
     kidUsername: c.kid_username || null,
     provider: c.provider,
     providerName: providerName(c.provider),
+    prevProvider: c.prev_provider || null,
+    prevProviderName: c.prev_provider ? providerName(c.prev_provider) : null,
+    providerChangedAt: c.provider_changed_at || null,
     accountStatus: c.account_status || 'active',
     accountOpenedAt: c.account_opened_at || null,
     nextTrackSwitch: nextSwitchDate(c),
@@ -35,7 +38,7 @@ export function giftsFor(db, c, { withEmail = false } = {}) {
   const age = ageOn(c.birth_date);
   return db
     .prepare(`SELECT c.*, e.title AS event_title FROM contributions c LEFT JOIN events e ON e.id=c.event_id
-              WHERE c.child_id=? AND c.status IN ('paid','invested') ORDER BY c.paid_at DESC`)
+              WHERE c.child_id=? AND c.status IN ('paid','invested') ORDER BY c.paid_at DESC, c.id DESC`)
     .all(c.id)
     .map((x) => ({
       id: x.id, giverName: x.giver_name, ...(withEmail && { giverEmail: x.giver_email }), amount: x.amount, status: x.status,

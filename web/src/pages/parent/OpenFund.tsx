@@ -14,19 +14,20 @@ const STEPS = ['identity', 'house', 'child', 'track'] as const;
  * a checklist on the next screen: the QR works right away and the parent can finish later.
  */
 export default function OpenFund() {
-  const { t, locale } = useI18n();
+  const { t, locale, fmtMoney } = useI18n();
   const { user, setUser } = useAuth();
   const nav = useNavigate();
   const errText = useErr();
   const [step, setStep] = useState(user?.kycStatus === 'verified' ? 1 : 0);
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [welcome, setWelcome] = useState(0);
   const [nationalId, setNationalId] = useState('');
   const [consent, setConsent] = useState(false);
   const [dialog, setDialog] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState({ provider: '', firstName: '', lastName: '', birthDate: '', avatar: AVATARS[0], track: 'equity', goalText: '', publicMessage: '' });
-  useEffect(() => { api<{ providers: Provider[]; defaultProvider: string }>('/providers').then((r) => { setProviders(r.providers); setF((x) => ({ ...x, provider: x.provider || r.defaultProvider })); }); }, []);
+  useEffect(() => { api<{ providers: Provider[]; defaultProvider: string; welcomeGift: number }>('/providers').then((r) => { setProviders(r.providers); setWelcome(r.welcomeGift); setF((x) => ({ ...x, provider: x.provider || r.defaultProvider })); }); }, []);
   const set = (k: keyof typeof f) => (e: any) => setF({ ...f, [k]: e.target.value });
   const age = f.birthDate ? Math.max(0, Math.floor((Date.now() - Date.parse(f.birthDate)) / (365.25 * 86400000))) : 0;
 
@@ -76,6 +77,7 @@ export default function OpenFund() {
           <div className="grid grid-3" style={{ gap: 10 }}>
             {['open.fact1', 'open.fact2', 'open.fact3'].map((k) => <div key={k} className="card" style={{ padding: 14, background: 'var(--surface-2)' }}><div className="small">{t(k as any)}</div></div>)}
           </div>
+          {welcome > 0 && <div className="banner small">{t('open.welcome', { amount: fmtMoney(welcome) })}</div>}
           <div className="small muted">ⓘ {t('fund.exampleNote')}</div>
           <div className="row"><button className="btn" onClick={() => setStep(2)} disabled={!f.provider}>{t('open.next')}</button></div>
         </div>

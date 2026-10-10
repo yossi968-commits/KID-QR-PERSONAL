@@ -5,7 +5,7 @@ import { portfolioSummary } from '../lib/portfolio.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 import { plannerPayload, withdrawalLimit, taxEstimate, executeWithdrawal } from '../lib/wishes.js';
 import { phaseOf, graduate } from '../lib/lifecycle.js';
-import { nextSwitchDate, docsStatus, submitDocument } from '../lib/fund.js';
+import { nextSwitchDate, docsStatus, submitDocument, transferProvider } from '../lib/fund.js';
 import { switchTrack } from '../lib/portfolio.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
 import { EVENT_TYPES } from '../lib/contribute.js';
@@ -93,9 +93,9 @@ r.post('/deposits', h((req, res) => {
 r.get('/deposits', h((req, res) => {
   const { db } = req.ctx;
   res.json({
-    pledges: db.prepare(`SELECT * FROM pledges WHERE child_id=? AND source NOT IN ('gift','employer_gift','event_gifts') ORDER BY id DESC`).all(req.child.id).map(pledgeView),
+    pledges: db.prepare(`SELECT * FROM pledges WHERE child_id=? AND source NOT IN ('gift','employer_gift','event_gifts','provider_gift') ORDER BY id DESC`).all(req.child.id).map(pledgeView),
     deposits: db
-      .prepare(`SELECT id, amount, source, method, pledge_id, paid_at, giver_name FROM contributions WHERE child_id=? AND status IN ('paid','invested') AND source NOT IN ('gift','employer_gift','event_gifts') ORDER BY paid_at DESC LIMIT 50`)
+      .prepare(`SELECT id, amount, source, method, pledge_id, paid_at, giver_name FROM contributions WHERE child_id=? AND status IN ('paid','invested') AND source NOT IN ('gift','employer_gift','event_gifts','provider_gift') ORDER BY paid_at DESC LIMIT 50`)
       .all(req.child.id)
       .map((x) => ({ id: x.id, amount: x.amount, source: x.source, method: x.method, monthly: Boolean(x.pledge_id), paidAt: x.paid_at, payer: x.giver_name })),
   });
@@ -142,6 +142,13 @@ r.post('/documents/:doc', selfManaged, h((req, res) => {
   if (!out) throw notFound();
   if (out.error) throw bad(out.error);
   res.json(out);
+}));
+
+/** From 18 the young adult may move the fund to another investment house on their own signature. */
+r.post('/provider', selfManaged, h((req, res) => {
+  const out = transferProvider(req.ctx, req.child, req.body.provider);
+  if (out.error) throw bad(out.error);
+  res.json({ ...out, child: childView(req.ctx.db.prepare('SELECT * FROM children WHERE id=?').get(req.child.id)) });
 }));
 
 /** Whether the parents keep seeing the fund after 18. */

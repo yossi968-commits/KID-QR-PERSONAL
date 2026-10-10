@@ -25,7 +25,7 @@ export default function Money({ data }: { data: ChildData; reload: () => void })
   useEffect(load, [child.id]);
   const thank = async (g: Gift) => { await api(`/children/${child.id}/contributions/${g.id}/thank`, { body: { message: text } }); setThanking(null); setText(''); load(); };
   const groups: Record<string, (g: Gift) => boolean> = {
-    all: () => true, gift: (g) => g.source === 'gift', employer_gift: (g) => g.source === 'employer_gift', event_gifts: (g) => g.source === 'event_gifts', own: (g) => !['gift', 'employer_gift', 'event_gifts'].includes(g.source),
+    all: () => true, gift: (g) => g.source === 'gift' || g.source === 'provider_gift', employer_gift: (g) => g.source === 'employer_gift', event_gifts: (g) => g.source === 'event_gifts', own: (g) => !['gift', 'employer_gift', 'event_gifts', 'provider_gift'].includes(g.source),
   };
   const shown = (gifts || []).filter(groups[filter]);
 
@@ -63,7 +63,7 @@ export default function Money({ data }: { data: ChildData; reload: () => void })
                 <tr key={g.id}>
                   <td className="num">{fmtDate(g.paidAt)}</td>
                   <td>{g.giverName}{g.sealed ? <div className="sealed small">🔒 {t('gifts.sealed', { age: g.unlockAge! })}</div> : g.message ? <div className="small muted" style={{ whiteSpace: 'normal', maxWidth: 260 }}>“{g.message}”</div> : null}</td>
-                  <td><span className={'pill' + (g.source === 'gift' ? '' : g.source === 'employer_gift' ? ' brand' : g.source === 'event_gifts' ? ' gold' : ' good')}>{L.source(g.source)}</span>{g.monthly && <span className="small muted"> · {t('pay.monthly')}</span>}</td>
+                  <td><span className={'pill' + (g.source === 'gift' ? '' : g.source === 'employer_gift' ? ' brand' : g.source === 'event_gifts' || g.source === 'provider_gift' ? ' gold' : ' good')}>{L.source(g.source)}</span>{g.monthly && <span className="small muted"> · {t('pay.monthly')}</span>}</td>
                   <td className="small">{L.method(g.method)}</td>
                   <td className="small">{g.eventTitle || '—'}</td>
                   <td className="num"><b>{fmtMoney(g.amount)}</b></td>

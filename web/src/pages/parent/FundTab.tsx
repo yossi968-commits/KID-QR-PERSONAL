@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useI18n } from '../../i18n';
 import { api, type ChildData, type DocItem, type Docs } from '../../lib/api';
 import TrackDialog from '../../components/TrackDialog';
+import { MoveFund } from '../../components/MoveFund';
 import { AccountPill, useLabels } from '../../components/ui';
 import { useErr } from '../Auth';
 
@@ -38,6 +39,8 @@ export default function FundTab({ data, reload, fresh }: { data: ChildData; relo
           </dl>
           <div className="small muted" style={{ marginTop: 10 }}>ⓘ {t('fund.exampleNote')}</div>
         </div>
+
+        <MoveFund child={child} url={`/children/${child.id}/provider`} coSign onDone={reload} />
 
         <div className="card stack">
           <div className="card-head"><h3 style={{ margin: 0 }}>{t('fund.track')}</h3><span className="pill brand">{L.track(child.track)}</span></div>

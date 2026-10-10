@@ -8,13 +8,13 @@ import { GIFT_MIN, GIFT_MAX } from '../lib/portfolio.js';
 import { settleContribution, chargePledge, pledgeView } from '../lib/pledges.js';
 import { startContribution, SOURCES } from '../lib/contribute.js';
 import { lessonsFor } from '../content/lessons.js';
-import { PROVIDERS, DEFAULT_PROVIDER, DOCUMENTS, ANNUAL_CEILING } from '../lib/fund.js';
+import { PROVIDERS, DEFAULT_PROVIDER, DOCUMENTS, ANNUAL_CEILING, WELCOME_GIFT } from '../lib/fund.js';
 
 const r = Router();
 
 r.get('/tracks', (req, res) => res.json({ tracks: req.ctx.partner.listTracks(), partner: req.ctx.partner.name }));
 
-r.get('/providers', (req, res) => res.json({ providers: PROVIDERS, defaultProvider: DEFAULT_PROVIDER, documents: DOCUMENTS.map((d) => d.id), annualCeiling: ANNUAL_CEILING }));
+r.get('/providers', (req, res) => res.json({ providers: PROVIDERS, defaultProvider: DEFAULT_PROVIDER, welcomeGift: WELCOME_GIFT, documents: DOCUMENTS.map((d) => d.id), annualCeiling: ANNUAL_CEILING }));
 
 r.get('/payment-methods', (req, res) => res.json({ methods: req.ctx.payments.methods }));
 
@@ -35,16 +35,17 @@ r.get('/gift/:code', h((req, res) => {
     .prepare(`SELECT id, type, title, date, goal_amount FROM events WHERE child_id=? AND active=1 AND date >= date('now','-14 days') ORDER BY date`)
     .all(c.id);
   const wall = db
-    .prepare(`SELECT giver_name, message, unlock_age, paid_at FROM contributions
-              WHERE child_id=? AND status IN ('paid','invested') AND is_public=1 ORDER BY paid_at DESC LIMIT 30`)
+    .prepare(`SELECT giver_name, message, unlock_age, paid_at, source FROM contributions
+              WHERE child_id=? AND status IN ('paid','invested') AND is_public=1 ORDER BY paid_at DESC, id DESC LIMIT 30`)
     .all(c.id)
     .map((w) => ({
       giverName: w.giver_name,
       sealedUntil: w.unlock_age && age < w.unlock_age ? w.unlock_age : null,
       message: w.unlock_age && age < w.unlock_age ? null : w.message,
       date: w.paid_at?.slice(0, 10),
+      fromHouse: w.source === 'provider_gift',
     }));
-  const giverCount = db.prepare(`SELECT COUNT(*) AS n FROM contributions WHERE child_id=? AND status IN ('paid','invested')`).get(c.id).n;
+  const giverCount = db.prepare(`SELECT COUNT(*) AS n FROM contributions WHERE child_id=? AND status IN ('paid','invested') AND COALESCE(source,'gift') <> 'provider_gift'`).get(c.id).n;
   const nb = nextBirthday(c.birth_date);
   res.json({
     child: { firstName: c.first_name, avatar: c.avatar, age, turning: age + 1, nextBirthday: nb, daysToBirthday: daysBetween(today(), nb), publicMessage: c.public_message, goalText: c.goal_text },
@@ -61,7 +62,7 @@ r.get('/gift/:code', h((req, res) => {
 r.post('/gift/:code/contribute', h((req, res) => {
   const c = childByCode(req.ctx.db, req.params.code);
   // Guests give gifts or pay the child for work; employer and event deposits have their own flows.
-  const source = ['employer_gift', 'event_gifts'].includes(req.body.source) ? 'gift' : req.body.source;
+  const source = ['employer_gift', 'event_gifts', 'provider_gift'].includes(req.body.source) ? 'gift' : req.body.source;
   res.status(201).json(startContribution(req.ctx, c, { ...req.body, source }));
 }));
 

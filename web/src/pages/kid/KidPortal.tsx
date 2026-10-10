@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { MoveFund } from '../../components/MoveFund';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
@@ -456,6 +457,7 @@ function MyFund({ d }: { d: KidData }) {
           </label>
         </div>
       </div>
+      {!graduated && <MoveFund child={child} url="/kid/provider" coSign={false} onDone={d.reload} />}
       <div className="card stack">
         <h3 style={{ margin: 0 }}>🎉 {t('life.events.title')}</h3>
         <p className="small muted" style={{ margin: 0 }}>{t('life.events.desc')}</p>

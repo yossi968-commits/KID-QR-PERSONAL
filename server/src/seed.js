@@ -15,7 +15,7 @@ import { investContribution } from './lib/portfolio.js';
 import { SandboxPayments } from './adapters/payments.js';
 import { runDuePledges, newPledgeToken } from './lib/pledges.js';
 import { executeWithdrawal } from './lib/wishes.js';
-import { DOCUMENTS, newApplicationRef } from './lib/fund.js';
+import { DOCUMENTS, newApplicationRef, providerName, WELCOME_GIFT } from './lib/fund.js';
 import { linkReports, sendGifts } from './lib/employer.js';
 import { addYears, today, nextBirthday, ageOn } from './lib/dates.js';
 
@@ -42,7 +42,7 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
 
   const kids = [
     { first: 'נועה', birth: '2019-05-12', avatar: '🦄', track: 'equity', provider: 'altshuler', goal: 'לימודים באוניברסיטה', goalAmount: 15000000, msg: 'נועה חוסכת לחלום הגדול שלה 🎓', code: 'noa2019demo', user: 'noa' },
-    { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'conservative', provider: 'meitav', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
+    { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'conservative', provider: 'meitav', firstProvider: 'altshuler', movedAt: '2024-09-01', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
     { first: 'שירה', birth: '2005-01-15', avatar: '🎓', track: 'conservative', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'שירה השתחררה ומתחילה ללמוד. מתנה לעתיד שלה 🎓', code: 'shira2005demo', user: 'shira' },
     { first: 'איתי', birth: '2013-11-03', avatar: '🚀', track: 'equity', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'איתי עולה לתורה בקרוב! במקום צ\'ק, מתנה שגדלה איתו 🚀', code: 'itay2013demo', user: 'itay' },
   ];
@@ -58,6 +58,14 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
     const child = db.prepare('SELECT * FROM children WHERE id=?').get(childId);
     child.partner_account_id = partner.openAccount({ child }).accountId;
     db.prepare('UPDATE children SET partner_account_id=? WHERE id=?').run(child.partner_account_id, childId);
+    // Omer's parents moved his fund from Altshuler Shaham to Meitav.
+    if (k.firstProvider) db.prepare('UPDATE children SET prev_provider=?, provider_changed_at=? WHERE id=?').run(k.firstProvider, k.movedAt, childId);
+    // The first gift on each QR: the welcome deposit of the house it opened at, on that day.
+    const house = providerName(k.firstProvider || k.provider);
+    const wid = db
+      .prepare(`INSERT INTO contributions (child_id, giver_name, amount, message, status, method, source, payment_ref, paid_at, created_at) VALUES (?,?,?,?,'paid','provider','provider_gift',?,?,?)`)
+      .run(childId, house, WELCOME_GIFT, `ברוכים הבאים לחיסכון, ${k.first}! המתנה הראשונה שלך מ${house}.`, 'WELCOME-' + childId, k.birth + ' 08:00:00', k.birth + ' 08:00:00').lastInsertRowid;
+    investContribution(db, partner, child, db.prepare('SELECT * FROM contributions WHERE id=?').get(wid), k.birth);
 
     for (let age = 0; age <= ageOn(k.birth); age++) {
       const date = addYears(k.birth, age);
@@ -130,6 +138,8 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
       .run(guardian, first, guardian === parent ? 'לוי' : 'כהן', birth, avatar, code, 'equity', provider, status, newApplicationRef(), `${first} נולדה! במקום עוד בגד, מתנה שגדלה איתה 💕`).lastInsertRowid;
     for (const d of DOCUMENTS.slice(0, docs))
       db.prepare(`INSERT INTO child_documents (child_id, doc_type, status, file_name, uploaded_at) VALUES (?,?,?,?,?)`).run(id, d.id, 'received', d.kind === 'upload' ? `${d.id}.pdf` : null, birth + ' 20:00:00');
+    db.prepare(`INSERT INTO contributions (child_id, giver_name, amount, message, status, method, source, payment_ref, paid_at) VALUES (?,?,?,?,'paid','provider','provider_gift',?,?)`)
+      .run(id, providerName(provider), WELCOME_GIFT, `ברוכים הבאים לחיסכון, ${first}! המתנה הראשונה שלך מ${providerName(provider)}.`, 'WELCOME-' + id, birth + ' 08:00:00');
     const ev = db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(id, 'birthday', 'לידה', birth).lastInsertRowid;
     db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(id, 'birthday', 'יום הולדת 1', addYears(birth, 1));
     givers.slice(0, 4).forEach(([name, email, message], i) => {

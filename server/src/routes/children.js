@@ -7,7 +7,7 @@ import { portfolioSummary, switchTrack } from '../lib/portfolio.js';
 import { pledgeView } from '../lib/pledges.js';
 import { plannerPayload, withdrawalLimit, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
-import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef } from '../lib/fund.js';
+import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef, addWelcomeGift, transferProvider } from '../lib/fund.js';
 import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
 import { linkReports } from '../lib/employer.js';
 import { phaseOf, lifecycleView } from '../lib/lifecycle.js';
@@ -75,6 +75,8 @@ r.post('/', h((req, res) => {
     );
   // The QR works from now on; the fund opens once the document checklist is complete.
   const child = db.prepare('SELECT * FROM children WHERE id=?').get(lastInsertRowid);
+  // The first gift on every new QR comes from the investment house.
+  addWelcomeGift(db, partner, child);
   // Every child gets a standing birthday campaign from day one.
   db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(child.id, 'birthday', `יום הולדת ${age + 1}`, nextBirthday(birthDate));
   audit(db, req.user.id, 'child_created', { childId: child.id, provider });
@@ -118,6 +120,16 @@ r.post('/:id/track', h((req, res) => {
   db.prepare('UPDATE children SET track_changed_at=? WHERE id=?').run(today(), c.id);
   audit(db, req.user.id, 'track_switched', { childId: c.id, from: c.track, to: req.body.track });
   res.json(out);
+}));
+
+/** Move the fund to another investment house. Until 18 both parents sign, as for a track switch. */
+r.post('/:id/provider', h((req, res) => {
+  const c = loadChild(req);
+  if (c.account_status === 'active' && req.body.coSigned !== true) throw bad('second_guardian_signature_required');
+  const out = transferProvider(req.ctx, c, req.body.provider);
+  if (out.error) throw bad(out.error);
+  audit(req.ctx.db, req.user.id, 'provider_transfer_requested', { childId: c.id, to: req.body.provider });
+  res.json({ ...out, child: childView(req.ctx.db.prepare('SELECT * FROM children WHERE id=?').get(c.id)) });
 }));
 
 r.get('/:id/contributions', h((req, res) => {

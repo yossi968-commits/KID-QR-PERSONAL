@@ -5,7 +5,7 @@ import { createApp } from '../src/app.js';
 import { SandboxInvestmentPartner } from '../src/adapters/investment-partner.js';
 import { SandboxPayments } from '../src/adapters/payments.js';
 import { validIsraeliId } from '../src/routes/auth.js';
-import { activateFund, remindMissingDocs } from '../src/lib/fund.js';
+import { activateFund, remindMissingDocs, WELCOME_GIFT } from '../src/lib/fund.js';
 import { runHandovers, phaseOf } from '../src/lib/lifecycle.js';
 import { OutboxNotifier } from '../src/adapters/notifier.js';
 
@@ -84,7 +84,7 @@ test('create child gets QR code and birthday event; fund opens after the documen
   const d = await api(`/children/${childId}`);
   assert.equal(d.body.child.accountStatus, 'active');
   assert.equal(d.body.events.length, 1);
-  assert.equal(d.body.portfolio.value, 0);
+  assert.ok(Math.abs(d.body.portfolio.value - WELCOME_GIFT) <= 1, 'only the welcome gift from the investment house');
 });
 
 test('gift flow: public page -> checkout -> invested', async () => {
@@ -103,8 +103,8 @@ test('gift flow: public page -> checkout -> invested', async () => {
   assert.equal((await api(`/payments/${c.body.checkoutId}/complete`, { method: 'POST', auth: false, body: {} })).status, 409);
 
   const d = await api(`/children/${childId}`);
-  assert.equal(d.body.portfolio.deposited, 18000);
-  assert.ok(Math.abs(d.body.portfolio.value - 18000) <= 1);
+  assert.equal(d.body.portfolio.deposited, 18000 + WELCOME_GIFT);
+  assert.ok(Math.abs(d.body.portfolio.value - 18000 - WELCOME_GIFT) <= 1);
   const list = await api(`/children/${childId}/contributions`);
   assert.equal(list.body.contributions[0].sealed, true);
   assert.equal(list.body.contributions[0].message, null, 'time capsule stays sealed');
@@ -130,14 +130,14 @@ test('gifts before the fund opens wait, then are invested on opening; parents ge
   const c = await api(`/gift/${kid.giftCode}/contribute`, { method: 'POST', auth: false, body: { amount: 360, giverName: 'סבא' } });
   await api(`/payments/${c.body.checkoutId}/complete`, { method: 'POST', auth: false, body: {} });
   let d = (await api(`/children/${kid.id}`)).body;
-  assert.equal(d.portfolio.held, 36000);
+  assert.equal(d.portfolio.held, 36000 + WELCOME_GIFT);
   assert.equal(d.portfolio.value, 0);
   assert.equal(remindMissingDocs(ctx).reminded, 1);
   assert.equal(remindMissingDocs(ctx).reminded, 0, 'not again within 3 days');
   await openFund(kid.id);
   d = (await api(`/children/${kid.id}`)).body;
   assert.equal(d.portfolio.held, 0);
-  assert.equal(d.portfolio.deposited, 36000);
+  assert.equal(d.portfolio.deposited, 36000 + WELCOME_GIFT);
 });
 
 test('lessons graded and stars counted', async () => {
@@ -468,4 +468,35 @@ test('parent signs in with ID + registered phone and a 6-digit SMS code', async 
   await api('/auth/otp/request', { method: 'POST', body: who });
   assert.equal((await api('/auth/otp/request', { method: 'POST', body: who })).body.error, 'too_many_codes', 'at most 3 codes per 10 minutes');
   token = saved;
+});
+
+test('the investment house gives the first gift when a QR opens; parents can move the fund to another house', async () => {
+  const made = await api('/children', { method: 'POST', body: { firstName: 'מיה', birthDate: '2024-02-02', provider: 'more' } });
+  const id = made.body.child.id;
+  const gifts = (await api(`/children/${id}/contributions`)).body.contributions;
+  assert.equal(gifts.length, 1);
+  assert.equal(gifts[0].source, 'provider_gift');
+  assert.equal(gifts[0].giverName, 'מור');
+  assert.equal(gifts[0].amount, 10000);
+  assert.equal(db.prepare('SELECT status FROM contributions WHERE child_id=?').get(id).status, 'paid', 'held until the fund opens');
+
+  // Before the fund opens, a move only changes where the application goes.
+  const early = await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'analyst' } });
+  assert.equal(early.status, 200);
+  assert.equal(early.body.child.providerName, 'אנליסט');
+  await openFund(id);
+  assert.equal(db.prepare('SELECT status FROM contributions WHERE child_id=?').get(id).status, 'invested');
+  const before = (await api(`/children/${id}`)).body;
+  assert.ok(before.portfolio.value > 0);
+
+  assert.equal((await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'harel' } })).body.error, 'second_guardian_signature_required');
+  assert.equal((await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'analyst', coSigned: true } })).body.error, 'same_provider');
+  assert.equal((await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'nope', coSigned: true } })).body.error, 'invalid_provider');
+  const moved = await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'harel', coSigned: true } });
+  assert.equal(moved.status, 200);
+  assert.match(moved.body.accountId, /^HAR-GML-/);
+  assert.equal(moved.body.child.prevProviderName, 'אנליסט');
+  const after = (await api(`/children/${id}`)).body;
+  assert.equal(after.portfolio.value, before.portfolio.value, 'the money moves as it is: no sale, no tax');
+  assert.equal(after.child.track, before.child.track);
 });

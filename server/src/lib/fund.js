@@ -24,6 +24,45 @@ export const PROVIDERS = [
 export const DEFAULT_PROVIDER = 'altshuler';
 export const providerName = (id) => PROVIDERS.find((p) => p.id === id)?.name || id;
 
+/**
+ * The investment house gives the first gift when a QR opens: a welcome deposit that
+ * waits with the other gifts and is invested when the fund opens. ₪100 is a placeholder
+ * until each house's amount is agreed.
+ */
+export const WELCOME_GIFT = 10000;
+
+export function addWelcomeGift(db, partner, child) {
+  const house = providerName(child.provider);
+  const { lastInsertRowid } = db
+    .prepare(`INSERT INTO contributions (child_id, giver_name, amount, message, is_public, status, method, source, payment_ref, paid_at) VALUES (?,?,?,?,1,'paid','provider','provider_gift',?,datetime('now'))`)
+    .run(child.id, house, WELCOME_GIFT, `ברוכים הבאים לחיסכון, ${child.first_name}! המתנה הראשונה שלך מ${house}.`, 'WELCOME-' + child.provider);
+  if (child.account_status === 'active') investContribution(db, partner, child, db.prepare('SELECT * FROM contributions WHERE id=?').get(lastInsertRowid), today());
+  return lastInsertRowid;
+}
+
+/**
+ * Move the fund to another investment house (ניוד between קופות גמל להשקעה: no tax,
+ * no withdrawal). The units carry over to a new account at the new house; in
+ * production the houses settle it over a few business days. Before the fund opens
+ * it simply changes which house the application goes to.
+ */
+export function transferProvider({ db, partner, notifier }, child, provider) {
+  if (!PROVIDERS.some((p) => p.id === provider)) return { error: 'invalid_provider' };
+  if (provider === child.provider) return { error: 'same_provider' };
+  if (child.graduated_at) return { error: 'managed_at_new_fund' };
+  return tx(db, () => {
+    const date = today();
+    const from = child.provider, fromAccount = child.partner_account_id;
+    let accountId = fromAccount;
+    if (child.account_status === 'active') accountId = partner.openAccount({ child: { ...child, provider } }).accountId;
+    db.prepare('UPDATE children SET provider=?, partner_account_id=?, prev_provider=?, provider_changed_at=? WHERE id=?').run(provider, accountId, from, date, child.id);
+    db.prepare('INSERT INTO audit_log (user_id, action, details) VALUES (?,?,?)').run(null, 'provider_transferred', JSON.stringify({ childId: child.id, from, to: provider, fromAccount, toAccount: accountId }));
+    const g = db.prepare('SELECT email FROM users WHERE id=?').get(child.guardian_id);
+    if (g) notifier.send({ to: g.email, subject: `הקופה של ${child.first_name} עוברת ל${providerName(provider)}`, body: child.account_status === 'active' ? `הכסף עובר מ${providerName(from)} כמו שהוא, באותו מסלול, בלי מס ובלי משיכה. מספר החשבון החדש: ${accountId}.` : 'בקשת הפתיחה תוגש לבית ההשקעות החדש.' });
+    return { provider, providerName: providerName(provider), from, accountId, changedAt: date };
+  });
+}
+
 /** 2026 yearly deposit ceiling per saver (by ID) for קופת גמל להשקעה, in agorot. */
 export const ANNUAL_CEILING = 8364100;
 

@@ -243,6 +243,8 @@ function migrate(db) {
   if (!wcols.has('purpose')) db.exec(`ALTER TABLE withdrawals ADD COLUMN purpose TEXT NOT NULL DEFAULT 'general'`);
   if (!cols.has('opened_as_adult')) db.exec('ALTER TABLE children ADD COLUMN opened_as_adult INTEGER NOT NULL DEFAULT 0');
   if (!cols.has('parent_view')) db.exec('ALTER TABLE children ADD COLUMN parent_view INTEGER NOT NULL DEFAULT 1');
+  if (!cols.has('prev_provider')) db.exec('ALTER TABLE children ADD COLUMN prev_provider TEXT');
+  if (!cols.has('provider_changed_at')) db.exec('ALTER TABLE children ADD COLUMN provider_changed_at TEXT');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
 }
 
