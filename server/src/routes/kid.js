@@ -3,7 +3,7 @@ import { verifyPassword, issueChildToken } from '../lib/auth.js';
 import { h, notFound, HttpError } from '../lib/http.js';
 import { portfolioSummary } from '../lib/portfolio.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
-import { plannerPayload, withdrawalBudget, taxEstimate, executeWithdrawal } from '../lib/wishes.js';
+import { plannerPayload, withdrawalLimit, taxEstimate, executeWithdrawal } from '../lib/wishes.js';
 import { phaseOf, graduate } from '../lib/lifecycle.js';
 import { nextSwitchDate } from '../lib/fund.js';
 import { switchTrack } from '../lib/portfolio.js';
@@ -59,7 +59,8 @@ r.post('/withdrawals', h((req, res) => {
   const { db, partner, notifier } = req.ctx;
   const amount = toAgorot(req.body.amount);
   if (req.child.account_status !== 'active') throw bad('fund_not_open');
-  if (amount > withdrawalBudget(db, partner, req.child).available) throw bad('over_budget');
+  const limit = withdrawalLimit(db, partner, req.child, req.body.purpose);
+  if (amount > limit.available) throw bad('over_budget');
   const wishId = req.body.wishId && db.prepare('SELECT 1 FROM wishes WHERE id=? AND child_id=?').get(Number(req.body.wishId), req.child.id) ? Number(req.body.wishId) : null;
   const adult = phaseOf(req.child) !== 'minor';
   let target = null;
@@ -68,14 +69,14 @@ r.post('/withdrawals', h((req, res) => {
     if (!PAYOUT_METHODS.includes(req.body.method)) throw bad('invalid_payout_method');
     target = { method: req.body.method, destination: requireString(req.body.destination, 'destination', { max: 60 }) };
   }
-  const ins = db.prepare('INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, tax_estimate, note) VALUES (?,?,?,?,?,?)')
-    .run(req.child.id, wishId, amount, 'child', taxEstimate(db, partner, req.child.id, amount), req.body.note ? String(req.body.note).slice(0, 200) : null);
+  const ins = db.prepare('INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, tax_estimate, note, purpose) VALUES (?,?,?,?,?,?,?)')
+    .run(req.child.id, wishId, amount, 'child', taxEstimate(db, partner, req.child.id, amount), req.body.note ? String(req.body.note).slice(0, 200) : null, limit.purpose);
   if (adult) {
     executeWithdrawal(req.ctx, req.child, db.prepare('SELECT * FROM withdrawals WHERE id=?').get(ins.lastInsertRowid), target);
     return res.status(201).json(plannerPayload(db, partner, req.child));
   }
   const g = db.prepare('SELECT email FROM users WHERE id=?').get(req.child.guardian_id);
-  notifier.send({ to: g.email, subject: `${req.child.first_name} מבקש/ת למשוך ₪${amount / 100}`, body: 'הבקשה מחכה לאישורך באפליקציה.' });
+  notifier.send({ to: g.email, subject: `${req.child.first_name} מבקש/ת למשוך ₪${amount / 100}${limit.purpose === 'driving' ? ' לשיעורי נהיגה' : ''}`, body: 'הבקשה מחכה לאישורך באפליקציה.' });
   res.status(201).json(plannerPayload(db, partner, req.child));
 }));
 

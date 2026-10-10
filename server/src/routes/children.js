@@ -5,7 +5,7 @@ import { requireUser, audit } from '../lib/guards.js';
 import { ageOn, nextBirthday, today } from '../lib/dates.js';
 import { portfolioSummary, switchTrack } from '../lib/portfolio.js';
 import { pledgeView } from '../lib/pledges.js';
-import { plannerPayload, withdrawalBudget, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
+import { plannerPayload, withdrawalLimit, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
 import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef } from '../lib/fund.js';
 import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
@@ -186,11 +186,12 @@ r.post('/:id/withdrawals', h((req, res) => {
   const c = loadChild(req);
   const amount = toAgorot(req.body.amount);
   const target = payoutTarget(req.body, c);
-  if (amount > withdrawalBudget(db, partner, c).available) throw bad('over_budget');
+  const limit = withdrawalLimit(db, partner, c, req.body.purpose);
+  if (amount > limit.available) throw bad('over_budget');
   const wishId = req.body.wishId ? Number(req.body.wishId) : null;
   const { lastInsertRowid } = db
-    .prepare('INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, tax_estimate, note) VALUES (?,?,?,?,?,?)')
-    .run(c.id, wishId, amount, 'parent', taxEstimate(db, partner, c.id, amount), req.body.note || null);
+    .prepare('INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, tax_estimate, note, purpose) VALUES (?,?,?,?,?,?,?)')
+    .run(c.id, wishId, amount, 'parent', taxEstimate(db, partner, c.id, amount), req.body.note || null, limit.purpose);
   executeWithdrawal(req.ctx, c, db.prepare('SELECT * FROM withdrawals WHERE id=?').get(lastInsertRowid), target);
   audit(db, req.user.id, 'withdrawal', { childId: c.id, amount });
   res.status(201).json(plannerPayload(db, partner, c));

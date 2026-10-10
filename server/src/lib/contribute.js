@@ -13,7 +13,7 @@ export const SOURCES = ['gift', 'employer_gift', 'event_gifts', 'pocket_money', 
 /** event_gifts: a parent depositing part of the cash gifts from a brit, naming, bar or bat mitzvah. */
 export const GIFT_SOURCES = ['gift', 'employer_gift', 'event_gifts'];
 export const isEarning = (source) => Boolean(source) && !GIFT_SOURCES.includes(source);
-export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'];
+export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'driving', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'];
 
 /**
  * Start a deposit. One-time deposits open a checkout for the chosen method. Monthly

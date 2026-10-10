@@ -4,6 +4,13 @@ import { holdings, PAYOUT_AGE } from './portfolio.js';
 import { phaseOf } from './lifecycle.js';
 
 export const CAPITAL_GAINS_TAX = 0.25;
+/**
+ * Driving lessons: from 16 (when learning to drive may start) a teen may take part of
+ * what has built up for lessons and tests, beyond the yearly gift share. Capped at about
+ * the cost of a licence, or at what family gave toward driving lessons if that is more.
+ */
+export const DRIVING_FROM_AGE = 16;
+export const DRIVING_CAP = 800000; // ₪8,000
 
 /** Date of the child's most recent birthday (start of the current "gift year"). */
 export function lastBirthday(birthDate, on = today()) {
@@ -22,12 +29,34 @@ function currentValue(db, partner, childId, date = today()) {
 export function withdrawalBudget(db, partner, child) {
   const since = lastBirthday(child.birth_date);
   const yearGifts = db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM contributions WHERE child_id=? AND status='invested' AND date(paid_at) >= ?`).get(child.id, since).s;
-  const used = db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM withdrawals WHERE child_id=? AND status IN ('requested','paid') AND date(created_at) >= ?`).get(child.id, since).s;
+  const used = db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM withdrawals WHERE child_id=? AND status IN ('requested','paid') AND purpose<>'driving' AND date(created_at) >= ?`).get(child.id, since).s;
   const allowed = Math.round((yearGifts * child.withdraw_pct) / 100);
   const value = Math.round(currentValue(db, partner, child.id));
   // From 18 the young adult decides; the yearly share no longer applies.
   if (phaseOf(child) !== 'minor') return { pct: 100, since, resetsOn: nextBirthday(child.birth_date), yearGifts, allowed: value, used, available: value, value, selfManaged: true };
   return { pct: child.withdraw_pct, since, resetsOn: nextBirthday(child.birth_date), yearGifts, allowed, used, available: Math.max(0, Math.min(value, allowed - used)), value };
+}
+
+export function drivingBudget(db, partner, child) {
+  const age = ageOn(child.birth_date);
+  const raised = db
+    .prepare(`SELECT COALESCE(SUM(c.amount),0) AS s FROM contributions c JOIN events e ON e.id=c.event_id WHERE c.child_id=? AND e.type='driving' AND c.status IN ('paid','invested')`)
+    .get(child.id).s;
+  const used = db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM withdrawals WHERE child_id=? AND purpose='driving' AND status IN ('requested','paid')`).get(child.id).s;
+  const cap = Math.max(DRIVING_CAP, raised);
+  const value = Math.round(currentValue(db, partner, child.id));
+  return { eligible: age >= DRIVING_FROM_AGE && phaseOf(child) === 'minor', fromAge: DRIVING_FROM_AGE, cap, raised, used, available: Math.max(0, Math.min(value, cap - used)) };
+}
+
+/** Purpose of a withdrawal, and the budget it is checked against. */
+export function withdrawalLimit(db, partner, child, purpose) {
+  if (purpose === 'driving') {
+    const d = drivingBudget(db, partner, child);
+    // Under 16 there is no driving allowance; from 18 the young adult's own rules apply.
+    if (!d.eligible) return phaseOf(child) === 'minor' ? { purpose, available: 0 } : { purpose: 'general', available: withdrawalBudget(db, partner, child).available };
+    return { purpose, available: d.available };
+  }
+  return { purpose: 'general', available: withdrawalBudget(db, partner, child).available };
 }
 
 /** What a shekel taken out today would have grown to by 21, at the track's expected net return. */
@@ -74,7 +103,7 @@ export function wishView(w, raised) {
 }
 
 export function withdrawalView(w) {
-  return { id: w.id, wishId: w.wish_id, amount: w.amount, method: w.method, destination: w.destination, note: w.note, status: w.status, requestedBy: w.requested_by, taxEstimate: w.tax_estimate, createdAt: w.created_at, decidedAt: w.decided_at };
+  return { id: w.id, wishId: w.wish_id, purpose: w.purpose || 'general', amount: w.amount, method: w.method, destination: w.destination, note: w.note, status: w.status, requestedBy: w.requested_by, taxEstimate: w.tax_estimate, createdAt: w.created_at, decidedAt: w.decided_at };
 }
 
 /** Everything the planning screens need, for parent and child alike. */
@@ -87,6 +116,7 @@ export function plannerPayload(db, partner, child) {
   const t = partner.listTracks().find((x) => x.id === child.track);
   return {
     budget,
+    driving: drivingBudget(db, partner, child),
     growthRate: t.expectedReturn - t.mgmtFee,
     yearsTo21: Math.max(0, PAYOUT_AGE - ageOn(child.birth_date)),
     wishes: wishes.map((w) => ({ ...wishView(w, byWish.get(w.id)), costAt21: costAt21(partner, child, w.target_amount) })),

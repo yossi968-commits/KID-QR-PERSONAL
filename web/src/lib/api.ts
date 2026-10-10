@@ -64,9 +64,10 @@ export type Gift = {
 };
 export type Pledge = { id: number; token: string; giverName: string; amount: number; method: string; status: string; nextDate: string; charges: number; source: string; institutionCode?: string; mandateRef?: string; createdAt: string };
 export type Wish = { id: number; title: string; icon: string; targetAmount: number; targetDate: string | null; status: string; createdBy: string; withdrawn: number; costAt21: number };
-export type Withdrawal = { id: number; wishId: number | null; amount: number; method: string | null; destination: string | null; note: string | null; status: 'requested' | 'paid' | 'rejected'; requestedBy: string; taxEstimate: number; createdAt: string; decidedAt: string | null };
+export type Withdrawal = { id: number; wishId: number | null; purpose: 'general' | 'driving'; amount: number; method: string | null; destination: string | null; note: string | null; status: 'requested' | 'paid' | 'rejected'; requestedBy: string; taxEstimate: number; createdAt: string; decidedAt: string | null };
 export type Planner = {
   budget: { pct: number; since: string; resetsOn: string; yearGifts: number; allowed: number; used: number; available: number; value: number; selfManaged?: boolean };
+  driving: { eligible: boolean; fromAge: number; cap: number; raised: number; used: number; available: number };
   growthRate: number; yearsTo21: number; wishes: Wish[]; withdrawals: Withdrawal[]; taxRate: number;
 };
 export type Method = { id: string; kind: string; recurring: boolean; recurringOnly?: boolean };
@@ -84,7 +85,7 @@ export type BirthReport = {
 export const OCCASIONS = ['birth', 'bar_mitzvah', 'bat_mitzvah', 'enlistment'];
 
 export const EARN_SOURCES = ['pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
-export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'];
+export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'driving', 'enlistment', 'graduation', 'wedding', 'holiday', 'other'];
 /** Occasions a young adult opens on their own QR. */
 export const ADULT_EVENT_TYPES = ['enlistment', 'graduation', 'wedding', 'birthday', 'other'];
 export const PAYOUT_METHODS = ['bit', 'paybox', 'card', 'bank'];

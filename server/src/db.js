@@ -229,6 +229,8 @@ function migrate(db) {
   if (!cols.has('handed_over_at')) db.exec('ALTER TABLE children ADD COLUMN handed_over_at TEXT');
   if (!cols.has('graduated_at')) db.exec('ALTER TABLE children ADD COLUMN graduated_at TEXT');
   if (!cols.has('minor_account_id')) db.exec('ALTER TABLE children ADD COLUMN minor_account_id TEXT');
+  const wcols = new Set(db.prepare('PRAGMA table_info(withdrawals)').all().map((c) => c.name));
+  if (!wcols.has('purpose')) db.exec(`ALTER TABLE withdrawals ADD COLUMN purpose TEXT NOT NULL DEFAULT 'general'`);
   if (!cols.has('parent_view')) db.exec('ALTER TABLE children ADD COLUMN parent_view INTEGER NOT NULL DEFAULT 1');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
 }

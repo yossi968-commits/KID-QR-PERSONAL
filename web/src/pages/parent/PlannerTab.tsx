@@ -37,6 +37,7 @@ export default function PlannerTab({ data }: { data: ChildData }) {
         { label: t('plan.allowed', { pct: b.pct }), value: fmtMoney(b.allowed) },
         { label: t('plan.used'), value: fmtMoney(b.used) },
       ]} />
+      {p.driving.eligible && <div className="banner small">🚗 <b>{t('drive.title')}</b>: {t('drive.available')} {fmtMoney(p.driving.available)} · {t('drive.raised')} {fmtMoney(p.driving.raised)} · {t('drive.used')} {fmtMoney(p.driving.used)}</div>}
       {err && <div className="error" role="alert">{err}</div>}
 
       <div className="grid grid-2" style={{ alignItems: 'start' }}>
@@ -94,7 +95,7 @@ export default function PlannerTab({ data }: { data: ChildData }) {
           <table className="table">
             <thead><tr><th>{t('money.col.date')}</th><th className="num">{t('money.col.amount')}</th><th>{t('plan.col.by')}</th><th>{t('plan.col.to')}</th><th className="num">{t('plan.col.tax')}</th><th>{t('money.col.status')}</th></tr></thead>
             <tbody>{p.withdrawals.filter((w) => w.status !== 'requested').map((w) => (
-              <tr key={w.id}><td>{fmtDate(w.decidedAt || w.createdAt)}</td><td className="num">{fmtMoney(w.amount)}</td><td className="small">{t(`plan.by.${w.requestedBy}` as any)}</td><td className="small">{w.method ? `${L.method(w.method)} · ${w.destination}` : '—'}</td><td className="num small">{fmtMoney(w.taxEstimate)}</td><td><span className={'pill' + (w.status === 'paid' ? ' good' : ' bad')}>{t(`wd.${w.status}` as any)}</span></td></tr>
+              <tr key={w.id}><td>{fmtDate(w.decidedAt || w.createdAt)}</td><td className="num">{fmtMoney(w.amount)}{w.purpose === 'driving' && <div className="small muted">{t('drive.pill')}</div>}</td><td className="small">{t(`plan.by.${w.requestedBy}` as any)}</td><td className="small">{w.method ? `${L.method(w.method)} · ${w.destination}` : '—'}</td><td className="num small">{fmtMoney(w.taxEstimate)}</td><td><span className={'pill' + (w.status === 'paid' ? ' good' : ' bad')}>{t(`wd.${w.status}` as any)}</span></td></tr>
             ))}</tbody>
           </table>
         </div>
@@ -116,7 +117,7 @@ function Approve({ w, wishTitle, growth, years, base, onDone }: { w: Withdrawal;
   };
   return (
     <div className="card" style={{ background: 'var(--surface-2)', padding: 14 }}>
-      <div className="row between"><b>{wishTitle || t('plan.request')}</b><b className="num">{fmtMoney(w.amount)}</b></div>
+      <div className="row between"><b>{w.purpose === 'driving' ? t('drive.pill') : wishTitle || t('plan.request')}</b><b className="num">{fmtMoney(w.amount)}</b></div>
       <div className="small muted">{fmtDate(w.createdAt)}{w.note ? ` · “${w.note}”` : ''}</div>
       <div className="small" style={{ marginTop: 6 }}>{t('plan.wouldBe', { amount: fmtMoney(w.amount * Math.pow(1 + growth, years)), n: years })} · {t('plan.taxEst', { amount: fmtMoney(w.taxEstimate) })}</div>
       <div className="row" style={{ marginTop: 10 }}>

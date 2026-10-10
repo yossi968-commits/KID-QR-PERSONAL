@@ -255,7 +255,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
         )}
         {tab === 'mine' && <MyFund d={d} />}
         {tab === 'deposits' && <Earn d={d} />}
-        {tab === 'plan' && <div className="card"><WishPlanner d={d} /></div>}
+        {tab === 'plan' && <>{!self && <Driving d={d} />}<div className="card"><WishPlanner d={d} /></div></>}
         {tab === 'learn' && (
           <div className="card" style={{ padding: 0 }}>
             <div className="card-head" style={{ padding: '16px 20px 0' }}><h3>{t('learn.title')}</h3><span className="pill brand">⭐ {lessons.totalStars}</span></div>
@@ -469,6 +469,39 @@ function MyFund({ d }: { d: KidData }) {
         </form>
       </div>
       {dialog && <TrackDialog value={child.track} coreOnly={false} years={10} onClose={() => setDialog(false)} onPick={(tr) => { setDialog(false); if (tr !== child.track) run(() => api('/kid/track', { body: { track: tr } })); }} />}
+    </div>
+  );
+}
+
+/** From 16: part of the savings for driving lessons and tests, beyond the yearly gift share; parents approve. */
+function Driving({ d }: { d: KidData }) {
+  const { t, fmtMoney, fmtDate } = useI18n();
+  const errText = useErr();
+  const dr = d.planner.driving;
+  const [ask, setAsk] = useState<{ amount: string; note: string } | null>(null);
+  const [err, setErr] = useState('');
+  const pending = d.planner.withdrawals.filter((w) => w.purpose === 'driving' && w.status === 'requested');
+  if (!dr.eligible) return <div className="banner small">🚗 {t('drive.soon', { date: fmtDate(`${Number(d.child.birthDate.slice(0, 4)) + dr.fromAge}${d.child.birthDate.slice(4)}`) })}</div>;
+  return (
+    <div className="card stack">
+      <div className="row between"><h3 style={{ margin: 0 }}>🚗 {t('drive.title')}</h3><span className="pill gold num">{t('drive.available')}: {fmtMoney(dr.available)}</span></div>
+      <p className="small muted" style={{ margin: 0 }}>{t('drive.desc', { cap: fmtMoney(dr.cap) })}</p>
+      <Kpis items={[
+        { label: t('drive.available'), value: fmtMoney(dr.available) },
+        { label: t('drive.raised'), value: fmtMoney(dr.raised) },
+        { label: t('drive.used'), value: fmtMoney(dr.used) },
+      ]} />
+      {pending.map((w) => <div key={w.id} className="list-row small"><span style={{ flex: 1 }}>{fmtDate(w.createdAt)}{w.note ? ` · ${w.note}` : ''}</span><b className="num">{fmtMoney(w.amount)}</b><span className="pill gold">{t('wd.requested')}</span></div>)}
+      {ask ? (
+        <div className="row">
+          <input type="number" dir="ltr" value={ask.amount} onChange={(e) => setAsk({ ...ask, amount: e.target.value })} placeholder="₪" max={dr.available / 100} style={{ flex: 1, minWidth: 90 }} aria-label={t('plan.askAmount')} />
+          <input value={ask.note} onChange={(e) => setAsk({ ...ask, note: e.target.value })} placeholder={t('drive.notePh')} style={{ flex: 2, minWidth: 140 }} />
+          <button className="btn sm" onClick={async () => { setErr(''); try { await api('/kid/withdrawals', { body: { amount: Number(ask.amount), note: ask.note, purpose: 'driving' } }); setAsk(null); d.reload(); } catch (x) { setErr(errText(x)); } }}>{t('plan.send')}</button>
+          <button className="btn ghost sm" onClick={() => setAsk(null)}>{t('common.cancel')}</button>
+        </div>
+      ) : <div className="row"><button className="btn secondary" disabled={dr.available <= 0 || d.child.accountStatus !== 'active'} onClick={() => setAsk({ amount: '', note: '' })}>{t('drive.ask')}</button><span className="small muted">{t('plan.parentsApprove')}</span></div>}
+      {err && <div className="error">{err}</div>}
+      <p className="small muted" style={{ margin: 0 }}>🎁 {t('drive.giftHint')}</p>
     </div>
   );
 }

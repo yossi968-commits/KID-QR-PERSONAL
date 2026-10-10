@@ -377,3 +377,35 @@ test('at 18 the young adult takes over; from 21 the savings move to a regular fu
   assert.ok((await api('/kid/me')).body.portfolio.value > v0);
   token = parentToken;
 });
+
+test('driving lessons: from 16 a teen takes part of the savings beyond the yearly share; gifts toward lessons raise the cap', async () => {
+  const parentToken = token;
+  const made = await api('/children', { method: 'POST', body: { firstName: 'רון', birthDate: '2012-05-01' } });
+  const id = made.body.child.id, code = made.body.child.giftCode;
+  await openFund(id);
+  await api(`/children/${id}/kid-login`, { method: 'POST', body: { username: 'ron', pin: '2222' } });
+  const ev = await api(`/children/${id}/events`, { method: 'POST', body: { type: 'driving', title: 'שיעורי נהיגה', date: '2026-12-01' } });
+  for (const amount of [3000, 4000, 3000]) {
+    const g = await api(`/gift/${code}/contribute`, { method: 'POST', auth: false, body: { amount, giverName: 'סבא', eventId: ev.body.event.id } });
+    await api(`/payments/${g.body.checkoutId}/complete`, { method: 'POST', auth: false, body: { method: 'card' } });
+  }
+  token = (await api('/kid/login', { method: 'POST', auth: false, body: { username: 'ron', pin: '2222' } })).body.token;
+  let plan = (await api('/kid/planner')).body;
+  assert.equal(plan.driving.eligible, false, 'not before 16');
+  assert.equal((await api('/kid/withdrawals', { method: 'POST', body: { amount: 2000, purpose: 'driving' } })).body.error, 'over_budget');
+
+  db.prepare('UPDATE children SET birth_date=? WHERE id=?').run('2009-05-01', id);
+  plan = (await api('/kid/planner')).body;
+  assert.equal(plan.driving.eligible, true);
+  assert.equal(plan.driving.raised, 1000000);
+  assert.equal(plan.driving.cap, 1000000, 'gifts toward lessons above the default cap raise it');
+  const r = await api('/kid/withdrawals', { method: 'POST', body: { amount: 2000, purpose: 'driving', note: 'שיעורים' } });
+  assert.equal(r.status, 201);
+  assert.equal(r.body.withdrawals[0].purpose, 'driving');
+  assert.equal(r.body.withdrawals[0].status, 'requested', 'parents still approve under 18');
+  assert.equal(r.body.budget.used, 0, 'driving does not use the yearly gift share');
+  assert.equal(r.body.driving.used, 200000);
+  token = parentToken;
+  const ok = await api(`/children/${id}/withdrawals/${r.body.withdrawals[0].id}/approve`, { method: 'POST', body: { method: 'bank', destination: 'בית ספר לנהיגה', coSigned: true } });
+  assert.equal(ok.body.withdrawals[0].status, 'paid');
+});

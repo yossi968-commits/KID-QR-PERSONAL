@@ -189,6 +189,17 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   });
   db.prepare('INSERT INTO events (child_id, type, title, date, goal_amount) VALUES (?,?,?,?,?)').run(shira.id, 'graduation', 'סיום הלימודים של שירה', '2028-06-30', 1000000);
 
+  // Omer (17) is learning to drive: family gave toward lessons, and he asked to use part of his savings.
+  const omer = db.prepare("SELECT * FROM children WHERE kid_username='omer'").get();
+  const drv = db.prepare('INSERT INTO events (child_id, type, title, date, goal_amount) VALUES (?,?,?,?,?)').run(omer.id, 'driving', 'שיעורי נהיגה לעומר', addYears(today(), 0).slice(0, 8) + '28', 700000).lastInsertRowid;
+  [['סבא משה', 150000, 'סע בזהירות!'], ['דודה שירה', 50000, 'לשיעור הראשון 🚗']].forEach(([name, amount, message], i) => {
+    const d = new Date(Date.now() - (20 - i * 6) * 86400000).toISOString().slice(0, 10);
+    const cid = db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, amount, message, status, payment_ref, paid_at, method) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(omer.id, drv, name, amount, message, 'paid', 'SEED-DRV-' + i, d + ' 12:00:00', ['bank_transfer', 'bit'][i]).lastInsertRowid;
+    investContribution(db, partner, omer, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), d);
+  });
+  db.prepare(`INSERT INTO withdrawals (child_id, amount, requested_by, note, tax_estimate, purpose) VALUES (?,?,?,?,?,?)`).run(omer.id, 180000, 'child', 'חבילת 12 שיעורים בבית הספר לנהיגה', 6000, 'driving');
+
   const progress = {
     shira: [['compound-interest', 5], ['risk-return', 6], ['fees', 6], ['scams', 6]],
     noa: [['what-is-money', 3], ['three-jars', 3]],
