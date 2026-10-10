@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "build:demo": "vite build --mode demo"
+    "build:demo": "vite build --mode demo",
+    "build:pages": "VITE_PAGES=1 vite build --mode demo --outDir dist-pages"
   },
   "dependencies": {
     "qrcode": "^1.5.4",

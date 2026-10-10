@@ -4,3 +4,4 @@ dist
 *.db-*
 .env
 dist-demo
+web/dist-pages

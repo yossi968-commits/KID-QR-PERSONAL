@@ -69,6 +69,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 
-if ('serviceWorker' in navigator && import.meta.env.PROD && !DEMO) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+// The published demo (VITE_PAGES) is installable too; the single-file demo stays without a worker.
+if ('serviceWorker' in navigator && import.meta.env.PROD && (!DEMO || import.meta.env.VITE_PAGES)) {
+  window.addEventListener('load', () => navigator.serviceWorker.register(DEMO ? 'sw.js' : '/sw.js').catch(() => {}));
 }
