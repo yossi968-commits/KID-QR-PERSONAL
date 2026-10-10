@@ -3,7 +3,7 @@ import { MoveFund } from '../../components/MoveFund';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
-import { api, ADULT_EVENT_TYPES, PAYOUT_METHODS, type Child, type EventRow, type Pledge, type Planner, type Portfolio, type Provider } from '../../lib/api';
+import { api, ADULT_EVENT_TYPES, PAYOUT_METHODS, type Child, type EventRow, type Pledge, type Planner, type Portfolio, type Provider, type Community } from '../../lib/api';
 import TrackDialog from '../../components/TrackDialog';
 import { LifeTimeline } from '../../components/Lifecycle';
 import { DocChecklist } from '../parent/FundTab';
@@ -19,7 +19,7 @@ import { gradeLabel } from '../parent/Dashboard';
 import { useErr } from '../Auth';
 
 type Deposit = { id: number; amount: number; source: string; method: string; monthly: boolean; paidAt: string; payer: string };
-type KidData = { child: Child; portfolio: Portfolio; planner: Planner; deposits: Deposit[]; pledges: Pledge[]; events: EventRow[]; reload: () => void };
+type KidData = { child: Child; portfolio: Portfolio; planner: Planner; community?: Community; deposits: Deposit[]; pledges: Pledge[]; events: EventRow[]; reload: () => void };
 
 /** Sources a child can tag their own money with, by stage: the older, the more options. */
 const SOURCES_BY_STAGE = {
@@ -32,7 +32,7 @@ function useKidData(): KidData | null {
   const [s, setS] = useState<Omit<KidData, 'reload'> | null>(null);
   const load = async () => {
     const [me, planner, dep] = await Promise.all([api('/kid/me'), api<Planner>('/kid/planner'), api('/kid/deposits')]);
-    setS({ child: me.child, portfolio: me.portfolio, planner, deposits: dep.deposits, pledges: dep.pledges, events: me.events || [] });
+    setS({ child: me.child, portfolio: me.portfolio, community: me.community, planner, deposits: dep.deposits, pledges: dep.pledges, events: me.events || [] });
   };
   useEffect(() => { load(); }, []);
   return s && { ...s, reload: load };
@@ -176,6 +176,7 @@ function Middle({ d, lessons, reloadLessons }: P) {
               <div className="card"><div className="small muted">{t('mid.fromMe')}</div><div className="big-num num" style={{ fontSize: '1.6rem', color: 'var(--accent)' }}>{fmtMoney(p.earned)}</div></div>
               <div className="card"><div className="small muted">{t('kid.at21')}</div><div className="big-num num" style={{ fontSize: '1.6rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
             </div>
+            <GoalsCard d={d} onNew={() => go('goals')} />
             <h3>{t('mid.badges')}</h3>
             <div className="badges">{badges.map(([i, l, on]) => <div key={l} className={'badge' + (on ? '' : ' locked')}><span className="b-icon">{i}</span>{l}</div>)}</div>
           </div>
@@ -237,6 +238,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
             </div>
             {!self && <div className="banner small">🔑 {t('life.until18', { date: fmtDate(child.lifecycle.handoverDate), n: Math.max(0, Math.round((Date.parse(child.lifecycle.handoverDate) - Date.now()) / 86400000)) })}</div>}
             {self && <LifeTimeline child={child} />}
+            <GoalsCard d={d} onNew={() => go('plan')} />
             <Kpis items={[
               { label: t('sen.fromFamily'), value: fmtMoney(p.deposited - p.earned) },
               { label: t('sen.fromMe'), value: fmtMoney(p.earned), sub: d.pledges.some((x) => x.status === 'active') ? t('sen.standing', { amount: fmtMoney(d.pledges.filter((x) => x.status === 'active').reduce((s, x) => s + x.amount, 0)) }) : undefined },
@@ -345,6 +347,49 @@ function DepositForm({ d, onCancel, returnTab }: { d: KidData; onCancel?: () => 
 const monthlyFv = (m: number, years: number, r: number) => { let v = 0; for (let i = 0; i < years * 12; i++) v = v * (1 + r / 12) + m; return v; };
 
 /** Wishes along the way and the birthday withdrawal request, with a nudge to keep saving. */
+/** Goals up front: what the money is for, what it takes a month, and ideas that fit the child's age and family. */
+function GoalsCard({ d, onNew }: { d: KidData; onNew: () => void }) {
+  const { t, fmtMoney, fmtDate } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const open = d.planner.wishes.filter((w) => w.status !== 'done');
+  // Skip ideas the child already has (same name, or the same kind of goal by its icon).
+  const have = new Set(d.planner.wishes.flatMap((w) => [w.title, w.icon]));
+  const ideas = (d.community?.goals || []).filter((g) => g.age >= d.child.age && !have.has(t(`goal.${g.key}` as any)) && !have.has(g.icon));
+  const dateAt = (age: number) => {
+    const b = new Date(d.child.birthDate); b.setFullYear(b.getFullYear() + Math.max(age, d.child.age + 1));
+    return b.toISOString().slice(0, 10);
+  };
+  const add = async (g: { key: string; icon: string; amount: number; age: number }) => {
+    setBusy(true);
+    try { await api('/kid/wishes', { body: { title: t(`goal.${g.key}` as any), icon: g.icon, targetAmount: g.amount / 100, targetDate: dateAt(g.age) } }); d.reload(); } finally { setBusy(false); }
+  };
+  const months = (date: string) => Math.max(1, Math.round((Date.parse(date) - Date.now()) / (30.44 * 86400000)));
+  return (
+    <div className="card stack">
+      <div className="row between"><h3 style={{ margin: 0 }}>🎯 {t('goals.mine')}</h3><button className="btn sm secondary" onClick={onNew}>＋ {t('goals.new')}</button></div>
+      {open.length === 0 && <p className="small muted" style={{ margin: 0 }}>{t('goals.empty')}</p>}
+      {open.map((w) => (
+        <div key={w.id} className="list-row">
+          <span aria-hidden style={{ fontSize: 24 }}>{w.icon}</span>
+          <span style={{ flex: 1 }}>
+            <b>{w.title}</b> <span className="num">{fmtMoney(w.targetAmount)}</span>
+            {w.targetDate && <div className="small muted">{fmtDate(w.targetDate)} · {t('goals.left', { n: months(w.targetDate), amount: fmtMoney(Math.ceil(w.targetAmount / months(w.targetDate) / 100) * 100) })}</div>}
+          </span>
+        </div>
+      ))}
+      {ideas.length > 0 && (
+        <div>
+          <span className="field-label">{t('goal.ideas')}</span>
+          <div className="row" style={{ gap: 6 }}>
+            {ideas.map((g) => <button key={g.key} className="chip" disabled={busy} onClick={() => add(g)}>＋ <span aria-hidden>{g.icon}</span> {t(`goal.${g.key}` as any)} · <span className="num">{fmtMoney(g.amount)}</span></button>)}
+          </div>
+          <div className="small muted" style={{ marginTop: 6 }}>{t('goals.ideasHint')}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WishPlanner({ d, simple }: { d: KidData; simple?: boolean }) {
   const { t, fmtMoney, fmtDate } = useI18n();
   const errText = useErr();

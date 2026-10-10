@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { communityView } from '../lib/community.js';
 import { verifyPassword, issueChildToken } from '../lib/auth.js';
 import { h, notFound, HttpError } from '../lib/http.js';
 import { portfolioSummary } from '../lib/portfolio.js';
@@ -33,7 +34,9 @@ r.get('/me', h((req, res) => {
   const p = portfolioSummary(db, partner, req.child);
   const { partnerAccountId, ...child } = childView(req.child);
   const events = phaseOf(req.child) === 'minor' ? [] : db.prepare('SELECT * FROM events WHERE child_id=? AND active=1 ORDER BY date').all(req.child.id);
-  res.json({ child: { ...child, ...(phaseOf(req.child) !== 'minor' && { partnerAccountId }) }, portfolio: p, events });
+  // Goal ideas follow the family's community (tefillin, driving lessons, a degree…).
+  const guardian = db.prepare('SELECT community FROM users WHERE id=?').get(req.child.guardian_id);
+  res.json({ child: { ...child, ...(phaseOf(req.child) !== 'minor' && { partnerAccountId }) }, portfolio: p, events, community: communityView(guardian?.community) });
 }));
 
 r.get('/gifts', h((req, res) => res.json({ gifts: giftsFor(req.ctx.db, req.child) })));

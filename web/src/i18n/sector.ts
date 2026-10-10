@@ -3,6 +3,12 @@
  * community adaptations (religious, Arab sector) and the language switch.
  */
 export const heSector = {
+  'goals.mine': 'היעדים שלי',
+  'goals.new': 'יעד חדש',
+  'goals.left': 'עוד {n} חודשים · כ־{amount} בחודש',
+  'goals.empty': 'עוד אין יעדים. בחרו רעיון או הוסיפו משלכם.',
+  'goals.ideasHint': 'לחיצה מוסיפה את היעד עם סכום ותאריך משוערים. אפשר לשנות.',
+  'sen.tab.plan': 'יעדים ותכנון',
   'lang.he': 'עברית',
   'lang.en': 'English',
   'lang.ar': 'العربية',
@@ -28,7 +34,7 @@ export const heSector = {
 
   'goal.bike': 'אופניים',
   'goal.laptop': 'מחשב נייד',
-  'goal.driving': 'רישיון נהיגה',
+  'goal.driving': 'שיעורי נהיגה ורישיון',
   'goal.trip': 'טיול אחרי צבא / שירות',
   'goal.degree': 'תואר אקדמי',
   'goal.apartment': 'עזרה בדירה',
@@ -125,6 +131,12 @@ export const heSector = {
 };
 
 export const enSector: Record<keyof typeof heSector, string> = {
+  'goals.mine': 'My goals',
+  'goals.new': 'New goal',
+  'goals.left': '{n} months left · about {amount} a month',
+  'goals.empty': 'No goals yet. Pick an idea or add your own.',
+  'goals.ideasHint': 'Tap to add the goal with an estimated amount and date. You can change them.',
+  'sen.tab.plan': 'Goals & plan',
   'lang.he': 'עברית',
   'lang.en': 'English',
   'lang.ar': 'العربية',
@@ -150,7 +162,7 @@ export const enSector: Record<keyof typeof heSector, string> = {
 
   'goal.bike': 'Bike',
   'goal.laptop': 'Laptop',
-  'goal.driving': 'Driving licence',
+  'goal.driving': 'Driving lessons & licence',
   'goal.trip': 'Trip after service',
   'goal.degree': 'University degree',
   'goal.apartment': 'Help with a flat',
@@ -247,6 +259,12 @@ export const enSector: Record<keyof typeof heSector, string> = {
 };
 
 export const arSector: Record<keyof typeof heSector, string> = {
+  'goals.mine': 'أهدافي',
+  'goals.new': 'هدف جديد',
+  'goals.left': 'بقي {n} شهرًا · نحو {amount} شهريًا',
+  'goals.empty': 'لا توجد أهداف بعد. اختر فكرة أو أضف هدفك.',
+  'goals.ideasHint': 'اضغط لإضافة الهدف بمبلغ وتاريخ تقديريين. يمكن التغيير.',
+  'sen.tab.plan': 'الأهداف والتخطيط',
   'lang.he': 'עברית',
   'lang.en': 'English',
   'lang.ar': 'العربية',
@@ -272,7 +290,7 @@ export const arSector: Record<keyof typeof heSector, string> = {
 
   'goal.bike': 'دراجة هوائية',
   'goal.laptop': 'حاسوب محمول',
-  'goal.driving': 'رخصة سياقة',
+  'goal.driving': 'دروس السياقة والرخصة',
   'goal.trip': 'رحلة بعد المدرسة',
   'goal.degree': 'شهادة جامعية',
   'goal.apartment': 'مساعدة في شراء شقة',
