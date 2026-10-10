@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS employers (
   gift_amount INTEGER NOT NULL DEFAULT 50000,
   gift_message TEXT,
   occasions TEXT NOT NULL DEFAULT 'birth',
+  occasion_amounts TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -182,7 +183,8 @@ CREATE TABLE IF NOT EXISTS birth_reports (
   employee_email TEXT,
   employee_number TEXT,
   baby_name TEXT,
-  birth_date TEXT NOT NULL,
+  birth_date TEXT NOT NULL,          -- the child's birth date (matches the QR)
+  event_date TEXT,                   -- bar/bat mitzvah or enlistment date
   occasion TEXT NOT NULL DEFAULT 'birth',
   child_id INTEGER REFERENCES children(id),
   status TEXT NOT NULL DEFAULT 'reported' CHECK (status IN ('reported','invited','linked','gifted')),

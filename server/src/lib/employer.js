@@ -3,17 +3,19 @@ import { settleContribution } from './pledges.js';
 import { ANNUAL_CEILING, depositedThisYear } from './fund.js';
 
 /**
- * Employer and workers'-committee birth gifts. Instead of a school bag or headphones,
+ * Employer and workers'-committee gifts for a birth, bar/bat mitzvah or army enlistment. Instead of a school bag or headphones,
  * the organization deposits a gift straight into the newborn's QR. Employees report
  * the birth (or HR adds it); the report links to the child's QR by the parent's email
  * and birth date, or by the gift code the parent shares.
  */
-export const OCCASIONS = ['birth', 'first_grade', 'bar_mitzvah', 'bat_mitzvah'];
+/** Occasions on which an organization swaps its physical gift for a deposit; amounts are per occasion. */
+export const OCCASIONS = ['birth', 'bar_mitzvah', 'bat_mitzvah', 'enlistment'];
+export const amountsOf = (e) => ({ ...Object.fromEntries(OCCASIONS.map((o) => [o, e.gift_amount])), ...JSON.parse(e.occasion_amounts || '{}') });
 
 export function employerView(e) {
   return {
     id: e.id, slug: e.slug, name: e.name, kind: e.kind, email: e.email, contactName: e.contact_name, logo: e.logo,
-    giftAmount: e.gift_amount, giftMessage: e.gift_message, occasions: e.occasions.split(',').filter(Boolean),
+    giftAmount: e.gift_amount, giftMessage: e.gift_message, occasions: e.occasions.split(',').filter(Boolean), amounts: amountsOf(e),
   };
 }
 
@@ -22,7 +24,7 @@ export function reportView(db, r) {
   const x = r.contribution_id ? db.prepare('SELECT amount, status, paid_at FROM contributions WHERE id=?').get(r.contribution_id) : null;
   return {
     id: r.id, employeeName: r.employee_name, employeeEmail: r.employee_email, employeeNumber: r.employee_number, babyName: r.baby_name || c?.first_name || null,
-    birthDate: r.birth_date, occasion: r.occasion, status: r.status, reportedBy: r.reported_by, createdAt: r.created_at, invitedAt: r.invited_at,
+    birthDate: r.birth_date, eventDate: r.event_date, occasion: r.occasion, status: r.status, reportedBy: r.reported_by, createdAt: r.created_at, invitedAt: r.invited_at,
     child: c ? { firstName: c.first_name, giftCode: c.gift_code, fundOpen: c.account_status === 'active' } : null,
     gift: x ? { amount: x.amount, status: x.status, paidAt: x.paid_at } : null,
   };
@@ -58,11 +60,11 @@ export function linkByCode(db, report, code) {
  */
 export function sendGifts(ctx, employer, reportIds, { amount, message } = {}) {
   const { db } = ctx;
-  const sum = amount || employer.gift_amount;
   const out = { sent: 0, skipped: [] };
   for (const id of reportIds) {
     const r = db.prepare('SELECT * FROM birth_reports WHERE id=? AND employer_id=?').get(Number(id), employer.id);
     if (!r || r.status !== 'linked') { out.skipped.push(Number(id)); continue; }
+    const sum = amount || amountsOf(employer)[r.occasion] || employer.gift_amount;
     if (depositedThisYear(db, r.child_id) + sum > ANNUAL_CEILING) { out.skipped.push(r.id); continue; }
     const { lastInsertRowid } = db
       .prepare(`INSERT INTO contributions (child_id, giver_name, giver_email, amount, message, is_public, method, source) VALUES (?,?,?,?,?,?,?,?)`)

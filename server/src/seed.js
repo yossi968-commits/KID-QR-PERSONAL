@@ -153,17 +153,21 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
 
   // An employer (fictional) that swapped its school-bag gift for a deposit into the newborn's QR.
   const emp = db
-    .prepare(`INSERT INTO employers (slug, name, kind, email, password_hash, contact_name, logo, gift_amount, gift_message, occasions) VALUES (?,?,?,?,?,?,?,?,?,?)`)
-    .run('alpha', 'אלפא טכנולוגיות', 'employer', 'hr@alpha.example', hashPassword('demo1234'), 'דנה רוזן, משאבי אנוש', '🏢', 50000, 'מזל טוב מכל המשפחה של אלפא! 💙', 'birth,first_grade')
+    .prepare(`INSERT INTO employers (slug, name, kind, email, password_hash, contact_name, logo, gift_amount, gift_message, occasions, occasion_amounts) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+    .run('alpha', 'אלפא טכנולוגיות', 'employer', 'hr@alpha.example', hashPassword('demo1234'), 'דנה רוזן, משאבי אנוש', '🏢', 50000, 'מזל טוב מכל המשפחה של אלפא! 💙', 'birth,bar_mitzvah,bat_mitzvah,enlistment',
+      JSON.stringify({ birth: 50000, bar_mitzvah: 36000, bat_mitzvah: 36000, enlistment: 50000 }))
     .lastInsertRowid;
   db.prepare(`INSERT INTO employers (slug, name, kind, email, password_hash, contact_name, logo) VALUES (?,?,?,?,?,?,?)`)
     .run('beta-vaad', 'ועד עובדי בטא', 'committee', 'vaad@beta.example', hashPassword('demo1234'), 'יו"ר הוועד', '🤝');
-  const report = (name, email, num, baby, birth, by) =>
-    db.prepare('INSERT INTO birth_reports (employer_id, employee_name, employee_email, employee_number, baby_name, birth_date, reported_by) VALUES (?,?,?,?,?,?,?)').run(emp, name, email, num, baby, birth, by).lastInsertRowid;
+  const report = (name, email, num, baby, birth, by, occasion = 'birth', eventDate = null) =>
+    db.prepare('INSERT INTO birth_reports (employer_id, employee_name, employee_email, employee_number, baby_name, birth_date, reported_by, occasion, event_date) VALUES (?,?,?,?,?,?,?,?,?)').run(emp, name, email, num, baby, birth, by, occasion, eventDate).lastInsertRowid;
   const ellaReport = report('מיכל לוי', 'demo@kfq.app', '10234', 'אלה', ella.birth_date, 'employee');
   report('יעל כהן', 'yael@example.com', '10871', 'רוני', daysAgo(12), 'employee');
   report('דניאל אברהם', 'daniel@example.com', '11502', 'תמר', daysAgo(6), 'hr');
   report('נועם פרץ', 'noam@example.com', '12077', null, daysAgo(2), 'employee');
+  // Same parent, other occasions: Itay's bar mitzvah next month, Omer's enlistment after school.
+  report('מיכל לוי', 'demo@kfq.app', '10234', 'איתי', '2013-11-03', 'employee', 'bar_mitzvah', '2026-11-05');
+  report('מיכל לוי', 'demo@kfq.app', '10234', 'עומר', '2009-03-20', 'hr', 'enlistment', '2027-08-01');
   linkReports(db);
   const empRow = db.prepare('SELECT * FROM employers WHERE id=?').get(emp);
   sendGifts({ db, partner, notifier: { send() {} } }, empRow, [ellaReport]);

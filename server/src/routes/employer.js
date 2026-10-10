@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { verifyPassword, issueEmployerToken } from '../lib/auth.js';
 import { h, bad, notFound, requireString, requireDate, toAgorot, HttpError } from '../lib/http.js';
-import { employerView, reportView, linkReports, linkByCode, sendGifts, OCCASIONS } from '../lib/employer.js';
+import { employerView, reportView, linkReports, linkByCode, sendGifts, OCCASIONS, amountsOf } from '../lib/employer.js';
 
 /** Employer / workers' committee portal. */
 const r = Router();
@@ -43,6 +43,7 @@ function validReport(body) {
     employeeNumber: body.employeeNumber ? String(body.employeeNumber).slice(0, 20) : null,
     babyName: body.babyName ? String(body.babyName).trim().slice(0, 40) : null,
     birthDate: requireDate(body.birthDate, 'birth_date'),
+    eventDate: body.eventDate ? requireDate(body.eventDate, 'event_date') : null,
     occasion: OCCASIONS.includes(body.occasion) ? body.occasion : 'birth',
   };
 }
@@ -50,8 +51,8 @@ function validReport(body) {
 function addReport(db, employer, body, by) {
   const v = validReport(body);
   const { lastInsertRowid } = db
-    .prepare('INSERT INTO birth_reports (employer_id, employee_name, employee_email, employee_number, baby_name, birth_date, occasion, reported_by) VALUES (?,?,?,?,?,?,?,?)')
-    .run(employer.id, v.employeeName, v.employeeEmail, v.employeeNumber, v.babyName, v.birthDate, v.occasion, by);
+    .prepare('INSERT INTO birth_reports (employer_id, employee_name, employee_email, employee_number, baby_name, birth_date, event_date, occasion, reported_by) VALUES (?,?,?,?,?,?,?,?,?)')
+    .run(employer.id, v.employeeName, v.employeeEmail, v.employeeNumber, v.babyName, v.birthDate, v.eventDate, v.occasion, by);
   const rep = db.prepare('SELECT * FROM birth_reports WHERE id=?').get(lastInsertRowid);
   if (body.giftCode) linkByCode(db, rep, body.giftCode);
   linkReports(db);
@@ -71,8 +72,8 @@ r.post('/reports/:id/invite', h((req, res) => {
   if (!rep.employee_email) throw bad('no_employee_email');
   notifier.send({
     to: rep.employee_email,
-    subject: `מזל טוב! ${req.employer.name} מחכה לשלוח מתנה ל־QR של התינוק/ת`,
-    body: `פתחו קוד QR אישי ל${rep.baby_name || 'תינוק/ת'} באפליקציה, ומתנה של ₪${req.employer.gift_amount / 100} תיכנס לחיסכון שלו/ה.`,
+    subject: `מזל טוב! ${req.employer.name} מחכה לשלוח מתנה ל־QR של ${rep.baby_name || 'הילד/ה'}`,
+    body: `פתחו קוד QR אישי באפליקציה (או שלחו לנו את הקוד הקיים), ומתנה של ₪${(amountsOf(req.employer)[rep.occasion] || req.employer.gift_amount) / 100} תיכנס לחיסכון.`,
   });
   db.prepare(`UPDATE birth_reports SET status=CASE WHEN status='reported' THEN 'invited' ELSE status END, invited_at=datetime('now') WHERE id=?`).run(rep.id);
   res.json({ report: reportView(db, db.prepare('SELECT * FROM birth_reports WHERE id=?').get(rep.id)) });
@@ -98,10 +99,12 @@ r.patch('/settings', h((req, res) => {
   const { db } = req.ctx;
   const e = req.employer;
   const amount = req.body.giftAmount !== undefined ? toAgorot(req.body.giftAmount) : e.gift_amount;
-  if (amount < 1800 || amount > 500000) throw bad('amount_out_of_range');
+  const amounts = amountsOf(e);
+  for (const o of OCCASIONS) if (req.body.amounts?.[o] !== undefined) amounts[o] = toAgorot(req.body.amounts[o]);
+  if ([amount, ...Object.values(amounts)].some((a) => a < 1800 || a > 500000)) throw bad('amount_out_of_range');
   const occasions = Array.isArray(req.body.occasions) ? req.body.occasions.filter((o) => OCCASIONS.includes(o)) : e.occasions.split(',');
-  db.prepare('UPDATE employers SET gift_amount=?, gift_message=?, occasions=? WHERE id=?').run(
-    amount, req.body.giftMessage !== undefined ? String(req.body.giftMessage).slice(0, 300) : e.gift_message, occasions.join(',') || 'birth', e.id
+  db.prepare('UPDATE employers SET gift_amount=?, gift_message=?, occasions=?, occasion_amounts=? WHERE id=?').run(
+    amount, req.body.giftMessage !== undefined ? String(req.body.giftMessage).slice(0, 300) : e.gift_message, occasions.join(',') || 'birth', JSON.stringify(amounts), e.id
   );
   res.json({ employer: employerView(db.prepare('SELECT * FROM employers WHERE id=?').get(e.id)) });
 }));
