@@ -1,0 +1,71 @@
+{
+  "id": "./",
+  "name": "QR לעתיד – חיסכון לילדים",
+  "short_name": "QR לעתיד",
+  "description": "קוד QR אישי וקופת גמל להשקעה לכל ילד: מתנות שהופכות לחיסכון, מהלידה ועד גיל 21.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./?source=homescreen",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
+  "background_color": "#0e1c33",
+  "theme_color": "#13243f",
+  "categories": [
+    "finance",
+    "education",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "כניסת הורים",
+      "url": "./login/parent",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "כניסת ילדים",
+      "url": "./login/kid",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
