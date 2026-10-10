@@ -230,3 +230,23 @@ test('planned gifts: child requests within the yearly budget, parent approves th
   assert.ok(Math.abs(valueBefore - valueAfter - req.amount) <= 2, 'units sold for the payout');
   assert.equal((await api(`/children/${childId}/withdrawals`, { method: 'POST', body: { amount: 1, method: 'cash', destination: 'x' } })).body.error, 'invalid_payout_method');
 });
+
+test('kid deposits own earnings: tagged by source, private, counted as earned', async () => {
+  const parentToken = token;
+  token = (await api('/kid/login', { method: 'POST', auth: false, body: { username: 'dani', pin: '2468' } })).body.token;
+  const d = await api('/kid/deposits', { method: 'POST', body: { amount: 120, source: 'babysitting', method: 'paybox' } });
+  assert.equal(d.status, 201);
+  await api(`/payments/${d.body.checkoutId}/complete`, { method: 'POST', auth: false, body: {} });
+  const m = await api('/kid/deposits', { method: 'POST', body: { amount: 500, source: 'salary', method: 'card', frequency: 'monthly' } });
+  assert.equal(m.status, 201);
+  assert.ok(m.body.pledgeToken);
+  await api(`/payments/${m.body.checkoutId}/complete`, { method: 'POST', auth: false, body: {} });
+  const list = (await api('/kid/deposits')).body;
+  assert.deepEqual(list.deposits.map((x) => x.source).sort(), ['babysitting', 'salary']);
+  assert.equal(list.pledges[0].status, 'active');
+  const me = (await api('/kid/me')).body;
+  assert.equal(me.portfolio.earned, 62000);
+  const wall = await api(`/gift/${giftCode}`, { auth: false });
+  assert.ok(!wall.body.wall.some((w) => w.amount === 12000), 'earnings stay off the public wall');
+  token = parentToken;
+});

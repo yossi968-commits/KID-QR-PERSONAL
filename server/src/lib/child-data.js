@@ -31,7 +31,7 @@ export function giftsFor(db, c, { withEmail = false } = {}) {
     .all(c.id)
     .map((x) => ({
       id: x.id, giverName: x.giver_name, ...(withEmail && { giverEmail: x.giver_email }), amount: x.amount, status: x.status,
-      eventTitle: x.event_title, paidAt: x.paid_at, thankedAt: x.thanked_at, unlockAge: x.unlock_age,
+      source: x.source || 'gift', method: x.method, monthly: Boolean(x.pledge_id), eventTitle: x.event_title, paidAt: x.paid_at, thankedAt: x.thanked_at, unlockAge: x.unlock_age,
       sealed: x.unlock_age ? age < x.unlock_age : false,
       message: x.unlock_age && age < x.unlock_age ? null : x.message,
     }));

@@ -168,6 +168,9 @@ function migrate(db) {
   if (!cols.has('kid_username')) db.exec('ALTER TABLE children ADD COLUMN kid_username TEXT');
   const ccols = new Set(db.prepare('PRAGMA table_info(contributions)').all().map((c) => c.name));
   if (!ccols.has('method')) db.exec('ALTER TABLE contributions ADD COLUMN method TEXT');
+  if (!ccols.has('source')) db.exec(`ALTER TABLE contributions ADD COLUMN source TEXT NOT NULL DEFAULT 'gift'`);
+  const pcols = new Set(db.prepare('PRAGMA table_info(pledges)').all().map((c) => c.name));
+  if (!pcols.has('source')) db.exec(`ALTER TABLE pledges ADD COLUMN source TEXT NOT NULL DEFAULT 'gift'`);
   if (!ccols.has('pledge_id')) db.exec('ALTER TABLE contributions ADD COLUMN pledge_id INTEGER REFERENCES pledges(id)');
   if (!cols.has('withdraw_pct')) db.exec('ALTER TABLE children ADD COLUMN withdraw_pct INTEGER NOT NULL DEFAULT 25');
   if (!cols.has('kid_pin_hash')) db.exec('ALTER TABLE children ADD COLUMN kid_pin_hash TEXT');

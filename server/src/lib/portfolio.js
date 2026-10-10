@@ -66,6 +66,8 @@ export function portfolioSummary(db, partner, child) {
     db
       .prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM contributions WHERE child_id=? AND status='invested' AND date(paid_at) > date('now','-365 days')`)
       .get(child.id).s;
+  const earned =
+    db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM contributions WHERE child_id=? AND status='invested' AND COALESCE(source,'gift')<>'gift'`).get(child.id).s;
   const giverCount = db.prepare(`SELECT COUNT(DISTINCT lower(giver_name)) AS c FROM contributions WHERE child_id=? AND status='invested'`).get(child.id).c;
 
   // Weekly history of value vs. cumulative deposits.
@@ -116,6 +118,7 @@ export function portfolioSummary(db, partner, child) {
     gain: value - deposited,
     gainPct: deposited ? (value - deposited) / deposited : 0,
     giverCount,
+    earned,
     holdings: hs.map((h) => ({ ...h, value: Math.round(h.units * partner.navOn(h.track, now) * 100) })),
     history,
     projection: { payoutDate, payoutAge: PAYOUT_AGE, annualAssumed: annual, points: projection, finals },

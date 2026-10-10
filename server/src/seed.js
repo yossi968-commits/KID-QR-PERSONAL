@@ -78,14 +78,29 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   // Monthly gifts with half a year of history: grandma by card, grandpa by bank direct debit.
   const sixMonthsAgo = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - 6, 10)).toISOString().slice(0, 10);
   const kidId = (u) => db.prepare('SELECT id FROM children WHERE kid_username=?').get(u).id;
-  const addPledge = (user, name, email, amount, method) =>
-    db.prepare(`INSERT INTO pledges (child_id, token, giver_name, giver_email, amount, method, message, status, card_token, institution_code, mandate_ref, next_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(kidId(user), newPledgeToken(), name, email, amount, method, 'כל חודש קצת, בשבילך', 'active', method === 'card' ? 'tok_seed' : null, method === 'masav' ? '52741' : null, method === 'masav' ? '700001' : null, sixMonthsAgo);
+  const addPledge = (user, name, email, amount, method, source = 'gift', message = 'כל חודש קצת, בשבילך') =>
+    db.prepare(`INSERT INTO pledges (child_id, token, giver_name, giver_email, amount, method, message, status, card_token, institution_code, mandate_ref, next_date, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(kidId(user), newPledgeToken(), name, email, amount, method, message, 'active', method === 'card' ? 'tok_seed' : null, method === 'masav' ? '52741' : null, method === 'masav' ? '700001' : null, sixMonthsAgo, source);
   addPledge('noa', 'סבתא רחל', 'rachel@example.com', 10000, 'card');
   addPledge('itay', 'סבא משה', 'moshe@example.com', 15000, 'masav');
   addPledge('omer', 'דודה שירה', 'shira@example.com', 5000, 'card');
+  // Omer's own money: part of his waiter's pay every month by bank direct debit.
+  addPledge('omer', 'עומר', null, 40000, 'masav', 'waiting_tables', 'חלק מהמשכורת מהמסעדה');
   const ctx = { db, partner, payments: new SandboxPayments(), notifier: { send() {} } };
   while (runDuePledges(ctx).charged) {}
+
+  // Itay's own earnings: babysitting and dog walking, paid straight to his QR.
+  const itayRow = db.prepare("SELECT * FROM children WHERE kid_username='itay'").get();
+  for (const [source, payer, amount, method, daysAgo] of [
+    ['dog_walking', 'משפחת כהן', 8000, 'bit', 150], ['babysitting', 'משפחת אברהם', 12000, 'paybox', 110],
+    ['pocket_money', 'איתי', 5000, 'bit', 80], ['dog_walking', 'משפחת כהן', 8000, 'bit', 45], ['babysitting', 'משפחת אברהם', 15000, 'paybox', 12],
+  ]) {
+    const d = new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10);
+    const cid = db
+      .prepare(`INSERT INTO contributions (child_id, giver_name, amount, is_public, status, payment_ref, paid_at, created_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+      .run(itayRow.id, payer, amount, 0, 'paid', 'SEED-E-' + daysAgo, d + ' 18:00:00', d + ' 17:58:00', method, source).lastInsertRowid;
+    investContribution(db, partner, itayRow, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), d);
+  }
 
   // Planned gifts through the years, one past withdrawal and one request waiting for the parent.
   const wish = (user, title, icon, amount, date, by = 'parent', status = 'planned') =>

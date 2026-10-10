@@ -5,7 +5,8 @@ import { addMonth } from '../lib/pledges.js';
 
 const addMonthFromToday = () => addMonth(today());
 import { GIFT_MIN, GIFT_MAX } from '../lib/portfolio.js';
-import { settleContribution, chargePledge, newPledgeToken, pledgeView } from '../lib/pledges.js';
+import { settleContribution, chargePledge, pledgeView } from '../lib/pledges.js';
+import { startContribution, SOURCES } from '../lib/contribute.js';
 import { lessonsFor } from '../content/lessons.js';
 
 const r = Router();
@@ -50,57 +51,13 @@ r.get('/gift/:code', h((req, res) => {
     limits: { min: GIFT_MIN, max: GIFT_MAX },
     suggested: [5200, 10000, 18000, 36000],
     methods: req.ctx.payments.methods,
+    sources: SOURCES,
   });
 }));
 
-/**
- * Start a gift. One-time gifts open a checkout for the chosen method. Monthly gifts
- * (card or bank direct debit only) create a pledge: card charges the first month now
- * and stores a token; a bank direct debit waits for the giver's bank to confirm.
- */
 r.post('/gift/:code/contribute', h((req, res) => {
-  const { db, payments } = req.ctx;
-  const c = childByCode(db, req.params.code);
-  const amount = toAgorot(req.body.amount);
-  if (amount < GIFT_MIN || amount > GIFT_MAX) throw bad('amount_out_of_range');
-  const giverName = requireString(req.body.giverName, 'giver_name', { max: 60 });
-  const giverEmail = req.body.giverEmail ? requireString(req.body.giverEmail, 'giver_email', { max: 120 }) : null;
-  const message = req.body.message ? String(req.body.message).trim().slice(0, 500) : null;
-  const method = String(req.body.method || 'card');
-  const m = payments.methods.find((x) => x.id === method);
-  if (!m) throw bad('invalid_method');
-  const monthly = req.body.frequency === 'monthly';
-  if (monthly && !m.recurring) throw bad('method_not_recurring');
-  if (!monthly && m.recurringOnly) throw bad('method_recurring_only');
-
-  if (monthly) {
-    const token = newPledgeToken();
-    const { lastInsertRowid: pledgeId } = db
-      .prepare(`INSERT INTO pledges (child_id, token, giver_name, giver_email, amount, method, message, next_date) VALUES (?,?,?,?,?,?,?,date('now'))`)
-      .run(c.id, token, giverName, giverEmail, amount, method, message);
-    if (method === 'masav') {
-      const mandate = payments.createMandate({ reference: pledgeId });
-      db.prepare('UPDATE pledges SET institution_code=?, mandate_ref=? WHERE id=?').run(mandate.institutionCode, mandate.mandateRef, pledgeId);
-      return res.status(201).json({ pledgeToken: token, redirectUrl: `/pledge/${token}` });
-    }
-    const { lastInsertRowid } = db
-      .prepare(`INSERT INTO contributions (child_id, giver_name, giver_email, amount, message, is_public, method, pledge_id) VALUES (?,?,?,?,?,?,?,?)`)
-      .run(c.id, giverName, giverEmail, amount, message, req.body.isPublic === false ? 0 : 1, method, pledgeId);
-    const checkout = payments.createCheckout({ amount, description: `מתנה חודשית לעתיד של ${c.first_name}`, reference: lastInsertRowid, method, recurring: true });
-    db.prepare('UPDATE contributions SET checkout_id=? WHERE id=?').run(checkout.checkoutId, lastInsertRowid);
-    return res.status(201).json({ contributionId: lastInsertRowid, pledgeToken: token, checkoutId: checkout.checkoutId, redirectUrl: checkout.redirectUrl });
-  }
-
-  const unlockAge = req.body.unlockAge ? Number(req.body.unlockAge) : null;
-  if (unlockAge !== null && (!Number.isInteger(unlockAge) || unlockAge <= ageOn(c.birth_date) || unlockAge > 21)) throw bad('invalid_unlock_age');
-  let eventId = req.body.eventId ? Number(req.body.eventId) : null;
-  if (eventId && !db.prepare('SELECT 1 FROM events WHERE id=? AND child_id=?').get(eventId, c.id)) eventId = null;
-  const { lastInsertRowid } = db
-    .prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, unlock_age, method) VALUES (?,?,?,?,?,?,?,?,?)`)
-    .run(c.id, eventId, giverName, giverEmail, amount, message, req.body.isPublic === false ? 0 : 1, unlockAge, method);
-  const checkout = payments.createCheckout({ amount, description: `מתנה לעתיד של ${c.first_name}`, reference: lastInsertRowid, method });
-  db.prepare('UPDATE contributions SET checkout_id=? WHERE id=?').run(checkout.checkoutId, lastInsertRowid);
-  res.status(201).json({ contributionId: lastInsertRowid, checkoutId: checkout.checkoutId, redirectUrl: checkout.redirectUrl });
+  const c = childByCode(req.ctx.db, req.params.code);
+  res.status(201).json(startContribution(req.ctx, c, req.body));
 }));
 
 r.get('/gift/:code/receipt/:cid', h((req, res) => {

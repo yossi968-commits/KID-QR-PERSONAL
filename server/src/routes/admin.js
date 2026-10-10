@@ -37,6 +37,7 @@ r.get('/stats', h((req, res) => {
     withdrawalsPending: one(`SELECT COUNT(*) AS n FROM withdrawals WHERE status='requested'`).n,
     activePledges: one(`SELECT COUNT(*) AS n FROM pledges WHERE status='active'`).n,
     monthlyRecurring: one(`SELECT COALESCE(SUM(amount),0) AS s FROM pledges WHERE status='active'`).s,
+    bySource: db.prepare(`SELECT COALESCE(source,'gift') AS source, COUNT(*) AS n, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
     byMethod: db.prepare(`SELECT COALESCE(method,'card') AS method, COUNT(*) AS gifts, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
   });
 }));

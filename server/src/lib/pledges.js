@@ -34,8 +34,8 @@ export function chargePledge(ctx, pledge, date = today()) {
     const { paymentRef } =
       pledge.method === 'card' ? payments.chargeToken({ token: pledge.card_token, amount: pledge.amount }) : payments.chargeMandate({ mandateRef: pledge.mandate_ref, amount: pledge.amount });
     const { lastInsertRowid } = db
-      .prepare(`INSERT INTO contributions (child_id, giver_name, giver_email, amount, message, is_public, method, pledge_id) VALUES (?,?,?,?,?,?,?,?)`)
-      .run(pledge.child_id, pledge.giver_name, pledge.giver_email, pledge.amount, pledge.charges === 0 ? pledge.message : null, 1, pledge.method, pledge.id);
+      .prepare(`INSERT INTO contributions (child_id, giver_name, giver_email, amount, message, is_public, method, pledge_id, source) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(pledge.child_id, pledge.giver_name, pledge.giver_email, pledge.amount, pledge.charges === 0 ? pledge.message : null, pledge.source === 'gift' ? 1 : 0, pledge.method, pledge.id, pledge.source || 'gift');
     settleContribution(ctx, db.prepare('SELECT * FROM contributions WHERE id=?').get(lastInsertRowid), paymentRef, date);
     db.prepare('UPDATE pledges SET charges=charges+1, next_date=? WHERE id=?').run(addMonth(pledge.next_date || date), pledge.id);
     return lastInsertRowid;
@@ -60,6 +60,6 @@ export function runDuePledges(ctx, date = today()) {
 export function pledgeView(p) {
   return {
     id: p.id, token: p.token, giverName: p.giver_name, amount: p.amount, method: p.method, status: p.status,
-    nextDate: p.next_date, charges: p.charges, institutionCode: p.institution_code, mandateRef: p.mandate_ref, createdAt: p.created_at,
+    nextDate: p.next_date, charges: p.charges, source: p.source || 'gift', institutionCode: p.institution_code, mandateRef: p.mandate_ref, createdAt: p.created_at,
   };
 }

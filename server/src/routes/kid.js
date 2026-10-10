@@ -5,6 +5,8 @@ import { portfolioSummary } from '../lib/portfolio.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 import { plannerPayload, withdrawalBudget, taxEstimate } from '../lib/wishes.js';
 import { validWish } from './children.js';
+import { startContribution } from '../lib/contribute.js';
+import { pledgeView } from '../lib/pledges.js';
 import { bad, toAgorot } from '../lib/http.js';
 
 /** The child's own portal: read-only money view, gifts and lessons. */
@@ -55,6 +57,27 @@ r.post('/withdrawals', h((req, res) => {
   const g = db.prepare('SELECT email FROM users WHERE id=?').get(req.child.guardian_id);
   notifier.send({ to: g.email, subject: `${req.child.first_name} מבקש/ת למשוך ₪${amount / 100}`, body: 'הבקשה מחכה לאישורך באפליקציה.' });
   res.status(201).json(plannerPayload(db, partner, req.child));
+}));
+
+/**
+ * The child deposits their own money (pocket money, earnings, part of a salary),
+ * one-time or as a monthly standing deposit. Payment is made by whoever pays; the
+ * child is recorded as the depositor.
+ */
+r.post('/deposits', h((req, res) => {
+  const source = req.body.source && req.body.source !== 'gift' ? req.body.source : 'pocket_money';
+  res.status(201).json(startContribution(req.ctx, req.child, { ...req.body, source, giverName: req.child.first_name, isPublic: false }));
+}));
+
+r.get('/deposits', h((req, res) => {
+  const { db } = req.ctx;
+  res.json({
+    pledges: db.prepare(`SELECT * FROM pledges WHERE child_id=? AND source<>'gift' ORDER BY id DESC`).all(req.child.id).map(pledgeView),
+    deposits: db
+      .prepare(`SELECT id, amount, source, method, pledge_id, paid_at, giver_name FROM contributions WHERE child_id=? AND status='invested' AND source<>'gift' ORDER BY paid_at DESC LIMIT 50`)
+      .all(req.child.id)
+      .map((x) => ({ id: x.id, amount: x.amount, source: x.source, method: x.method, monthly: Boolean(x.pledge_id), paidAt: x.paid_at, payer: x.giver_name })),
+  });
 }));
 
 export default r;
