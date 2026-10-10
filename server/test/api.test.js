@@ -6,6 +6,8 @@ import { SandboxInvestmentPartner } from '../src/adapters/investment-partner.js'
 import { SandboxPayments } from '../src/adapters/payments.js';
 import { validIsraeliId } from '../src/routes/auth.js';
 import { activateFund, remindMissingDocs, WELCOME_GIFT } from '../src/lib/fund.js';
+import { analytics } from '../src/lib/analytics.js';
+import { portfolioSummary } from '../src/lib/portfolio.js';
 import { runHandovers, phaseOf } from '../src/lib/lifecycle.js';
 import { OutboxNotifier } from '../src/adapters/notifier.js';
 
@@ -499,4 +501,19 @@ test('the investment house gives the first gift when a QR opens; parents can mov
   const after = (await api(`/children/${id}`)).body;
   assert.equal(after.portfolio.value, before.portfolio.value, 'the money moves as it is: no sale, no tax');
   assert.equal(after.child.track, before.child.track);
+});
+
+test('admin analytics: savers by age, joins, split by house and track, invested now and projected', () => {
+  const a = analytics(ctx);
+  const n = db.prepare('SELECT COUNT(*) AS n FROM children').get().n;
+  assert.equal(a.savers, n);
+  assert.equal(a.ages.reduce((s, b) => s + b.savers, 0), n, 'every saver falls in one age band');
+  assert.equal(a.byProvider.reduce((s, p) => s + p.savers, 0), n);
+  assert.equal(a.byTrack.reduce((s, p) => s + p.savers, 0), n);
+  assert.ok(Math.abs(a.byProvider.reduce((s, p) => s + p.share, 0) - 1) < 1e-9);
+  assert.equal(a.joinedThisYear, n, 'everyone in this test joined today');
+  const values = db.prepare('SELECT * FROM children').all().reduce((s, c) => s + portfolioSummary(db, ctx.partner, c).value, 0);
+  assert.ok(Math.abs(a.aum - values) <= n, 'AUM is the sum of the savers’ portfolios');
+  assert.deepEqual(a.projection.at.map((p) => p.years), [1, 5, 10]);
+  for (const p of a.projection.at) assert.ok(p.withNew >= p.existing && p.existing >= a.aum);
 });

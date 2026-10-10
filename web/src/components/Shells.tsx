@@ -73,7 +73,7 @@ export function AdminShell() {
   if (loading) return null;
   if (!user || user.role !== 'admin') return <Navigate to="/login/admin" replace />;
   const items: [string, string, string][] = [
-    ['/admin', '▦', 'admin.nav.overview'], ['/admin/applications', '🗂', 'admin.nav.applications'], ['/admin/payments', '⇄', 'admin.nav.payments'],
+    ['/admin', '▦', 'admin.nav.overview'], ['/admin/analytics', '📈', 'admin.nav.analytics'], ['/admin/applications', '🗂', 'admin.nav.applications'], ['/admin/payments', '⇄', 'admin.nav.payments'],
     ['/admin/users', '👥', 'admin.nav.users'], ['/admin/outbox', '✉', 'admin.nav.outbox'],
   ];
   return (

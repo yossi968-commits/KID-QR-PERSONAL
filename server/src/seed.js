@@ -8,7 +8,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { openDb } from './db.js';
+import { openDb, tx } from './db.js';
 import { hashPassword } from './lib/auth.js';
 import { SandboxInvestmentPartner } from './adapters/investment-partner.js';
 import { investContribution } from './lib/portfolio.js';
@@ -220,6 +220,10 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
     const { id } = db.prepare('SELECT id FROM children WHERE kid_username=?').get(user);
     for (const [lid, stars] of rows) db.prepare('INSERT INTO lesson_progress (child_id, lesson_id, score) VALUES (?,?,?)').run(id, lid, stars);
   }
+
+  // The story families joined with their QR from birth (or from opening, for the newborns).
+  db.prepare(`UPDATE children SET created_at = COALESCE(account_opened_at, birth_date) || ' 09:00:00'`).run();
+  seedPopulation(db, partner);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -228,4 +232,68 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const db = openDb(file);
   seed(db);
   console.log('Seeded', file, '\n  parent: demo@kfq.app / demo1234\n  admin:  admin@kfq.app / admin1234\n  kids:   noa / itay / omer / shira, PIN 1234\n  gift pages: /g/noa2019demo  /g/itay2013demo  /g/omer2009demo');
+
+}
+
+/**
+ * A realistic population for the admin analytics: about five hundred fictional families
+ * who joined since January 2023, faster each month. Each QR has the house's welcome gift,
+ * the gifts from the day it opened and from every birthday since. Deterministic.
+ */
+function seedPopulation(db, partner) {
+  let s = 20231;
+  const rand = () => ((s = (s * 48271) % 2147483647) / 2147483647);
+  const pick = (weights) => { let x = rand() * weights.reduce((a, [, w]) => a + w, 0); for (const [v, w] of weights) if ((x -= w) <= 0) return v; return weights[0][0]; };
+  const PROV = [['altshuler', 26], ['meitav', 18], ['more', 14], ['analyst', 10], ['harel', 8], ['migdal', 7], ['clal', 6], ['phoenix', 5], ['yelin', 4], ['menora', 2]];
+  const TRK = [['equity', 55], ['conservative', 22], ['solid', 12], ['sp500', 7], ['balanced', 4]];
+  const FIRST = ['יונתן', 'מאיה', 'אריאל', 'תמר', 'נועם', 'שירה', 'איתן', 'יעל', 'עידו', 'הילה', 'דניאל', 'רוני', 'אורי', 'ליה', 'עמית', 'נגה', 'יואב', 'אביגיל', 'אלון', 'מיכל'];
+  const LAST = ['כהן', 'לוי', 'מזרחי', 'פרץ', 'ביטון', 'אברהם', 'פרידמן', 'שפירא', 'דהן', 'אזולאי', 'גבאי', 'חדד'];
+  const AV = ['🦁', '🐻', '🦊', '🐼', '🐨', '🐯', '🦄', '🐬', '🦋', '🐢', '🚀', '⭐'];
+  const pw = hashPassword('family-demo-' + 1);
+  const day = (d) => new Date(d).toISOString().slice(0, 10);
+  const now = today();
+  const DAY = 86400000;
+  const insUser = db.prepare('INSERT INTO users (email, password_hash, name, role, kyc_status, created_at) VALUES (?,?,?,?,?,?)');
+  const insChild = db.prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, provider, account_status, application_ref, account_opened_at, opened_as_adult, handed_over_at, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const insGift = db.prepare(`INSERT INTO contributions (child_id, giver_name, amount, status, method, source, payment_ref, paid_at, created_at) VALUES (?,?,?,?,?,?,?,?,?)`);
+  tx(db, () => {
+    let n = 0, guardian = null;
+    const start = Date.UTC(2023, 0, 1);
+    for (let m = 0; ; m++) {
+      const monthStart = Date.UTC(2023, m, 1);
+      if (day(monthStart) > now) break;
+      const monthEnd = Math.min(Date.UTC(2023, m + 1, 1) - DAY, Date.parse(now + 'T00:00:00Z'));
+      const span = (monthEnd - monthStart) / DAY + 1;
+      const joins = Math.round(3 * Math.pow(1.05, m) * (0.8 + rand() * 0.4) * (span / 30));
+      for (let j = 0; j < joins; j++, n++) {
+        const joinedMs = monthStart + Math.floor(rand() * span) * DAY;
+        const joined = day(joinedMs);
+        // Most QRs open for a newborn; some for older kids and a few for adults.
+        const kind = pick([['newborn', 55], ['kid', 25], ['teen', 15], ['adult', 5]]);
+        const ageDays = kind === 'newborn' ? Math.floor(rand() * 60) : kind === 'kid' ? 365 * (1 + Math.floor(rand() * 10)) : kind === 'teen' ? 365 * (11 + Math.floor(rand() * 7)) : 365 * (18 + Math.floor(rand() * 12));
+        const birth = day(joinedMs - ageDays * DAY - Math.floor(rand() * 300) * DAY * (kind === 'newborn' ? 0 : 1));
+        if (!guardian || rand() < 0.75) guardian = insUser.run(`family${n}@example.com`, pw, `משפחת ${LAST[n % LAST.length]}`, 'parent', 'verified', joined + ' 08:00:00').lastInsertRowid;
+        const provider = pick(PROV), track = pick(TRK);
+        const opens = day(joinedMs + 14 * DAY);
+        const active = opens <= now;
+        const adult = ageOn(birth, joined) >= 18;
+        const id = insChild.run(guardian, FIRST[(n * 7) % FIRST.length], LAST[n % LAST.length], birth, AV[n % AV.length], 'fam' + n + 'x' + (1000 + Math.floor(rand() * 9000)), track, provider,
+          active ? 'active' : 'pending_docs', newApplicationRef(), active ? opens : null, adult ? 1 : 0, ageOn(birth, now) >= 18 ? (adult ? joined : addYears(birth, 18)) : null, joined + ' 09:00:00').lastInsertRowid;
+        const child = { id, track, provider, birth_date: birth };
+        if (active) { child.partner_account_id = partner.openAccount({ child }).accountId; db.prepare('UPDATE children SET partner_account_id=? WHERE id=?').run(child.partner_account_id, id); }
+        const gift = (giver, amount, date, source, ref) => {
+          if (date > now) return;
+          const cid = insGift.run(id, giver, amount, 'paid', source === 'provider_gift' ? 'provider' : 'bit', source, ref, date + ' 10:00:00', date + ' 10:00:00').lastInsertRowid;
+          if (active) investContribution(db, partner, child, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), date < opens ? opens : date);
+        };
+        gift(providerName(provider), WELCOME_GIFT, joined, 'provider_gift', 'POP-W-' + id);
+        gift('משפחה וחברים', (kind === 'newborn' ? 150000 : 60000) + Math.floor(rand() * 300000), day(joinedMs + 3 * DAY), 'gift', 'POP-J-' + id);
+        for (let a = ageOn(birth, joined) + 1; ; a++) {
+          const bd = addYears(birth, a);
+          if (bd > now) break;
+          gift('משפחה וחברים', 40000 + Math.floor(rand() * 210000), bd, 'gift', `POP-B-${id}-${a}`);
+        }
+      }
+    }
+  });
 }

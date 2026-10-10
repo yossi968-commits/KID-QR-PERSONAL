@@ -3,6 +3,7 @@ import { h, notFound } from '../lib/http.js';
 import { requireAdmin, audit } from '../lib/guards.js';
 import { holdings } from '../lib/portfolio.js';
 import { today } from '../lib/dates.js';
+import { analytics } from '../lib/analytics.js';
 import { runDuePledges } from '../lib/pledges.js';
 import { docsStatus, activateFund, remindMissingDocs, providerName } from '../lib/fund.js';
 
@@ -46,6 +47,8 @@ r.get('/stats', h((req, res) => {
     byMethod: db.prepare(`SELECT COALESCE(method,'card') AS method, COUNT(*) AS gifts, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
   });
 }));
+
+r.get('/analytics', h((req, res) => res.json(analytics(req.ctx))));
 
 r.get('/users', h((req, res) => {
   const rows = req.ctx.db
