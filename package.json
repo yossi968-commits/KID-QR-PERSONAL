@@ -2,7 +2,7 @@
   "name": "kids-future-qr",
   "private": true,
   "version": "1.0.0",
-  "description": "QR לעתיד: מתנות יום הולדת שהופכות להשקעה לטווח ארוך לילד",
+  "description": "QR livela: מתנות יום הולדת שהופכות להשקעה לטווח ארוך לילד",
   "workspaces": ["server", "web"],
   "scripts": {
     "dev": "npm run dev -w server & npm run dev -w web",

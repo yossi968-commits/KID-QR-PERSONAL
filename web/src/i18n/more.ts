@@ -3,8 +3,8 @@
  * employer and admin areas, payments and the investment fund. Overrides base keys.
  */
 export const heMore = {
-  appName: 'QR לעתיד',
-  'footer.regulatory': 'QR לעתיד היא שכבת טכנולוגיה. הכספים מוחזקים בקופת גמל להשקעה על שם הילד, אצל בית השקעות בפיקוח רשות שוק ההון. אין באמור ייעוץ השקעות. סביבת הדגמה: אין חיבור לבתי השקעות ואין תנועת כסף.',
+  appName: 'QR livela',
+  'footer.regulatory': 'QR livela היא שכבת טכנולוגיה. הכספים מוחזקים בקופת גמל להשקעה על שם הילד, אצל בית השקעות בפיקוח רשות שוק ההון. אין באמור ייעוץ השקעות. סביבת הדגמה: אין חיבור לבתי השקעות ואין תנועת כסף.',
 
   // Entry portal
   'portal.eyebrow': 'קוד QR אישי לכל ילד, לכל החיים',
@@ -603,7 +603,7 @@ export const heMore = {
   'app.desktopSteps': 'נכנסים לאתר מכל דפדפן, לוחצים "האזור האישי" ומזדהים עם ת״ז וקוד לטלפון. ב־Chrome וב־Edge אפשר גם להתקין כאפליקציה.',
   'app.install': 'התקנת האפליקציה',
   'app.installed': 'האפליקציה מותקנת במכשיר הזה',
-  'app.bannerText': 'רוצים את QR לעתיד כאייקון במסך הבית?',
+  'app.bannerText': 'רוצים את QR livela כאייקון במסך הבית?',
   'app.iosHint': 'לחצו על ⬆️ שיתוף ואז "הוספה למסך הבית".',
   'app.later': 'לא עכשיו',
   'app.login': 'לאזור האישי',
@@ -699,8 +699,8 @@ export const heMore = {
 };
 
 export const enMore: Record<keyof typeof heMore, string> = {
-  appName: 'Future QR',
-  'footer.regulatory': 'Future QR is a technology layer. Money is held in an investment provident fund (kupat gemel lehashkaa) in the child\'s name at a licensed investment house. Not investment advice. Demo environment: no connection to investment houses and no real money.',
+  appName: 'QR livela',
+  'footer.regulatory': 'QR livela is a technology layer. Money is held in an investment provident fund (kupat gemel lehashkaa) in the child\'s name at a licensed investment house. Not investment advice. Demo environment: no connection to investment houses and no real money.',
   'portal.eyebrow': 'A personal QR for every child, for life',
   'portal.title': 'Gifts, pocket money and a first salary, in one savings that grows with your child',
   'portal.lead': 'Family, friends and the parents\' employer send money to the child\'s QR by Bit, PayBox, card or bank transfer. It is invested in a provident fund in the child\'s name at the investment house the parents chose.',
@@ -1271,7 +1271,7 @@ export const enMore: Record<keyof typeof heMore, string> = {
   'app.desktopSteps': 'Open the site in any browser, click "Personal area" and sign in with your ID and a code to your phone. Chrome and Edge can also install it as an app.',
   'app.install': 'Install the app',
   'app.installed': 'The app is installed on this device',
-  'app.bannerText': 'Want QR for the Future as a home-screen icon?',
+  'app.bannerText': 'Want QR livela as a home-screen icon?',
   'app.iosHint': 'Tap ⬆️ Share, then "Add to Home Screen".',
   'app.later': 'Not now',
   'app.login': 'Personal area',

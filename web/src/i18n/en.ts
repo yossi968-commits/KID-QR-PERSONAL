@@ -1,7 +1,7 @@
 import type { Dict } from './he';
 
 const en: Dict = {
-  appName: 'Future QR',
+  appName: 'QR livela',
   tagline: 'A birthday gift that grows up with your child',
   'nav.home': 'Home',
   'nav.dashboard': 'My kids',

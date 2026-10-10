@@ -39,7 +39,7 @@ export function sendCode({ db, notifier }, user) {
   if (recent >= MAX_SENDS) return { error: 'too_many_codes' };
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   db.prepare(`INSERT INTO login_codes (user_id, code_hash, expires_at) VALUES (?,?,datetime('now','+${CODE_TTL_MIN} minutes'))`).run(user.id, hashCode(user.id, code));
-  notifier.send({ channel: 'sms', to: user.phone, subject: 'קוד כניסה', body: `הקוד שלך ל-QR לעתיד: ${code}. בתוקף ${CODE_TTL_MIN} דקות. אל תמסרו אותו לאף אחד.` });
+  notifier.send({ channel: 'sms', to: user.phone, subject: 'קוד כניסה', body: `הקוד שלך ל-QR livela: ${code}. בתוקף ${CODE_TTL_MIN} דקות. אל תמסרו אותו לאף אחד.` });
   return { code };
 }
 

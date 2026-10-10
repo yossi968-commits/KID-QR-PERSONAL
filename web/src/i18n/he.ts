@@ -1,5 +1,5 @@
 const he = {
-  appName: 'QR לעתיד',
+  appName: 'QR livela',
   tagline: 'מתנת יום הולדת שגדלה עם הילד',
   'nav.home': 'בית',
   'nav.dashboard': 'הילדים שלי',
