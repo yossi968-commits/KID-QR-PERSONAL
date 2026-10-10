@@ -159,6 +159,39 @@ CREATE TABLE IF NOT EXISTS child_documents (
   PRIMARY KEY (child_id, doc_type)
 );
 
+-- Employers and workers' committees that give a birth gift into the newborn's QR.
+CREATE TABLE IF NOT EXISTS employers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'employer' CHECK (kind IN ('employer','committee')),
+  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT NOT NULL,
+  contact_name TEXT,
+  logo TEXT NOT NULL DEFAULT '🏢',
+  gift_amount INTEGER NOT NULL DEFAULT 50000,
+  gift_message TEXT,
+  occasions TEXT NOT NULL DEFAULT 'birth',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS birth_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  employer_id INTEGER NOT NULL REFERENCES employers(id) ON DELETE CASCADE,
+  employee_name TEXT NOT NULL,
+  employee_email TEXT,
+  employee_number TEXT,
+  baby_name TEXT,
+  birth_date TEXT NOT NULL,
+  occasion TEXT NOT NULL DEFAULT 'birth',
+  child_id INTEGER REFERENCES children(id),
+  status TEXT NOT NULL DEFAULT 'reported' CHECK (status IN ('reported','invited','linked','gifted')),
+  contribution_id INTEGER REFERENCES contributions(id),
+  reported_by TEXT NOT NULL DEFAULT 'employee',
+  invited_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_children_guardian ON children(guardian_id);
 CREATE INDEX IF NOT EXISTS idx_contrib_child ON contributions(child_id);
 CREATE INDEX IF NOT EXISTS idx_tx_child ON transactions(child_id);

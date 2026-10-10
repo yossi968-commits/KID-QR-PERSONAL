@@ -3,6 +3,7 @@
  * invested every year since birth (back-dated against sandbox prices), plus an admin.
  *   parent: demo@kfq.app / demo1234     admin: admin@kfq.app / admin1234
  *   kids (username / PIN): noa, itay, omer / 1234
+ *   employer HR: hr@alpha.example / demo1234
  *   newborn אלה: fund documents still missing; רוני (yael@example.com): waiting for the investment house
  */
 import fs from 'node:fs';
@@ -15,6 +16,7 @@ import { SandboxPayments } from './adapters/payments.js';
 import { runDuePledges, newPledgeToken } from './lib/pledges.js';
 import { executeWithdrawal } from './lib/wishes.js';
 import { DOCUMENTS, newApplicationRef } from './lib/fund.js';
+import { linkReports, sendGifts } from './lib/employer.js';
 import { addYears, today, nextBirthday, ageOn } from './lib/dates.js';
 
 
@@ -148,6 +150,24 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
     .run(ella.id, zb, 'מיכל לוי', 'demo@kfq.app', 400000, 'מתנות מהבריתה', 0, 'paid', 'SEED-ZB', daysAgo(28) + ' 10:00:00', 'bank_transfer', 'event_gifts');
   const yael = addUser('yael@example.com', 'demo1234', 'יעל כהן', 'parent', 'verified');
   newborn(yael, 'רוני', daysAgo(12), '🐥', 'more', 'roni2026demo', DOCUMENTS.length, 'in_review');
+
+  // An employer (fictional) that swapped its school-bag gift for a deposit into the newborn's QR.
+  const emp = db
+    .prepare(`INSERT INTO employers (slug, name, kind, email, password_hash, contact_name, logo, gift_amount, gift_message, occasions) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+    .run('alpha', 'אלפא טכנולוגיות', 'employer', 'hr@alpha.example', hashPassword('demo1234'), 'דנה רוזן, משאבי אנוש', '🏢', 50000, 'מזל טוב מכל המשפחה של אלפא! 💙', 'birth,first_grade')
+    .lastInsertRowid;
+  db.prepare(`INSERT INTO employers (slug, name, kind, email, password_hash, contact_name, logo) VALUES (?,?,?,?,?,?,?)`)
+    .run('beta-vaad', 'ועד עובדי בטא', 'committee', 'vaad@beta.example', hashPassword('demo1234'), 'יו"ר הוועד', '🤝');
+  const report = (name, email, num, baby, birth, by) =>
+    db.prepare('INSERT INTO birth_reports (employer_id, employee_name, employee_email, employee_number, baby_name, birth_date, reported_by) VALUES (?,?,?,?,?,?,?)').run(emp, name, email, num, baby, birth, by).lastInsertRowid;
+  const ellaReport = report('מיכל לוי', 'demo@kfq.app', '10234', 'אלה', ella.birth_date, 'employee');
+  report('יעל כהן', 'yael@example.com', '10871', 'רוני', daysAgo(12), 'employee');
+  report('דניאל אברהם', 'daniel@example.com', '11502', 'תמר', daysAgo(6), 'hr');
+  report('נועם פרץ', 'noam@example.com', '12077', null, daysAgo(2), 'employee');
+  linkReports(db);
+  const empRow = db.prepare('SELECT * FROM employers WHERE id=?').get(emp);
+  sendGifts({ db, partner, notifier: { send() {} } }, empRow, [ellaReport]);
+  db.prepare(`UPDATE birth_reports SET status='invited', invited_at=? WHERE employee_name='דניאל אברהם'`).run(daysAgo(5) + ' 09:00:00');
 
   const progress = {
     noa: [['what-is-money', 3], ['three-jars', 3]],

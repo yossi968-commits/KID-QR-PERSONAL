@@ -9,6 +9,7 @@ import { plannerPayload, withdrawalBudget, executeWithdrawal, taxEstimate } from
 import { PAYOUT_METHODS } from '../adapters/payments.js';
 import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef } from '../lib/fund.js';
 import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
+import { linkReports } from '../lib/employer.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
 
 const r = Router();
@@ -29,7 +30,12 @@ r.get('/', h((req, res) => {
   res.json({
     children: rows.map((c) => {
       const p = portfolioSummary(db, partner, c);
-      return { ...childView(c), value: p.value, deposited: p.deposited };
+      return {
+        ...childView(c), value: p.value, deposited: p.deposited, held: p.held, earned: p.earned,
+        docsMissing: docsStatus(db, c).missing.length,
+        pendingWithdrawals: db.prepare(`SELECT COUNT(*) AS n FROM withdrawals WHERE child_id=? AND status='requested'`).get(c.id).n,
+        monthly: db.prepare(`SELECT COALESCE(SUM(amount),0) AS s FROM pledges WHERE child_id=? AND status='active'`).get(c.id).s,
+      };
     }),
   });
 }));
@@ -61,6 +67,7 @@ r.post('/', h((req, res) => {
   // Every child gets a standing birthday campaign from day one.
   db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(child.id, 'birthday', `יום הולדת ${age + 1}`, nextBirthday(birthDate));
   audit(db, req.user.id, 'child_created', { childId: child.id, provider });
+  linkReports(db); // an employer may already be waiting to send a birth gift
   res.status(201).json({ child: childView(child), documents: docsStatus(db, child) });
 }));
 

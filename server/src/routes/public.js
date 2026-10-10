@@ -60,7 +60,9 @@ r.get('/gift/:code', h((req, res) => {
 
 r.post('/gift/:code/contribute', h((req, res) => {
   const c = childByCode(req.ctx.db, req.params.code);
-  res.status(201).json(startContribution(req.ctx, c, req.body));
+  // Guests give gifts or pay the child for work; employer and event deposits have their own flows.
+  const source = ['employer_gift', 'event_gifts'].includes(req.body.source) ? 'gift' : req.body.source;
+  res.status(201).json(startContribution(req.ctx, c, { ...req.body, source }));
 }));
 
 r.get('/gift/:code/receipt/:cid', h((req, res) => {

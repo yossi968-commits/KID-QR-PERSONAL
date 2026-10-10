@@ -10,6 +10,7 @@ import childRoutes from './routes/children.js';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
 import kidRoutes from './routes/kid.js';
+import employerRoutes, { workRoutes } from './routes/employer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -29,6 +30,7 @@ export function createApp({ db, partner, payments, notifier = new OutboxNotifier
     const t = readToken(raw);
     req.user = t?.uid ? db.prepare('SELECT * FROM users WHERE id=?').get(t.uid) || null : null;
     req.child = t?.cid ? db.prepare('SELECT * FROM children WHERE id=?').get(t.cid) || null : null;
+    req.employer = t?.eid ? db.prepare('SELECT * FROM employers WHERE id=?').get(t.eid) || null : null;
     req.ctx = ctx;
     next();
   });
@@ -37,6 +39,8 @@ export function createApp({ db, partner, payments, notifier = new OutboxNotifier
   app.use('/api/auth', authRoutes);
   app.use('/api/children', childRoutes);
   app.use('/api/kid', kidRoutes);
+  app.use('/api/employer', employerRoutes);
+  app.use('/api/work', workRoutes);
   app.use('/api', publicRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'not_found')));

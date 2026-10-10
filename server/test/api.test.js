@@ -304,3 +304,21 @@ test('parent deposits part of the bar mitzvah gifts, tagged to the event', async
   assert.equal(g.eventTitle, 'בר המצווה של דני');
   assert.equal((await api(`/children/${childId}/deposits`, { method: 'POST', body: { amount: 82000, method: 'card' } })).body.error, 'annual_ceiling');
 });
+
+test('employer: employee reports a birth, report links to the QR, HR sends the gift', async () => {
+  const { hashPassword } = await import('../src/lib/auth.js');
+  db.prepare(`INSERT INTO employers (slug, name, email, password_hash, gift_amount) VALUES (?,?,?,?,?)`).run('acme', 'אקמי', 'hr@acme.example', hashPassword('secret123'), 40000);
+  assert.equal((await api('/work/acme/report', { method: 'POST', auth: false, body: { employeeName: 'הורה', employeeEmail: 'P@x.com', birthDate: '2026-01-16', babyName: 'מיה' } })).status, 201);
+  const parentToken = token;
+  token = (await api('/employer/login', { method: 'POST', auth: false, body: { email: 'hr@acme.example', password: 'secret123' } })).body.token;
+  assert.equal((await api('/children')).status, 401, 'employer cannot see families');
+  const reports = (await api('/employer/reports')).body.reports;
+  assert.equal(reports[0].status, 'linked', 'matched by parent email and birth date');
+  assert.equal(reports[0].child.firstName, 'מיה');
+  const sent = (await api('/employer/gifts', { method: 'POST', body: { reportIds: [reports[0].id] } })).body;
+  assert.equal(sent.sent, 1);
+  assert.equal((await api('/employer/me')).body.stats.total, 40000);
+  token = parentToken;
+  const g = (await api(`/children/${reports[0].child && (await api('/children')).body.children.find((c) => c.firstName === 'מיה').id}/contributions`)).body.contributions;
+  assert.ok(g.some((x) => x.source === 'employer_gift' && x.giverName === 'אקמי'));
+});

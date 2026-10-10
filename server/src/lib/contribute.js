@@ -9,9 +9,10 @@ import { ANNUAL_CEILING, depositedThisYear } from './fund.js';
  * money: pocket money and earnings paid straight to their QR instead of cash, and
  * part of a soldier's or young worker's salary.
  */
-export const SOURCES = ['gift', 'event_gifts', 'pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
+export const SOURCES = ['gift', 'employer_gift', 'event_gifts', 'pocket_money', 'babysitting', 'dog_walking', 'tutoring', 'waiting_tables', 'salary', 'other_work'];
 /** event_gifts: a parent depositing part of the cash gifts from a brit, naming, bar or bat mitzvah. */
-export const isEarning = (source) => Boolean(source) && source !== 'gift' && source !== 'event_gifts';
+export const GIFT_SOURCES = ['gift', 'employer_gift', 'event_gifts'];
+export const isEarning = (source) => Boolean(source) && !GIFT_SOURCES.includes(source);
 export const EVENT_TYPES = ['birthday', 'brit', 'brita', 'bar_mitzvah', 'bat_mitzvah', 'holiday', 'other'];
 
 /**

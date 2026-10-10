@@ -40,6 +40,7 @@ r.get('/stats', h((req, res) => {
     monthlyRecurring: one(`SELECT COALESCE(SUM(amount),0) AS s FROM pledges WHERE status='active'`).s,
     bySource: db.prepare(`SELECT COALESCE(source,'gift') AS source, COUNT(*) AS n, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
     byProvider: db.prepare(`SELECT provider, COUNT(*) AS children, SUM(account_status='active') AS open FROM children GROUP BY 1 ORDER BY 2 DESC`).all(),
+    employers: db.prepare(`SELECT e.name, e.kind, COUNT(b.id) AS reports, SUM(b.status='gifted') AS gifted FROM employers e LEFT JOIN birth_reports b ON b.employer_id=e.id GROUP BY e.id ORDER BY 3 DESC`).all(),
     applicationsOpen: one(`SELECT COUNT(*) AS n FROM children WHERE account_status<>'active'`).n,
     heldAmount: one(`SELECT COALESCE(SUM(amount),0) AS s FROM contributions WHERE status='paid'`).s,
     byMethod: db.prepare(`SELECT COALESCE(method,'card') AS method, COUNT(*) AS gifts, SUM(amount) AS amount FROM contributions WHERE status='invested' GROUP BY 1 ORDER BY 3 DESC`).all(),
@@ -56,7 +57,7 @@ r.get('/users', h((req, res) => {
 
 r.get('/contributions', h((req, res) => {
   const rows = req.ctx.db
-    .prepare(`SELECT x.id, x.giver_name, x.amount, x.status, x.payment_ref, x.method, x.pledge_id, x.created_at, x.paid_at, c.first_name AS child, c.partner_account_id
+    .prepare(`SELECT x.id, x.giver_name, x.amount, x.status, x.payment_ref, x.method, x.source, x.pledge_id, x.created_at, x.paid_at, c.first_name AS child, c.partner_account_id
               FROM contributions x JOIN children c ON c.id=x.child_id ORDER BY x.id DESC LIMIT 200`)
     .all();
   res.json({ contributions: rows });
@@ -75,7 +76,7 @@ r.get('/pledges', h((req, res) => {
     pledges: req.ctx.db
       .prepare(`SELECT p.*, c.first_name AS child FROM pledges p JOIN children c ON c.id=p.child_id ORDER BY p.id DESC LIMIT 200`)
       .all()
-      .map((p) => ({ id: p.id, child: p.child, giverName: p.giver_name, amount: p.amount, method: p.method, status: p.status, nextDate: p.next_date, charges: p.charges })),
+      .map((p) => ({ id: p.id, child: p.child, giverName: p.giver_name, amount: p.amount, method: p.method, status: p.status, nextDate: p.next_date, charges: p.charges, source: p.source })),
   });
 }));
 

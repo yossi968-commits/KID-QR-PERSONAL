@@ -29,6 +29,12 @@ export function issueChildToken(child) {
   return `${payload}.${sign(payload)}`;
 }
 
+/** Employer / workers' committee HR session: limited to the employer portal. */
+export function issueEmployerToken(employer) {
+  const payload = b64(JSON.stringify({ eid: employer.id, role: 'employer', exp: Date.now() + TOKEN_TTL_MS }));
+  return `${payload}.${sign(payload)}`;
+}
+
 export function readToken(token) {
   if (!token) return null;
   const [payload, sig] = token.split('.');
