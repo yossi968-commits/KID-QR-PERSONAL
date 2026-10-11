@@ -5,12 +5,7 @@ import { useI18n } from '../i18n';
 import { api, type Provider } from '../lib/api';
 import { AppSection } from '../components/InstallPrompt';
 import { QrScanner } from '../components/QrScanner';
-
-function fvAnnuity(perYear: number, years: number, r: number) {
-  let v = 0;
-  for (let y = 0; y < years; y++) v = v * (1 + r) + perYear;
-  return v;
-}
+import { ScenarioCalc } from '../components/ScenarioCalc';
 
 /** Entry portal: three doors (kids, parents, admin) plus the gift-code box for guests. */
 export default function Portal() {
@@ -18,11 +13,8 @@ export default function Portal() {
   const nav = useNavigate();
   const [code, setCode] = useState('');
   const [scanning, setScanning] = useState(false);
-  const [givers, setGivers] = useState(15);
-  const [amount, setAmount] = useState(150);
   const [providers, setProviders] = useState<Provider[]>([]);
   useEffect(() => { api<{ providers: Provider[] }>('/providers').then((r) => setProviders(r.providers)).catch(() => {}); }, []);
-  const yearly = givers * amount * 100;
   const doors: [string, string, string, string][] = [
     ['/login/kid', '🧒', 'portal.kid', 'portal.kidDesc'],
     ['/login/parent', '💼', 'portal.parent', 'portal.parentDesc'],
@@ -66,16 +58,7 @@ export default function Portal() {
             <button type="button" className="btn gold block" onClick={() => setScanning(true)}>📷 {t('scan.button')}</button>
             {scanning && <QrScanner onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); nav('/g/' + c); }} />}
           </div>
-          <div className="card">
-            <div className="card-head"><h3>{t('land.calcTitle')}</h3><span className="pill brand num">{fmtMoney(yearly)} {t('common.perYear')}</span></div>
-            <label className="field"><span>{t('land.calcGivers')}: <b className="num">{givers}</b></span><input type="range" min={3} max={40} value={givers} onChange={(e) => setGivers(+e.target.value)} /></label>
-            <label className="field" style={{ marginTop: 8 }}><span>{t('land.calcAmount')}: <b className="num">₪{amount}</b></span><input type="range" min={36} max={500} step={2} value={amount} onChange={(e) => setAmount(+e.target.value)} /></label>
-            <div className="row between" style={{ marginTop: 12 }}>
-              <span className="muted">{t('land.calcResult')}</span>
-              <strong className="num" style={{ fontSize: '1.6rem', fontFamily: 'var(--font-display)' }}>{fmtMoney(fvAnnuity(yearly, 22, 0.065))}</strong>
-            </div>
-            <p className="small muted" style={{ margin: '8px 0 0' }}>{t('land.calcNote')}</p>
-          </div>
+          <ScenarioCalc />
         </section>
 
         <section className="section" style={{ paddingTop: 0 }}>

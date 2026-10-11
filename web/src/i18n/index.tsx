@@ -5,11 +5,12 @@ import { heMore, enMore } from './more';
 import { heSector, enSector, arSector } from './sector';
 import { arBase } from './ar';
 import { heDesign, enDesign, arDesign } from './design';
+import { heCalc, enCalc, arCalc } from './calc';
 
-const he = { ...heBase, ...heMore, ...heSector, ...heDesign };
-const en = { ...enBase, ...enMore, ...enSector, ...enDesign };
+const he = { ...heBase, ...heMore, ...heSector, ...heDesign, ...heCalc };
+const en = { ...enBase, ...enMore, ...enSector, ...enDesign, ...enCalc };
 type Dict = typeof he;
-const ar = { ...arBase, ...arSector, ...arDesign } as Dict;
+const ar = { ...arBase, ...arSector, ...arDesign, ...arCalc } as Dict;
 
 export type Locale = 'he' | 'en' | 'ar';
 export const LOCALES: Locale[] = ['he', 'en', 'ar'];

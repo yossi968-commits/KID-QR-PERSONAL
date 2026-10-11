@@ -543,3 +543,30 @@ footer.site { padding-block: 28px 40px; color: var(--muted); font-size: 0.82rem;
 .step-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .step-head .step-num { margin: 0; flex: none; }
 .step-head h3 { margin: 0; }
+
+/* "How much could it be" calculator */
+.risk-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.risk-pick .chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; }
+.risk-pick .chip b { font-size: 1.15rem; font-family: var(--font-display); }
+.calc-rows { display: flex; flex-direction: column; gap: 8px; }
+.calc-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.calc-who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.calc-who small { font-size: 0.78rem; }
+.calc-who input { min-height: 36px; padding: 4px 8px; }
+.calc-num { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 0.85rem; color: var(--ink-2); }
+.calc-num input { width: 76px; min-height: 36px; padding: 4px 8px; text-align: center; }
+.calc-x { padding: 4px 8px; min-height: 32px; }
+.calc-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.calc-res { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.calc-res > b { font-size: 1.5rem; font-family: var(--font-display); line-height: 1.1; }
+.calc-res.main { border-color: var(--growth); box-shadow: inset 0 0 0 1px var(--growth); }
+.calc-res .split-bar { height: 8px; }
+@media (max-width: 560px) {
+  .calc-row { flex-wrap: wrap; }
+  .calc-who { flex-basis: calc(100% - 48px); }
+  .calc-num input { width: 68px; }
+}
+.calc-leg { display: flex; flex-direction: column; gap: 2px; color: var(--ink-2); }
+.calc-leg span { display: flex; align-items: center; gap: 6px; }
+.calc-leg i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.calc-leg b { margin-inline-start: auto; font-weight: 600; }
