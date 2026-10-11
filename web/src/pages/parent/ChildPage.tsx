@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { FutureHero, FutureTiles } from '../../components/Future';
 import { useI18n } from '../../i18n';
 import { api, type ChildData } from '../../lib/api';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
@@ -65,7 +66,7 @@ export default function ChildPage() {
           </button>
         ))}
       </div>
-      {tab === 'overview' && <Overview data={data} />}
+      {tab === 'overview' && <Overview data={data} go={(k) => setSp({ tab: k })} />}
       {tab === 'money' && <Money data={data} reload={load} />}
       {tab === 'planner' && <PlannerTab data={data} />}
       {tab === 'fund' && sp.get('new') === '1' && (Number(sp.get('gifts')) > 0 || Number(sp.get('reused')) > 0) && (
@@ -83,13 +84,17 @@ export default function ChildPage() {
   );
 }
 
-function Overview({ data }: { data: ChildData }) {
+function Overview({ data, go }: { data: ChildData; go: (tab: string) => void }) {
   const { t, fmtMoney, fmtDate } = useI18n();
   const L = useLabels();
   const { child, portfolio: p } = data;
   const goalPct = child.goalAmount ? Math.min(100, (p.value / child.goalAmount) * 100) : 0;
   return (
     <div className="stack">
+      <FutureHero child={child} p={p}>
+        <div className="row"><button className="btn gold" onClick={() => go('money')}>🎁 {t('future.addGift')}</button></div>
+      </FutureHero>
+      <FutureTiles onGift={() => go('qr')} onLearn={() => go('learn')} />
       <LifeTimeline child={child} />
       <Kpis items={[
         { label: t('child.value'), value: fmtMoney(p.value) },

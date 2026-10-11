@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FundPill } from '../../components/Lifecycle';
+import { AgeTimeline } from '../../components/Future';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
 import { api, type Child, type Family } from '../../lib/api';
@@ -45,6 +46,23 @@ export default function Dashboard() {
         { label: t('dash.monthly'), value: fmtMoney(sum('monthly')), sub: t('dash.monthlySub') },
         { label: t('dash.held'), value: fmtMoney(sum('held')), sub: t('dash.heldSub') },
       ]} />
+
+      {kids.length > 0 && (
+        <section aria-labelledby="futures">
+          <h2 id="futures" style={{ fontSize: '1.15rem' }}>{t('dash.futures')}</h2>
+          <div className="kid-cards">
+            {kids.filter((k) => !k.hidden).map((k) => (
+              <Link key={k.id} className="kid-card" to={`/parent/child/${k.id}`}>
+                <div className="row" style={{ gap: 10 }}>
+                  <span className="avatar" aria-hidden>{k.avatar}</span>
+                  <span><span className="small muted">{t('future.of', { name: k.firstName })}</span><div className="kc-value num">{fmtMoney((k.value || 0) + (k.held || 0))}</div></span>
+                </div>
+                <AgeTimeline age={k.age} end={Math.max(21, k.age)} />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {tasks.length > 0 && (
         <div className="card">

@@ -62,7 +62,7 @@ export function ParentShell() {
           <span className="spacer" />
           <nav className="nav">
             <NavLink to="/parent" end>{t('parent.nav.portfolio')}</NavLink>
-            <NavLink to="/parent/new">{t('parent.nav.open')}</NavLink>
+            <NavLink to="/parent/new" className="hide-sm">{t('parent.nav.open')}</NavLink>
             <span className="hide-sm" style={{ color: 'var(--header-muted)', fontSize: '0.85rem', paddingInline: 8 }}>{user.name}</span>
             <button className="link" onClick={() => { logout(); nav('/'); }}>{t('nav.logout')}</button>
             <LangButton />

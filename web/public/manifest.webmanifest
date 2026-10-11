@@ -13,8 +13,8 @@
     "minimal-ui"
   ],
   "orientation": "portrait",
-  "background_color": "#0e1c33",
-  "theme_color": "#13243f",
+  "background_color": "#102A43",
+  "theme_color": "#102A43",
   "categories": [
     "finance",
     "education",

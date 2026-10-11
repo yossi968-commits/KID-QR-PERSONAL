@@ -14,6 +14,7 @@ import { GrowthChart, ProjectionChart } from '../../components/Charts';
 import { useLessons, LessonModal, type Lesson, type LessonsRes } from '../../components/Lessons';
 import { MethodPicker, goPay, useMethods } from '../../components/Pay';
 import { LangButton } from '../../components/Shells';
+import { AgeTimeline, FutureHero } from '../../components/Future';
 import { Kpis, useLabels } from '../../components/ui';
 import { gradeLabel } from '../parent/Dashboard';
 import { useErr } from '../Auth';
@@ -168,6 +169,7 @@ function Middle({ d, lessons, reloadLessons }: P) {
                 <div className="small muted">{child.goalText || t('mid.goal21')}</div>
                 <div className="big-num num">{fmtMoney(p.value)}</div>
                 <div className="small">{t('mid.gain', { amount: fmtMoney(Math.max(0, p.gain)) })}</div>
+                <AgeTimeline age={child.age} />
                 <div><div className="row between small"><span>{t('mid.level', { n: level })}</span><span>{lessons.totalStars} XP</span></div><div className="xp"><div style={{ width: xp + '%' }} /></div></div>
               </div>
             </div>
@@ -228,14 +230,12 @@ function Senior({ d, lessons, reloadLessons }: P) {
       <main className="container page-head stack">
         {tab === 'overview' && (
           <>
-            <div className="sen-hero">
-              <div>
-                <div className="eyebrow">{t('sen.portfolio')} · {t(`provider.${child.provider}` as any)} · {L.track(child.track)}</div>
-                <div className="value num">{fmtMoney(p.value)}</div>
-                <div className="small"><span className={p.gain >= 0 ? 'pos' : 'neg'}>{p.gain >= 0 ? '+' : ''}{fmtMoney(p.gain)} ({(p.gainPct * 100).toFixed(1)}%)</span> <span className="muted">{t('sen.allTime')}</span></div>
+            <FutureHero child={child} p={p} self>
+              <div className="row">
+                <button className="btn" onClick={() => go('deposits')}>＋ {t('sen.deposit')}</button>
+                <span className="small muted">{t('sen.portfolio')} · {t(`provider.${child.provider}` as any)} · {L.track(child.track)}</span>
               </div>
-              <button className="btn" onClick={() => go('deposits')}>＋ {t('sen.deposit')}</button>
-            </div>
+            </FutureHero>
             {!self && <div className="banner small">🔑 {t('life.until18', { date: fmtDate(child.lifecycle.handoverDate), n: Math.max(0, Math.round((Date.parse(child.lifecycle.handoverDate) - Date.now()) / 86400000)) })}</div>}
             {self && <LifeTimeline child={child} />}
             <GoalsCard d={d} onNew={() => go('plan')} />
