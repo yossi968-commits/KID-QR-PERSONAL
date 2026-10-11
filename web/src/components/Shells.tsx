@@ -2,7 +2,9 @@ import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useI18n, LOCALES, type Locale } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { api, type User } from '../lib/api';
-import iconUrl from '../../public/icon.svg';
+import iconSvg from '../../public/icon.svg?raw';
+// Inlined so the single-file demo shows it too (the file is past the 4KB auto-inline limit).
+const iconUrl = 'data:image/svg+xml,' + encodeURIComponent(iconSvg);
 import { InstallBanner } from './InstallPrompt';
 
 export function LangButton({ className = 'lang' }: { className?: string }) {

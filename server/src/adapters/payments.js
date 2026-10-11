@@ -41,7 +41,7 @@ export const METHODS = [
 export const PAYOUT_METHODS = ['bit', 'paybox', 'card', 'bank'];
 
 // Sandbox trust account at the investment partner, shown for bank transfers.
-const TRUST_ACCOUNT = { bank: '31', bankName: 'הבינלאומי', branch: '012', account: '123456', beneficiary: 'בית ההשקעות (נאמנות QR livela)' };
+const TRUST_ACCOUNT = { bank: '31', bankName: 'הבינלאומי', branch: '012', account: '123456', beneficiary: 'בית ההשקעות (נאמנות QR Li&VeLa)' };
 const SANDBOX_INSTITUTION_CODE = '52741';
 const ref = (p, n = 5) => `${p}-${crypto.randomBytes(n).toString('hex').toUpperCase()}`;
 

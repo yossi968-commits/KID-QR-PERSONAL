@@ -19,4 +19,4 @@ const charge = () => { const r = runDuePledges(ctx); if (r.due) console.log('mon
 charge();
 setInterval(charge, 6 * 60 * 60 * 1000).unref();
 const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log(`QR livela API on http://localhost:${port}`));
+app.listen(port, () => console.log(`QR Li&VeLa API on http://localhost:${port}`));

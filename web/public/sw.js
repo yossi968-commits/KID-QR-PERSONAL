@@ -1,5 +1,5 @@
 // App-shell service worker: cache-first for static assets, network-only for the API.
-const CACHE = 'kfq-v3';
+const CACHE = 'kfq-v4';
 // Paths are relative to the worker, so the app also works from a sub-path (GitHub Pages).
 const SHELL = ['./', './index.html', './icon.svg', './icon-192.png', './apple-touch-icon.png', './manifest.webmanifest'];
 

@@ -3,8 +3,8 @@
  * employer and admin areas, payments and the investment fund. Overrides base keys.
  */
 export const heMore = {
-  appName: 'QR livela',
-  'footer.regulatory': 'QR livela היא שכבת טכנולוגיה. הכספים מוחזקים בקופת גמל להשקעה על שם הילד, אצל בית השקעות בפיקוח רשות שוק ההון. אין באמור ייעוץ השקעות. סביבת הדגמה: אין חיבור לבתי השקעות ואין תנועת כסף.',
+  appName: 'QR Li&VeLa',
+  'footer.regulatory': 'QR Li&VeLa היא שכבת טכנולוגיה. הכספים מוחזקים בקופת גמל להשקעה על שם הילד, אצל בית השקעות בפיקוח רשות שוק ההון. אין באמור ייעוץ השקעות. סביבת הדגמה: אין חיבור לבתי השקעות ואין תנועת כסף.',
 
   // Entry portal
   'portal.eyebrow': 'קוד QR אישי לכל ילד, לכל החיים',
@@ -650,7 +650,7 @@ export const heMore = {
   'scan.starting': 'מפעילים את המצלמה…',
   'scan.noCamera': 'אין גישה למצלמה. אפשר לצלם את הקוד או לבחור תמונה שלו.',
   'scan.photo': 'צילום או בחירת תמונה של הקוד',
-  'scan.notOurs': 'זה לא קוד של QR livela. נסו קוד אחר.',
+  'scan.notOurs': 'זה לא קוד של QR Li&VeLa. נסו קוד אחר.',
   'scan.noneInPhoto': 'לא מצאנו קוד QR בתמונה. נסו תמונה חדה וקרובה יותר.',
   'scan.close': 'סגירה',
   'scan.or': 'או',
@@ -664,7 +664,7 @@ export const heMore = {
   'app.desktopSteps': 'נכנסים לאתר מכל דפדפן, לוחצים "האזור האישי" ומזדהים עם ת״ז וקוד לטלפון. ב־Chrome וב־Edge אפשר גם להתקין כאפליקציה.',
   'app.install': 'התקנת האפליקציה',
   'app.installed': 'האפליקציה מותקנת במכשיר הזה',
-  'app.bannerText': 'רוצים את QR livela כאייקון במסך הבית?',
+  'app.bannerText': 'רוצים את QR Li&VeLa כאייקון במסך הבית?',
   'app.iosHint': 'לחצו על ⬆️ שיתוף ואז "הוספה למסך הבית".',
   'app.later': 'לא עכשיו',
   'app.login': 'לאזור האישי',
@@ -760,8 +760,8 @@ export const heMore = {
 };
 
 export const enMore: Record<keyof typeof heMore, string> = {
-  appName: 'QR livela',
-  'footer.regulatory': 'QR livela is a technology layer. Money is held in an investment provident fund (kupat gemel lehashkaa) in the child\'s name at a licensed investment house. Not investment advice. Demo environment: no connection to investment houses and no real money.',
+  appName: 'QR Li&VeLa',
+  'footer.regulatory': 'QR Li&VeLa is a technology layer. Money is held in an investment provident fund (kupat gemel lehashkaa) in the child\'s name at a licensed investment house. Not investment advice. Demo environment: no connection to investment houses and no real money.',
   'portal.eyebrow': 'A personal QR for every child, for life',
   'portal.title': 'Gifts, pocket money and a first salary, in one savings that grows with your child',
   'portal.lead': 'Family, friends and the parents\' employer send money to the child\'s QR by Bit, PayBox, card or bank transfer. It is invested in a provident fund in the child\'s name at the investment house the parents chose.',
@@ -1379,7 +1379,7 @@ export const enMore: Record<keyof typeof heMore, string> = {
   'scan.starting': 'Starting the camera…',
   'scan.noCamera': 'No camera access. You can take or choose a photo of the code instead.',
   'scan.photo': 'Take or choose a photo of the code',
-  'scan.notOurs': 'This is not a QR livela code. Try another one.',
+  'scan.notOurs': 'This is not a QR Li&VeLa code. Try another one.',
   'scan.noneInPhoto': 'No QR code found in the photo. Try a sharper, closer photo.',
   'scan.close': 'Close',
   'scan.or': 'or',
@@ -1393,7 +1393,7 @@ export const enMore: Record<keyof typeof heMore, string> = {
   'app.desktopSteps': 'Open the site in any browser, click "Personal area" and sign in with your ID and a code to your phone. Chrome and Edge can also install it as an app.',
   'app.install': 'Install the app',
   'app.installed': 'The app is installed on this device',
-  'app.bannerText': 'Want QR livela as a home-screen icon?',
+  'app.bannerText': 'Want QR Li&VeLa as a home-screen icon?',
   'app.iosHint': 'Tap ⬆️ Share, then "Add to Home Screen".',
   'app.later': 'Not now',
   'app.login': 'Personal area',

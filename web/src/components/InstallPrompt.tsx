@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
-import iconUrl from '../../public/icon.svg';
+import iconSvg from '../../public/icon.svg?raw';
+// Inlined so the single-file demo shows it too (the file is past the 4KB auto-inline limit).
+const iconUrl = 'data:image/svg+xml,' + encodeURIComponent(iconSvg);
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
