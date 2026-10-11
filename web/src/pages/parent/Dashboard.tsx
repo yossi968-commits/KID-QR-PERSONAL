@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FundPill } from '../../components/Lifecycle';
 import { AgeTimeline } from '../../components/Future';
+import { ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
 import { api, type Child, type Family } from '../../lib/api';
@@ -90,14 +91,14 @@ export default function Dashboard() {
                 {kids.map((k) => k.hidden ? (
                   <tr key={k.id}>
                     <td><span aria-hidden>{k.avatar}</span> <b>{k.firstName}</b><div className="small muted">{t('dash.ageGrade', { age: k.age, grade: gradeLabel(t, k.grade) })}</div></td>
-                    <td>{t(`provider.${k.provider}` as any)}</td><td className="num small">—</td><td>—</td>
+                    <td><ProviderName id={k.provider} name={t(`provider.${k.provider}` as any)} size={22} /></td><td className="num small">—</td><td>—</td>
                     <td><FundPill child={k} /></td>
                     <td colSpan={3} className="small muted">🔒 {t('life.hiddenRow')}</td>
                   </tr>
                 ) : (
                   <tr key={k.id}>
                     <td><Link className="rowlink" to={`/parent/child/${k.id}`}><span aria-hidden>{k.avatar}</span> {k.firstName}</Link><div className="small muted">{t('dash.ageGrade', { age: k.age, grade: gradeLabel(t, k.grade) })}</div></td>
-                    <td>{t(`provider.${k.provider}` as any)}</td>
+                    <td><ProviderName id={k.provider} name={t(`provider.${k.provider}` as any)} size={22} /></td>
                     <td className="num small">{k.partnerAccountId || '—'}</td>
                     <td>{L.track(k.track)}</td>
                     <td><FundPill child={k} /></td>

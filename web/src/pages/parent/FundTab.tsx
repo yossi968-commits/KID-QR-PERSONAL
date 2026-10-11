@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { api, type ChildData, type DocItem, type Docs } from '../../lib/api';
 import TrackDialog from '../../components/TrackDialog';
@@ -30,7 +31,7 @@ export default function FundTab({ data, reload, fresh }: { data: ChildData; relo
         <div className="card">
           <h3>{t('fund.account')}</h3>
           <dl className="kv">
-            <dt>{t('open.house')}</dt><dd>{t(`provider.${child.provider}` as any)}</dd>
+            <dt>{t('open.house')}</dt><dd><ProviderName id={child.provider} name={t(`provider.${child.provider}` as any)} size={22} /></dd>
             <dt>{t('fund.productLabel')}</dt><dd>{t('fund.product')}</dd>
             <dt>{t('fund.appRef')}</dt><dd className="num">{documents.applicationRef || '—'}</dd>
             <dt>{t('fund.accountNo')}</dt><dd className="num">{child.partnerAccountId || t('fund.afterOpening')}</dd>

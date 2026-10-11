@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { FutureHero, FutureTiles } from '../../components/Future';
+import { ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { api, type ChildData } from '../../lib/api';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
@@ -41,7 +42,7 @@ export default function ChildPage() {
         <div className="avatar lg">{child.avatar}</div>
         <div>
           <h1 style={{ margin: 0 }}>{child.firstName} {child.lastName}</h1>
-          <div className="muted small">{t('dash.ageGrade', { age: child.age, grade: gradeLabel(t, child.grade) })} · {t(`provider.${child.provider}` as any)} · <span className="num">{child.partnerAccountId || child.giftCode}</span></div>
+          <div className="muted small">{t('dash.ageGrade', { age: child.age, grade: gradeLabel(t, child.grade) })} · <ProviderName id={child.provider} name={t(`provider.${child.provider}` as any)} size={20} /> · <span className="num">{child.partnerAccountId || child.giftCode}</span></div>
         </div>
         <span className="spacer" />
         <FundPill child={child} />
@@ -124,7 +125,7 @@ function Overview({ data, go }: { data: ChildData; go: (tab: string) => void }) 
         <div className="card">
           <h3>{t('child.account')}</h3>
           <dl className="kv">
-            <dt>{t('open.house')}</dt><dd>{t(`provider.${child.provider}` as any)}</dd>
+            <dt>{t('open.house')}</dt><dd><ProviderName id={child.provider} name={t(`provider.${child.provider}` as any)} size={22} /></dd>
             <dt>{t('fund.productLabel')}</dt><dd>{t('fund.product')}</dd>
             <dt>{t('fund.accountNo')}</dt><dd className="num">{child.partnerAccountId || '—'}</dd>
             <dt>{t('onb.track')}</dt><dd>{L.track(child.track)}</dd>

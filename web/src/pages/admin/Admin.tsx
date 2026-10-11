@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { api } from '../../lib/api';
 import { Bars } from '../../components/Charts';
@@ -35,7 +36,7 @@ export function AdminOverview() {
       <div className="grid grid-3">
         <Table head={[t('admin.bySource'), '#', '₪']}>{s.bySource.map((r: any) => <tr key={r.source}><td>{L.source(r.source)}</td><td className="num">{r.n}</td><td className="num">{fmtMoney(r.amount)}</td></tr>)}</Table>
         <Table head={[t('admin.byMethod'), '#', '₪']}>{s.byMethod.map((r: any) => <tr key={r.method}><td>{L.method(r.method)}</td><td className="num">{r.gifts}</td><td className="num">{fmtMoney(r.amount)}</td></tr>)}</Table>
-        <Table head={[t('admin.byProvider'), t('admin.children'), t('admin.open')]}>{s.byProvider.map((r: any) => <tr key={r.provider}><td>{t(`provider.${r.provider}` as any)}</td><td className="num">{r.children}</td><td className="num">{r.open}</td></tr>)}</Table>
+        <Table head={[t('admin.byProvider'), t('admin.children'), t('admin.open')]}>{s.byProvider.map((r: any) => <tr key={r.provider}><td><ProviderName id={r.provider} name={t(`provider.${r.provider}` as any)} size={22} /></td><td className="num">{r.children}</td><td className="num">{r.open}</td></tr>)}</Table>
       </div>
       <Table head={[t('admin.employers'), t('employer.kind'), t('employer.reports'), t('employer.gifted')]}>
         {s.employers.map((r: any) => <tr key={r.name}><td>{r.name}</td><td>{t(`employer.kind.${r.kind}` as any)}</td><td className="num">{r.reports}</td><td className="num">{r.gifted || 0}</td></tr>)}

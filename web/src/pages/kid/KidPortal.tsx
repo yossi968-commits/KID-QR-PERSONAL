@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { MoveFund } from '../../components/MoveFund';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
 import { api, ADULT_EVENT_TYPES, PAYOUT_METHODS, type Child, type EventRow, type Pledge, type Planner, type Portfolio, type Provider, type Community } from '../../lib/api';
@@ -233,7 +234,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
             <FutureHero child={child} p={p} self>
               <div className="row">
                 <button className="btn" onClick={() => go('deposits')}>＋ {t('sen.deposit')}</button>
-                <span className="small muted">{t('sen.portfolio')} · {t(`provider.${child.provider}` as any)} · {L.track(child.track)}</span>
+                <span className="small muted">{t('sen.portfolio')} · <ProviderName id={child.provider} name={t(`provider.${child.provider}` as any)} size={20} /> · {L.track(child.track)}</span>
               </div>
             </FutureHero>
             {!self && <div className="banner small">🔑 {t('life.until18', { date: fmtDate(child.lifecycle.handoverDate), n: Math.max(0, Math.round((Date.parse(child.lifecycle.handoverDate) - Date.now()) / 86400000)) })}</div>}

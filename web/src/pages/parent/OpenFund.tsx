@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ProviderMark, ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
 import { api, type Child, type ChildData, type Family, type Provider } from '../../lib/api';
@@ -94,11 +95,12 @@ export default function OpenFund() {
         <div className="card stack">
           <h3>{t('open.houseTitle')}</h3>
           <p className="muted small" style={{ margin: 0 }}>{t('open.houseDesc')}</p>
-          <label className="field"><span>{t('open.house')}</span>
-            <select value={f.provider} onChange={set('provider')}>
-              {providers.map((p) => <option key={p.id} value={p.id}>{name(p)}</option>)}
-            </select>
-          </label>
+          <div role="radiogroup" aria-label={t('open.house')}>
+            <span className="field-label">{t('open.house')}</span>
+            <div className="house-pick">
+              {providers.map((p) => <button type="button" role="radio" aria-checked={f.provider === p.id} key={p.id} className={f.provider === p.id ? 'on' : ''} onClick={() => setF({ ...f, provider: p.id })}><ProviderMark id={p.id} size={32} />{name(p)}</button>)}
+            </div>
+          </div>
           <div className="grid grid-3" style={{ gap: 10 }}>
             {['open.fact1', 'open.fact2', 'open.fact3'].map((k) => <div key={k} className="card" style={{ padding: 14, background: 'var(--surface-2)' }}><div className="small">{t(k as any)}</div></div>)}
           </div>
@@ -154,7 +156,7 @@ export default function OpenFund() {
         <div className="card stack">
           <h3>{t('open.summary')}</h3>
           <table className="table"><tbody>
-            <tr><th>{t('open.house')}</th><td>{name(house)} · {t('fund.product')}</td></tr>
+            <tr><th>{t('open.house')}</th><td>{house && <ProviderName id={house.id} name={name(house)} />} · {t('fund.product')}</td></tr>
             <tr><th>{t('onb.firstName')}</th><td>{f.avatar} {f.firstName} {f.lastName}</td></tr>
             <tr><th>{t('onb.birthDate')}</th><td className="num">{f.birthDate}</td></tr>
             <tr><th>{t('onb.track')}</th><td>{t(`track.${f.track}` as any)} <button className="link small" onClick={() => setDialog(true)}>{t('open.change')}</button></td></tr>

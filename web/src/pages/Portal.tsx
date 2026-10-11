@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ProviderName } from '../components/ProviderMark';
 import { useI18n } from '../i18n';
 import { api, type Provider } from '../lib/api';
 import { AppSection } from '../components/InstallPrompt';
@@ -46,8 +47,7 @@ export default function Portal() {
         <div className="doors">
           {doors.map(([to, icon, title, desc]) => (
             <Link key={to} to={to} className="door">
-              <div className="door-icon">{icon}</div>
-              <h3>{t(title as any)}</h3>
+              <div className="door-head"><div className="door-icon">{icon}</div><h3>{t(title as any)}</h3></div>
               <p className="muted small" style={{ margin: 0 }}>{t(desc as any)}</p>
               <span className="go">{t('portal.enter')}</span>
             </Link>
@@ -84,8 +84,7 @@ export default function Portal() {
           <div className="grid grid-4" style={{ marginTop: 16 }}>
             {[1, 2, 3, 4].map((n) => (
               <div key={n} className="card">
-                <div className="step-num">{n}</div>
-                <h3>{t(`portal.how${n}t` as any)}</h3>
+                <div className="step-head"><div className="step-num">{n}</div><h3>{t(`portal.how${n}t` as any)}</h3></div>
                 <p className="muted small" style={{ margin: 0 }}>{t(`portal.how${n}d` as any)}</p>
               </div>
             ))}
@@ -97,7 +96,7 @@ export default function Portal() {
             <div className="card">
               <div className="card-head"><h3>{t('portal.providersTitle')}</h3><span className="pill gold">{t('fund.example')}</span></div>
               <div className="row" style={{ gap: 8 }}>
-                {providers.map((p) => <span key={p.id} className="pill">{name(p)}</span>)}
+                {providers.map((p) => <span key={p.id} className="pill" style={{ padding: '4px 10px 4px 4px', paddingInlineStart: 4 }}><ProviderName id={p.id} name={name(p)} size={24} /></span>)}
               </div>
               <p className="small muted" style={{ margin: '10px 0 0' }}>{t('portal.providersNote')}</p>
             </div>
