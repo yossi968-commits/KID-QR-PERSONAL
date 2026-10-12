@@ -9,6 +9,8 @@ export const heBlend = {
   'trust.reg': 'בית השקעות בפיקוח רשות שוק ההון',
   'trust.sign': 'כל משיכה בחתימת שני ההורים',
   'trust.family': 'כל המשפחה יכולה לתת מתנה',
+  'lang.ru': 'Русский',
+  'lang.fr': 'Français',
 };
 export const enBlend: Record<keyof typeof heBlend, string> = {
   'hero.card.of': 'Noa\'s future',
@@ -20,6 +22,8 @@ export const enBlend: Record<keyof typeof heBlend, string> = {
   'trust.reg': 'Held by a regulated investment house',
   'trust.sign': 'Every withdrawal needs both parents',
   'trust.family': 'The whole family can give',
+  'lang.ru': 'Русский',
+  'lang.fr': 'Français',
 };
 export const arBlend: Record<keyof typeof heBlend, string> = {
   'hero.card.of': 'مستقبل نوعا',
@@ -31,4 +35,6 @@ export const arBlend: Record<keyof typeof heBlend, string> = {
   'trust.reg': 'شركة استثمار خاضعة لرقابة سلطة سوق المال',
   'trust.sign': 'كل سحب بتوقيع الوالدين',
   'trust.family': 'كل العائلة تستطيع أن تهدي',
+  'lang.ru': 'Русский',
+  'lang.fr': 'Français',
 };

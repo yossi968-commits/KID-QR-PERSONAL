@@ -33,7 +33,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
 }
 
 export type Stage = 'young' | 'middle' | 'senior';
-export type User = { id: number; email: string; name: string; phone?: string; role: 'parent' | 'admin'; locale: 'he' | 'en' | 'ar'; community?: string; kycStatus: string; hasNationalId?: boolean };
+export type User = { id: number; email: string; name: string; phone?: string; role: 'parent' | 'admin'; locale: 'he' | 'en' | 'ar' | 'ru' | 'fr'; community?: string; kycStatus: string; hasNationalId?: boolean };
 export type AccountStatus = 'pending_docs' | 'in_review' | 'active';
 export type Child = {
   id: number; firstName: string; lastName?: string; birthDate: string; age: number; grade: number; stage: Stage; nextBirthday: string; avatar: string;

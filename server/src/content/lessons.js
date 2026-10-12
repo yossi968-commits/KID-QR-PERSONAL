@@ -1,3 +1,4 @@
+import { LESSONS_MORE } from './lessons-more.js';
 /**
  * Financial-education curriculum by age band. Each lesson has a short story,
  * a "try it" activity and a quiz; completing a quiz earns stars.
@@ -330,7 +331,8 @@ export const LESSONS = [
 
 export function lessonsFor(locale = 'he') {
   return LESSONS.map((l) => {
-    const c = l[locale] || l.he;
+    // Russian and French live in their own file; any language without a lesson falls back to English, Hebrew last.
+    const c = l[locale] || LESSONS_MORE[locale]?.[l.id] || (locale === 'he' ? l.he : l.en || l.he);
     return { id: l.id, band: l.band, icon: l.icon, stars: l.stars, title: c.title, body: c.body, activity: c.activity, quiz: c.quiz.map(({ q, options }) => ({ q, options })) };
   });
 }

@@ -52,6 +52,7 @@
 }
 /* English in Inter; Arabic in Rubik (Heebo has no Arabic letters). */
 :root:lang(en) { --font: 'Inter', 'Heebo', system-ui, sans-serif; --font-display: 'Inter', 'Heebo', system-ui, sans-serif; --font-num: 'Inter', system-ui, sans-serif; }
+:root:lang(ru), :root:lang(fr) { --font: 'Inter', 'Heebo', system-ui, sans-serif; --font-display: 'Inter', 'Heebo', system-ui, sans-serif; --font-num: 'Inter', system-ui, sans-serif; }
 :root:lang(ar) { --font: 'Rubik', 'Heebo', system-ui, sans-serif; --font-display: 'Rubik', 'Heebo', system-ui, sans-serif; --font-num: 'Rubik', 'Heebo', system-ui, sans-serif; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
