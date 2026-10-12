@@ -16,20 +16,30 @@ export function riskForTrack(track?: string): RiskId {
   return 'conservative';
 }
 
-type Row = { key: string; title?: string; amount: number; times: number };
-const DEFAULT_ROWS: Row[] = [
+/** Who gives what, how often a year, and between which ages (work from 14, army salary 18–21). */
+export type Row = { key: string; title?: string; amount: number; times: number; from?: number; to?: number };
+export const DEFAULT_ROWS: Row[] = [
   { key: 'parents', amount: 100, times: 12 },
   { key: 'grand', amount: 300, times: 1 },
   { key: 'friends', amount: 100, times: 20 },
+  { key: 'work', amount: 100, times: 12, from: 14, to: 18 },
+  { key: 'army', amount: 150, times: 12, from: 18, to: 21 },
 ];
+const END = 21;
+const active = (r: Row, age: number) => age >= (r.from ?? 0) && age < (r.to ?? END);
+/** Yearly amount (agorot) the rows put in at a given age. */
+export const perYearAt = (rows: Row[], age: number) => rows.reduce((s, r) => s + (active(r, age) ? (r.amount || 0) * (r.times || 0) : 0), 0) * 100;
 
 /** Value at each target age (all amounts in agorot), money in at the end of every month, compounding monthly. */
-export function project(startValue: number, startAge: number, perYear: number, rate: number, ages: number[]) {
+export function project(startValue: number, startAge: number, rows: Row[], rate: number, ages: number[]) {
   const m = Math.pow(1 + rate, 1 / 12);
   const out: Record<number, { value: number; deposited: number }> = {};
   for (const a of ages) {
     let v = startValue, dep = startValue;
-    for (let i = 0; i < Math.round((a - startAge) * 12); i++) { v = v * m + perYear / 12; dep += perYear / 12; }
+    for (let i = 0; i < Math.round((a - startAge) * 12); i++) {
+      const add = perYearAt(rows, startAge + i / 12) / 12;
+      v = v * m + add; dep += add;
+    }
     out[a] = { value: Math.round(v), deposited: Math.round(dep) };
   }
   return out;
@@ -44,10 +54,10 @@ export function ScenarioCalc({ startAge = 0, startValue = 0, risk: initial = 'co
   const [risk, setRisk] = useState<RiskId>(initial);
   const [rows, setRows] = useState<Row[]>(DEFAULT_ROWS);
   const rate = RISKS.find((r) => r.id === risk)!.rate;
-  const perYear = rows.reduce((s, r) => s + (r.amount || 0) * (r.times || 0), 0) * 100;
+  const perYear = perYearAt(rows, startAge);
   const ages = [13, 18, 21].filter((a) => a > startAge);
   if (!ages.length) ages.push(Math.floor(startAge) + 10);
-  const res = project(startValue, startAge, perYear, rate, ages);
+  const res = project(startValue, startAge, rows, rate, ages);
   const set = (i: number, patch: Partial<Row>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const pct = (r: number) => (r * 100).toLocaleString('en', { maximumFractionDigits: 1 }) + '%';
 
@@ -77,7 +87,8 @@ export function ScenarioCalc({ startAge = 0, startValue = 0, risk: initial = 'co
             <div className="calc-who">
               {r.title != null
                 ? <input value={r.title} onChange={(e) => set(i, { title: e.target.value })} placeholder={t('calc.customPh')} aria-label={t('calc.customPh')} />
-                : <><b>{t(`calc.row.${r.key}` as any)}</b><small className="muted">{t(`calc.row.${r.key}Hint` as any)}</small></>}
+                : <span className="calc-line"><b>{t(`calc.row.${r.key}` as any)}</b> <span className="muted">{t(`calc.row.${r.key}Hint` as any)}</span></span>}
+              {(r.from != null || r.to != null) && <span className="calc-ages">{t('calc.ages', { from: r.from ?? 0, to: r.to ?? END })}</span>}
             </div>
             <label className="calc-num"><span>₪</span><input type="number" min={0} dir="ltr" value={r.amount} onChange={(e) => set(i, { amount: Math.max(0, +e.target.value) })} aria-label={t('calc.amount')} /></label>
             <span className="muted" aria-hidden>×</span>

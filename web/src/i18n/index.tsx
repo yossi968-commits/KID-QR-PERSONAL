@@ -9,14 +9,15 @@ import { heCalc, enCalc, arCalc } from './calc';
 import { heBlend, enBlend, arBlend } from './blend';
 import { ruBase } from './ru';
 import { frBase } from './fr';
+import { heJr, enJr, arJr, ruJr, frJr } from './journey';
 
-const he = { ...heBase, ...heMore, ...heSector, ...heDesign, ...heCalc, ...heBlend };
-const en = { ...enBase, ...enMore, ...enSector, ...enDesign, ...enCalc, ...enBlend };
+const he = { ...heBase, ...heMore, ...heSector, ...heDesign, ...heCalc, ...heBlend, ...heJr };
+const en = { ...enBase, ...enMore, ...enSector, ...enDesign, ...enCalc, ...enBlend, ...enJr };
 type Dict = typeof he;
-const ar = { ...arBase, ...arSector, ...arDesign, ...arCalc, ...arBlend } as Dict;
+const ar = { ...arBase, ...arSector, ...arDesign, ...arCalc, ...arBlend, ...arJr } as Dict;
 // Russian and French each come as one full dictionary (missing keys fall back to Hebrew).
-const ru = ruBase as Dict;
-const fr = frBase as Dict;
+const ru = { ...ruBase, ...ruJr } as Dict;
+const fr = { ...frBase, ...frJr } as Dict;
 
 export type Locale = 'he' | 'en' | 'ar' | 'ru' | 'fr';
 export const LOCALES: Locale[] = ['he', 'en', 'ar', 'ru', 'fr'];

@@ -4,6 +4,7 @@ import { verifyPassword, issueChildToken } from '../lib/auth.js';
 import { h, notFound, HttpError } from '../lib/http.js';
 import { portfolioSummary } from '../lib/portfolio.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
+import { journeyFor } from '../lib/journey.js';
 import { plannerPayload, withdrawalLimit, taxEstimate, executeWithdrawal } from '../lib/wishes.js';
 import { phaseOf, graduate } from '../lib/lifecycle.js';
 import { nextSwitchDate, docsStatus, submitDocument, transferProvider } from '../lib/fund.js';
@@ -38,6 +39,8 @@ r.get('/me', h((req, res) => {
   const guardian = db.prepare('SELECT community FROM users WHERE id=?').get(req.child.guardian_id);
   res.json({ child: { ...child, ...(phaseOf(req.child) !== 'minor' && { partnerAccountId }) }, portfolio: p, events, community: communityView(guardian?.community) });
 }));
+
+r.get('/journey', h((req, res) => res.json(journeyFor(req.ctx.db, req.ctx.partner, req.child))));
 
 r.get('/gifts', h((req, res) => res.json({ gifts: giftsFor(req.ctx.db, req.child) })));
 

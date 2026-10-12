@@ -14,6 +14,7 @@ import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
 import { linkReports } from '../lib/employer.js';
 import { phaseOf, lifecycleView } from '../lib/lifecycle.js';
 import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/child-data.js';
+import { journeyFor } from '../lib/journey.js';
 
 const r = Router();
 r.use(requireUser);
@@ -170,6 +171,8 @@ export function validWish(body) {
     targetDate: body.targetDate ? requireDate(body.targetDate, 'target_date') : null,
   };
 }
+
+r.get('/:id/journey', h((req, res) => res.json(journeyFor(req.ctx.db, req.ctx.partner, loadChild(req)))));
 
 r.get('/:id/planner', h((req, res) => res.json(plannerPayload(req.ctx.db, req.ctx.partner, loadChild(req)))));
 

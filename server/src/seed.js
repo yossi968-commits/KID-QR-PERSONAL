@@ -212,6 +212,37 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   });
   db.prepare(`INSERT INTO withdrawals (child_id, amount, requested_by, note, tax_estimate, purpose) VALUES (?,?,?,?,?,?)`).run(omer.id, 180000, 'child', 'חבילת 12 שיעורים בבית הספר לנהיגה', 6000, 'driving');
 
+  // Each child's savings story, so "plan vs actual" has real years to show: the parents'
+  // standing order since birth, Omer's babysitting and dog sitting from 15, Shira's share of
+  // her army pay, and planned gifts the kids took only part of.
+  const story = (user, fn) => fn(db.prepare('SELECT * FROM children WHERE kid_username=?').get(user));
+  const deposit = (c, giver, amount, date, source, pledgeId = null) => {
+    if (date > today()) return;
+    const cid = db.prepare(`INSERT INTO contributions (child_id, giver_name, amount, is_public, status, payment_ref, paid_at, created_at, method, source, pledge_id) VALUES (?,?,?,0,'paid',?,?,?,?,?,?)`)
+      .run(c.id, giver, amount, `SEED-S-${c.id}-${date}-${source}`, date + ' 09:00:00', date + ' 09:00:00', pledgeId ? 'masav' : 'bit', source, pledgeId).lastInsertRowid;
+    investContribution(db, partner, c, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), date);
+  };
+  const quarters = (from, to) => { const out = []; for (let d = from; d < to; ) { out.push(d); const x = new Date(d); x.setUTCMonth(x.getUTCMonth() + 3); d = x.toISOString().slice(0, 10); } return out; };
+  const nextMonth = (() => { const x = new Date(); x.setUTCDate(1); x.setUTCMonth(x.getUTCMonth() + 1); return x.toISOString().slice(0, 10); })();
+  for (const user of ['noa', 'itay', 'omer', 'shira']) story(user, (c) => {
+    // The standing order stops at 18, when the fund becomes the young adult's.
+    const adultAt = addYears(c.birth_date, 18);
+    const ended = adultAt <= today();
+    const pid = db.prepare(`INSERT INTO pledges (child_id, token, giver_name, giver_email, amount, method, message, status, institution_code, mandate_ref, next_date, source, charges) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(c.id, newPledgeToken(), 'מיכל לוי', 'demo@kfq.app', 10000, 'masav', 'הוראת קבע מההורים', ended ? 'cancelled' : 'active', '52741', '7001' + c.id, nextMonth, 'gift', 0).lastInsertRowid;
+    for (const d of quarters(addDays(c.birth_date, 30), ended ? adultAt : today())) deposit(c, 'מיכל לוי', 30000, d, 'gift', pid);
+  });
+  story('omer', (c) => quarters(addYears(c.birth_date, 15), today()).forEach((d, i) => deposit(c, i % 2 ? 'משפחת כהן' : 'משפחת אברהם', 30000, d, i % 2 ? 'dog_walking' : 'babysitting')));
+  story('shira', (c) => quarters('2023-04-10', '2025-03-10').forEach((d) => deposit(c, 'שירה', 45000, d, 'salary')));
+  const tookPart = (user, title, icon, planned, took, date) => story(user, (c) => {
+    const w = db.prepare('INSERT INTO wishes (child_id, title, icon, target_amount, target_date, created_by, status) VALUES (?,?,?,?,?,?,?)').run(c.id, title, icon, planned, date, 'child', 'planned').lastInsertRowid;
+    const id = db.prepare(`INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, created_at) VALUES (?,?,?,?,?)`).run(c.id, w, took, 'child', date + ' 10:00:00').lastInsertRowid;
+    executeWithdrawal(ctx, c, db.prepare('SELECT * FROM withdrawals WHERE id=?').get(id), { method: 'bit', destination: '050-1234567' }, date);
+  });
+  tookPart('shira', 'שיעורי נהיגה', '🚗', 700000, 400000, '2022-03-01');
+  tookPart('shira', 'טיול אחרי הצבא', '✈️', 800000, 500000, '2025-05-20');
+  tookPart('omer', 'טלפון חדש', '📱', 300000, 150000, '2025-06-15');
+
   const progress = {
     shira: [['compound-interest', 5], ['risk-return', 6], ['fees', 6], ['scams', 6]],
     noa: [['what-is-money', 3], ['three-jars', 3]],

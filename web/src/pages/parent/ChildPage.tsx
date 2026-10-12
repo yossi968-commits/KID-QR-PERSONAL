@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { FutureHero, FutureTiles } from '../../components/Future';
 import { ScenarioCalc, riskForTrack } from '../../components/ScenarioCalc';
+import { Journey } from '../../components/Journey';
 import { ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { api, type ChildData } from '../../lib/api';
@@ -122,6 +123,7 @@ function Overview({ data, go }: { data: ChildData; go: (tab: string) => void }) 
           </div>
         </div>
       </div>
+      <Journey path={`/children/${child.id}/journey`} self={false} />
       <ScenarioCalc name={child.firstName} startValue={p.value} startAge={(Date.now() - new Date(child.birthDate).getTime()) / 31557600000} risk={riskForTrack(child.track)} />
       <div className="grid grid-2">
         <div className="card">
