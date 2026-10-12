@@ -6,11 +6,12 @@ import { heSector, enSector, arSector } from './sector';
 import { arBase } from './ar';
 import { heDesign, enDesign, arDesign } from './design';
 import { heCalc, enCalc, arCalc } from './calc';
+import { heBlend, enBlend, arBlend } from './blend';
 
-const he = { ...heBase, ...heMore, ...heSector, ...heDesign, ...heCalc };
-const en = { ...enBase, ...enMore, ...enSector, ...enDesign, ...enCalc };
+const he = { ...heBase, ...heMore, ...heSector, ...heDesign, ...heCalc, ...heBlend };
+const en = { ...enBase, ...enMore, ...enSector, ...enDesign, ...enCalc, ...enBlend };
 type Dict = typeof he;
-const ar = { ...arBase, ...arSector, ...arDesign, ...arCalc } as Dict;
+const ar = { ...arBase, ...arSector, ...arDesign, ...arCalc, ...arBlend } as Dict;
 
 export type Locale = 'he' | 'en' | 'ar';
 export const LOCALES: Locale[] = ['he', 'en', 'ar'];

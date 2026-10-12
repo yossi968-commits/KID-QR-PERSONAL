@@ -8,7 +8,7 @@ export const heMore = {
 
   // Entry portal
   'portal.eyebrow': 'קוד QR אישי לכל ילד, לכל החיים',
-  'portal.title': 'מתנות, דמי כיס ומשכורת ראשונה, בחיסכון אחד שגדל עם הילד',
+  'portal.title': 'מתנות, דמי כיס ומשכורת ראשונה, בחיסכון אחד *שגדל עם הילד*',
   'portal.lead': 'המשפחה, החברים ומקום העבודה של ההורים מעבירים כסף ל־QR של הילד בביט, פייבוקס, כרטיס או העברה בנקאית. הכסף מושקע בקופת גמל להשקעה על שם הילד, בבית ההשקעות שההורים בחרו.',
   'portal.open': 'פתיחת QR וקופה לילד',
   'portal.sample': 'דף מתנה לדוגמה',
@@ -763,7 +763,7 @@ export const enMore: Record<keyof typeof heMore, string> = {
   appName: 'QR Li&VeLa',
   'footer.regulatory': 'QR Li&VeLa is a technology layer. Money is held in an investment provident fund (kupat gemel lehashkaa) in the child\'s name at a licensed investment house. Not investment advice. Demo environment: no connection to investment houses and no real money.',
   'portal.eyebrow': 'A personal QR for every child, for life',
-  'portal.title': 'Gifts, pocket money and a first salary, in one savings that grows with your child',
+  'portal.title': 'Gifts, pocket money and a first salary, in one savings that *grows with your child*',
   'portal.lead': 'Family, friends and the parents\' employer send money to the child\'s QR by Bit, PayBox, card or bank transfer. It is invested in a provident fund in the child\'s name at the investment house the parents chose.',
   'portal.open': 'Open a QR and fund',
   'portal.sample': 'Sample gift page',

@@ -6,6 +6,7 @@ import { api, type Provider } from '../lib/api';
 import { AppSection } from '../components/InstallPrompt';
 import { QrScanner } from '../components/QrScanner';
 import { ScenarioCalc } from '../components/ScenarioCalc';
+import { Hl } from '../components/Hl';
 
 /** Entry portal: three doors (kids, parents, admin) plus the gift-code box for guests. */
 export default function Portal() {
@@ -24,17 +25,27 @@ export default function Portal() {
   return (
     <>
       <section className="portal-hero">
-        <div className="container">
-          <div className="eyebrow" style={{ color: 'var(--accent)' }}>{t('portal.eyebrow')}</div>
-          <h1 style={{ marginTop: 10 }}>{t('portal.title')}</h1>
-          <p className="lead">{t('portal.lead')}</p>
-          <div className="row" style={{ marginTop: 20 }}>
-            <Link className="btn gold" to="/register">{t('portal.open')}</Link>
-            <Link className="btn secondary" to="/g/itay2013demo" style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.3)' }}>{t('portal.sample')}</Link>
+        <div className="container hero-grid">
+          <div>
+            <div className="eyebrow" style={{ color: 'var(--accent)' }}>{t('portal.eyebrow')}</div>
+            <h1 style={{ marginTop: 10 }}><Hl text={t('portal.title')} /></h1>
+            <p className="lead">{t('portal.lead')}</p>
+            <div className="row" style={{ marginTop: 20 }}>
+              <Link className="btn gold" to="/register">{t('portal.open')}</Link>
+              <Link className="btn secondary on-dark" to="/g/itay2013demo">{t('portal.sample')}</Link>
+            </div>
+            <p style={{ marginTop: 14 }}><Link to="/expecting" style={{ color: 'var(--accent)' }}>🤰 {t('expPub.link')}</Link></p>
           </div>
-          <p style={{ marginTop: 14 }}><Link to="/expecting" style={{ color: 'var(--accent)' }}>🤰 {t('expPub.link')}</Link></p>
+          <HeroCard />
         </div>
       </section>
+      <div className="container">
+        <ul className="trust-row">
+          {([['🧒', 'trust.name'], ['🏛️', 'trust.reg'], ['✍️', 'trust.sign'], ['🎁', 'trust.family']] as const).map(([i, k]) => (
+            <li key={k}><span aria-hidden>{i}</span>{t(k)}</li>
+          ))}
+        </ul>
+      </div>
       <div className="container">
         <div className="doors">
           {doors.map(([to, icon, title, desc]) => (
@@ -90,5 +101,22 @@ export default function Portal() {
       </div>
       <footer className="site"><div className="container">{t('footer.regulatory')}</div></footer>
     </>
+  );
+}
+
+/** A sample child's savings as the app shows it, with gifts arriving: the hero's picture. */
+function HeroCard() {
+  const { t, fmtMoney } = useI18n();
+  return (
+    <div className="hero-card" aria-hidden>
+      <div className="hc-main">
+        <div className="hc-top"><span className="hc-avatar">🦄</span><span><b>{t('hero.card.of')}</b><small>{t('hero.card.age')}</small></span></div>
+        <div className="hc-value num">{fmtMoney(1807500)}</div>
+        <div className="hc-grew"><span className="pill-up">▲ 9.8%</span>{t('hero.card.grew')}</div>
+        <svg className="hc-spark" viewBox="0 0 200 56" preserveAspectRatio="none"><path d="M0 50 C30 46 45 40 70 36 S115 30 135 20 S175 10 200 4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+      </div>
+      <div className="hc-note n1"><span className="hc-gift">🎁</span><span><b className="num">{fmtMoney(20000)}</b><small>{t('hero.card.gift1')}</small></span></div>
+      <div className="hc-note n2"><span className="hc-gift mint">💚</span><span><b className="num">{fmtMoney(10000)}</b><small>{t('hero.card.gift2')}</small></span></div>
+    </div>
   );
 }
