@@ -114,9 +114,12 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 /* Keep everything clear of the iPhone camera notch and rounded corners in the installed app. */
-body { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
 /* iPhone home-screen app: the clock and camera sit over the page, so keep a solid strip behind them and push content below it. */
-body::before { content: ''; position: fixed; inset: 0 0 auto 0; height: env(safe-area-inset-top, 0px); background: #0B1B2B; z-index: 1000; pointer-events: none; }
+@media (display-mode: standalone) {
+  body { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
+  body::before { content: ''; position: fixed; inset: 0 0 auto 0; height: env(safe-area-inset-top, 0px); background: #0B1B2B; z-index: 1000; pointer-events: none; }
+  .topbar { top: env(safe-area-inset-top, 0px); }
+}
 body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .shell { min-height: 100vh; background: var(--bg); color: var(--ink); font-family: var(--font); }
 a { color: var(--brand); text-decoration: none; }
@@ -151,7 +154,7 @@ img, svg { max-width: 100%; }
 main { padding-bottom: 48px; }
 
 /* Header (parent + public) */
-.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--header-bg); color: var(--header-ink); }
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--header-bg); color: var(--header-ink); }
 .topbar .container { display: flex; align-items: center; gap: 16px; min-height: 60px; }
 .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; color: var(--header-ink); }
 .logo:hover { text-decoration: none; }
@@ -630,6 +633,7 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .theme-parent .portal-hero::before { width: 520px; height: 520px; inset-inline-start: -180px; bottom: -320px; background: radial-gradient(circle, rgba(32,180,134,.22), transparent 70%); }
 .theme-parent .portal-hero::after { width: 360px; height: 360px; inset-inline-end: 8%; top: -200px; background: radial-gradient(circle, rgba(244,201,93,.16), transparent 70%); }
 .theme-parent .portal-hero p.lead { color: #B8CADB; }
+@media (max-width: 640px) { .theme-parent .portal-hero { padding-block: 20px 56px; } }
 .hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; position: relative; z-index: 1; }
 .hero-card { position: relative; padding: 18px 0 40px; }
 .hc-main { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 28px; padding: 22px; backdrop-filter: blur(8px); color: #fff; }
