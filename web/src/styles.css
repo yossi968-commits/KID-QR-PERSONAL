@@ -113,6 +113,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Keep everything clear of the iPhone camera notch and rounded corners in the installed app. */
+body { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
 body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .shell { min-height: 100vh; background: var(--bg); color: var(--ink); font-family: var(--font); }
 a { color: var(--brand); text-decoration: none; }
