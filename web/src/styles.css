@@ -115,6 +115,8 @@
 html, body { margin: 0; }
 /* Keep everything clear of the iPhone camera notch and rounded corners in the installed app. */
 body { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
+/* iPhone home-screen app: the clock and camera sit over the page, so keep a solid strip behind them and push content below it. */
+body::before { content: ''; position: fixed; inset: 0 0 auto 0; height: env(safe-area-inset-top, 0px); background: #0B1B2B; z-index: 1000; pointer-events: none; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .shell { min-height: 100vh; background: var(--bg); color: var(--ink); font-family: var(--font); }
 a { color: var(--brand); text-decoration: none; }
