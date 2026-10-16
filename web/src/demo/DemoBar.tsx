@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../i18n';
@@ -8,7 +10,23 @@ export default function DemoBar() {
   const { t } = useI18n();
   const nav = useNavigate();
   const go = async (fn: () => Promise<unknown>, to: string) => { logout(); await fn(); nav(to); };
-  return (
+  // Sit right under the page's header (logo and language), or at the very top when the page has none.
+  const [host] = useState(() => document.createElement('div'));
+  const [under, setUnder] = useState(false);
+  useEffect(() => {
+    const root = document.getElementById('root')!;
+    const place = () => {
+      const top = root.querySelector('.topbar, .kid-top, .sen-top');
+      if (top && top.nextSibling !== host) top.after(host);
+      if (!top && host.isConnected) host.remove();
+      setUnder(!!top);
+    };
+    place();
+    const mo = new MutationObserver(place);
+    mo.observe(root, { childList: true, subtree: true });
+    return () => { mo.disconnect(); host.remove(); };
+  }, [host]);
+  const bar = (
     <div className="demo-bar">
       <div className="container row" style={{ gap: 6 }}>
         <strong>🧪 {t('demo.label')}</strong>
@@ -26,4 +44,5 @@ export default function DemoBar() {
       </div>
     </div>
   );
+  return under ? createPortal(bar, host) : bar;
 }
