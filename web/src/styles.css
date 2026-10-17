@@ -713,3 +713,7 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .jr-kind.army { background: color-mix(in srgb, #7A5AF8 14%, var(--surface)); color: #5B3FD6; }
 @media (max-width: 560px) { .jr-compare { grid-template-columns: 1fr 1fr; } .jr-compare .jr-tile.main { grid-column: 1 / -1; } .jr-risk { padding: 8px; font-size: .72rem; } .jr-risk b { font-size: .98rem; } }
 .journey .chart { max-height: 240px; }
+/* Access-code screen for the shared preview */
+.gate { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: #0B1B2B; }
+.gate-card { width: min(360px, 100%); text-align: center; }
+.gate-card input { font-size: 1.4rem; text-align: center; letter-spacing: 0.3em; }

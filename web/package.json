@@ -7,7 +7,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "build:demo": "vite build --mode demo",
-    "build:pages": "VITE_PAGES=1 vite build --mode demo --outDir dist-pages"
+    "build:pages": "VITE_ACCESS_HASH=69e5a75191a7161f09fe02fe85979542c6f0316ee8a67ba41a42e27d5f82da68 VITE_PAGES=1 vite build --mode demo --outDir dist-pages"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
