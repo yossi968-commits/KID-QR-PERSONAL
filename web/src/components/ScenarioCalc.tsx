@@ -19,11 +19,11 @@ export function riskForTrack(track?: string): RiskId {
 /** Who gives what, how often a year, and between which ages (work from 14, army salary 18–21). */
 export type Row = { key: string; title?: string; amount: number; times: number; from?: number; to?: number };
 export const DEFAULT_ROWS: Row[] = [
-  { key: 'parents', amount: 100, times: 12 },
-  { key: 'grand', amount: 300, times: 1 },
+  { key: 'parents', amount: 120, times: 12 },
+  { key: 'grand', amount: 100, times: 5 },
   { key: 'friends', amount: 100, times: 20 },
   { key: 'work', amount: 100, times: 12, from: 14, to: 18 },
-  { key: 'army', amount: 150, times: 12, from: 18, to: 21 },
+  { key: 'army', amount: 200, times: 12, from: 18, to: 21 },
 ];
 const END = 21;
 const active = (r: Row, age: number) => age >= (r.from ?? 0) && age < (r.to ?? END);
