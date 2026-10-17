@@ -11,8 +11,8 @@ export function codeFromQr(text: string): string | null {
   return /^[a-z0-9_-]{4,40}$/i.test(s) ? s.toLowerCase() : null;
 }
 
-function decode(source: CanvasImageSource, w: number, h: number, canvas: HTMLCanvasElement) {
-  const scale = Math.min(1, 1024 / Math.max(w, h));
+function decode(source: CanvasImageSource, w: number, h: number, canvas: HTMLCanvasElement, max = 1024) {
+  const scale = Math.min(1, max / Math.max(w, h));
   canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
@@ -57,14 +57,30 @@ export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Phone photos are large and QR codes small in them, so try a few sizes; older iOS lacks createImageBitmap for some files. */
   const fromPhoto = async (file?: File) => {
     if (!file) return;
     setErr('');
     try {
-      const bmp = await createImageBitmap(file);
-      if (!found(decode(bmp, bmp.width, bmp.height, canvas.current))) setErr((e) => e || t('scan.noneInPhoto'));
+      let img: ImageBitmap | HTMLImageElement;
+      try { img = await createImageBitmap(file); }
+      catch {
+        img = await new Promise<HTMLImageElement>((ok, bad) => {
+          const url = URL.createObjectURL(file), el = new Image();
+          el.onload = () => { URL.revokeObjectURL(url); ok(el); }; el.onerror = bad; el.src = url;
+        });
+      }
+      const w = (img as HTMLImageElement).naturalWidth || img.width, h = (img as HTMLImageElement).naturalHeight || img.height;
+      let text: string | null = null;
+      for (const max of [1024, 800, 1400, 600]) { text = decode(img, w, h, canvas.current, max); if (text && codeFromQr(text)) break; }
+      if (!found(text)) setErr((e) => e || t('scan.noneInPhoto'));
     } catch { setErr(t('scan.noneInPhoto')); }
   };
+  // iOS ignores clicks on display:none inputs, so the file inputs stay in the layout, just invisible.
+  const pick = (capture: boolean) => (
+    <input type="file" accept="image/*" {...(capture ? { capture: 'environment' as const } : {})} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+      onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; fromPhoto(f); }} />
+  );
 
   return (
     <Modal onClose={onClose}>
@@ -77,10 +93,10 @@ export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void;
       </div>
       <p className="small muted center" style={{ margin: '10px 0' }}>{t('scan.hint')}</p>
       {err && <div className="error" role="alert">{err}</div>}
-      <label className="btn secondary block" style={{ marginTop: 8 }}>
-        🖼️ {t('scan.photo')}
-        <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => fromPhoto(e.target.files?.[0])} />
-      </label>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+        <label className="btn secondary" style={{ position: 'relative', overflow: 'hidden' }}>📷 {t('scan.photo')}{pick(true)}</label>
+        <label className="btn secondary" style={{ position: 'relative', overflow: 'hidden' }}>🖼️ {t('scan.gallery')}{pick(false)}</label>
+      </div>
     </Modal>
   );
 }
