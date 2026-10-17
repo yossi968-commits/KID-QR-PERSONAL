@@ -1,0 +1,305 @@
+import { DatabaseSync } from 'node:sqlite';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const SCHEMA = `
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'parent' CHECK (role IN ('parent','admin')),
+  locale TEXT NOT NULL DEFAULT 'he',
+  kyc_status TEXT NOT NULL DEFAULT 'none' CHECK (kyc_status IN ('none','pending','verified','rejected')),
+  national_id TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS children (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guardian_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  first_name TEXT NOT NULL,
+  last_name TEXT,
+  birth_date TEXT NOT NULL,
+  avatar TEXT NOT NULL DEFAULT '🦁',
+  gift_code TEXT NOT NULL UNIQUE,
+  track TEXT NOT NULL DEFAULT 'equity',
+  partner_account_id TEXT,
+  goal_text TEXT,
+  goal_amount INTEGER,
+  public_message TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  type TEXT NOT NULL DEFAULT 'birthday',
+  title TEXT NOT NULL,
+  date TEXT NOT NULL,
+  goal_amount INTEGER,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS contributions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  event_id INTEGER REFERENCES events(id) ON DELETE SET NULL,
+  giver_name TEXT NOT NULL,
+  giver_email TEXT,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  message TEXT,
+  is_public INTEGER NOT NULL DEFAULT 1,
+  unlock_age INTEGER,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','invested','failed','cancelled')),
+  checkout_id TEXT UNIQUE,
+  payment_ref TEXT,
+  thanked_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  paid_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS pledges (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  giver_name TEXT NOT NULL,
+  giver_email TEXT,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  method TEXT NOT NULL CHECK (method IN ('card','masav')),
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','active','cancelled')),
+  card_token TEXT,
+  institution_code TEXT,
+  mandate_ref TEXT,
+  next_date TEXT,
+  charges INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  cancelled_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS wishes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  icon TEXT NOT NULL DEFAULT '🎁',
+  target_amount INTEGER NOT NULL CHECK (target_amount > 0),
+  target_date TEXT,
+  status TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned','done','cancelled')),
+  created_by TEXT NOT NULL DEFAULT 'parent' CHECK (created_by IN ('parent','child')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS withdrawals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  wish_id INTEGER REFERENCES wishes(id) ON DELETE SET NULL,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  method TEXT,
+  destination TEXT,
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'requested' CHECK (status IN ('requested','paid','rejected')),
+  requested_by TEXT NOT NULL CHECK (requested_by IN ('parent','child')),
+  tax_estimate INTEGER NOT NULL DEFAULT 0,
+  payout_ref TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  decided_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  contribution_id INTEGER REFERENCES contributions(id) ON DELETE SET NULL,
+  type TEXT NOT NULL CHECK (type IN ('buy','sell')),
+  reason TEXT NOT NULL,
+  track TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  units REAL NOT NULL,
+  nav REAL NOT NULL,
+  partner_order_id TEXT,
+  date TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lesson_progress (
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  lesson_id TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  completed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (child_id, lesson_id)
+);
+
+CREATE TABLE IF NOT EXISTS login_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS outbox (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel TEXT NOT NULL DEFAULT 'email',
+  recipient TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  action TEXT NOT NULL,
+  details TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS child_documents (
+  child_id INTEGER NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  doc_type TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('received','verified','rejected')),
+  file_name TEXT,
+  data TEXT,
+  uploaded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (child_id, doc_type)
+);
+
+-- Employers and workers' committees that give a birth gift into the newborn's QR.
+CREATE TABLE IF NOT EXISTS employers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'employer' CHECK (kind IN ('employer','committee')),
+  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT NOT NULL,
+  contact_name TEXT,
+  logo TEXT NOT NULL DEFAULT '🏢',
+  gift_amount INTEGER NOT NULL DEFAULT 50000,
+  gift_message TEXT,
+  occasions TEXT NOT NULL DEFAULT 'birth',
+  occasion_amounts TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS birth_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  employer_id INTEGER NOT NULL REFERENCES employers(id) ON DELETE CASCADE,
+  employee_name TEXT NOT NULL,
+  employee_email TEXT,
+  employee_number TEXT,
+  baby_name TEXT,
+  birth_date TEXT NOT NULL,          -- the child's birth date (matches the QR)
+  event_date TEXT,                   -- bar/bat mitzvah or enlistment date
+  occasion TEXT NOT NULL DEFAULT 'birth',
+  child_id INTEGER REFERENCES children(id),
+  status TEXT NOT NULL DEFAULT 'reported' CHECK (status IN ('reported','invited','linked','gifted')),
+  contribution_id INTEGER REFERENCES contributions(id),
+  reported_by TEXT NOT NULL DEFAULT 'employee',
+  invited_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_children_guardian ON children(guardian_id);
+CREATE INDEX IF NOT EXISTS idx_contrib_child ON contributions(child_id);
+CREATE INDEX IF NOT EXISTS idx_tx_child ON transactions(child_id);
+`;
+
+export function openDb(file = process.env.DB_PATH || path.resolve('data/kfq.db')) {
+  if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
+  const db = new DatabaseSync(file);
+  db.exec(SCHEMA);
+  migrate(db);
+  return db;
+}
+
+/** Additive migrations for databases created before a column existed. */
+function migrate(db) {
+  const cols = new Set(db.prepare('PRAGMA table_info(children)').all().map((c) => c.name));
+  if (!cols.has('kid_username')) db.exec('ALTER TABLE children ADD COLUMN kid_username TEXT');
+  const ccols = new Set(db.prepare('PRAGMA table_info(contributions)').all().map((c) => c.name));
+  if (!ccols.has('method')) db.exec('ALTER TABLE contributions ADD COLUMN method TEXT');
+  if (!ccols.has('source')) db.exec(`ALTER TABLE contributions ADD COLUMN source TEXT NOT NULL DEFAULT 'gift'`);
+  const pcols = new Set(db.prepare('PRAGMA table_info(pledges)').all().map((c) => c.name));
+  if (!pcols.has('source')) db.exec(`ALTER TABLE pledges ADD COLUMN source TEXT NOT NULL DEFAULT 'gift'`);
+  if (!ccols.has('partner_id')) db.exec('ALTER TABLE contributions ADD COLUMN partner_id INTEGER');
+  if (!ccols.has('pledge_id')) db.exec('ALTER TABLE contributions ADD COLUMN pledge_id INTEGER REFERENCES pledges(id)');
+  if (!cols.has('withdraw_pct')) db.exec('ALTER TABLE children ADD COLUMN withdraw_pct INTEGER NOT NULL DEFAULT 25');
+  if (!cols.has('kid_pin_hash')) db.exec('ALTER TABLE children ADD COLUMN kid_pin_hash TEXT');
+  // Investment provident fund at the chosen house; existing children were opened before checklists.
+  if (!cols.has('provider')) db.exec(`ALTER TABLE children ADD COLUMN provider TEXT NOT NULL DEFAULT 'altshuler'`);
+  if (!cols.has('account_status')) db.exec(`ALTER TABLE children ADD COLUMN account_status TEXT NOT NULL DEFAULT 'active'`);
+  if (!cols.has('application_ref')) db.exec('ALTER TABLE children ADD COLUMN application_ref TEXT');
+  if (!cols.has('account_opened_at')) db.exec('ALTER TABLE children ADD COLUMN account_opened_at TEXT');
+  if (!cols.has('docs_reminded_at')) db.exec('ALTER TABLE children ADD COLUMN docs_reminded_at TEXT');
+  if (!cols.has('track_changed_at')) db.exec('ALTER TABLE children ADD COLUMN track_changed_at TEXT');
+  if (!cols.has('handed_over_at')) db.exec('ALTER TABLE children ADD COLUMN handed_over_at TEXT');
+  if (!cols.has('graduated_at')) db.exec('ALTER TABLE children ADD COLUMN graduated_at TEXT');
+  if (!cols.has('minor_account_id')) db.exec('ALTER TABLE children ADD COLUMN minor_account_id TEXT');
+  const wcols = new Set(db.prepare('PRAGMA table_info(withdrawals)').all().map((c) => c.name));
+  if (!wcols.has('purpose')) db.exec(`ALTER TABLE withdrawals ADD COLUMN purpose TEXT NOT NULL DEFAULT 'general'`);
+  if (!cols.has('opened_as_adult')) db.exec('ALTER TABLE children ADD COLUMN opened_as_adult INTEGER NOT NULL DEFAULT 0');
+  if (!cols.has('parent_view')) db.exec('ALTER TABLE children ADD COLUMN parent_view INTEGER NOT NULL DEFAULT 1');
+  if (!cols.has('health_fund_id')) db.exec('ALTER TABLE children ADD COLUMN health_fund_id INTEGER');
+  if (!cols.has('prev_provider')) db.exec('ALTER TABLE children ADD COLUMN prev_provider TEXT');
+  if (!cols.has('provider_changed_at')) db.exec('ALTER TABLE children ADD COLUMN provider_changed_at TEXT');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_children_kid_username ON children(kid_username COLLATE NOCASE)');
+  const ucols = new Set(db.prepare('PRAGMA table_info(users)').all().map((c) => c.name));
+  if (!ucols.has('community')) db.exec(`ALTER TABLE users ADD COLUMN community TEXT NOT NULL DEFAULT 'general'`);
+  // First-gift partners and expecting parents (see lib/partners.js, lib/pregnancy.js).
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS partners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      kind TEXT NOT NULL CHECK (kind IN ('health_fund','formula','other')),
+      name TEXT NOT NULL, name_en TEXT, name_ar TEXT, logo TEXT,
+      welcome_amount INTEGER NOT NULL DEFAULT 5000 CHECK (welcome_amount > 0),
+      max_child_age INTEGER,
+      message TEXT,
+      active INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS pregnancies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      name TEXT NOT NULL, phone TEXT, email TEXT,
+      due_date TEXT NOT NULL,
+      partner_id INTEGER REFERENCES partners(id),
+      reminders TEXT NOT NULL DEFAULT '[]',
+      child_id INTEGER REFERENCES children(id) ON DELETE SET NULL,
+      cancelled_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );`);
+  // Partners start switched off until an agreement is signed; the admin turns each one on.
+  if (!db.prepare('SELECT COUNT(*) AS n FROM partners').get().n) {
+    const add = db.prepare('INSERT INTO partners (slug, kind, name, name_en, name_ar, logo, welcome_amount, max_child_age) VALUES (?,?,?,?,?,?,?,?)');
+    add.run('clalit', 'health_fund', 'כללית', 'Clalit', 'كلاليت', '🏥', 5000, null);
+    add.run('maccabi', 'health_fund', 'מכבי', 'Maccabi', 'مكابي', '🏥', 5000, null);
+    add.run('meuhedet', 'health_fund', 'מאוחדת', 'Meuhedet', 'مئوحيدت', '🏥', 5000, null);
+    add.run('leumit', 'health_fund', 'לאומית', 'Leumit', 'لئوميت', '🏥', 5000, null);
+    add.run('formula', 'formula', 'חברת תחליפי חלב (שותף לדוגמה)', 'Baby formula brand (sample partner)', 'شركة بدائل حليب (شريك تجريبي)', '🍼', 5000, 1);
+  }
+}
+
+const inTx = new WeakSet();
+
+/** Run fn inside a transaction; rolls back on throw. Nested calls join the outer transaction. */
+export function tx(db, fn) {
+  if (inTx.has(db)) return fn();
+  inTx.add(db);
+  db.exec('BEGIN');
+  try {
+    const out = fn();
+    db.exec('COMMIT');
+    return out;
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  } finally {
+    inTx.delete(db);
+  }
+}

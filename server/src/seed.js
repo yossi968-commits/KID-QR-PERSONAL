@@ -1,0 +1,359 @@
+/**
+ * Demo data: one verified parent with two children whose birthday gifts have been
+ * invested every year since birth (back-dated against sandbox prices), plus an admin.
+ *   parent: ID 000000018 + phone 050-1234567 (SMS code), or demo@kfq.app / demo1234     admin: admin@kfq.app / admin1234
+ *   kids (username / PIN): noa, itay, omer, shira (21, self-managed) / 1234
+ *   employer HR: hr@alpha.example / demo1234
+ *   newborn אלה: fund documents still missing; רוני (yael@example.com): waiting for the investment house
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { openDb, tx } from './db.js';
+import { hashPassword } from './lib/auth.js';
+import { SandboxInvestmentPartner } from './adapters/investment-partner.js';
+import { investContribution } from './lib/portfolio.js';
+import { SandboxPayments } from './adapters/payments.js';
+import { runDuePledges, newPledgeToken } from './lib/pledges.js';
+import { executeWithdrawal } from './lib/wishes.js';
+import { DOCUMENTS, newApplicationRef, providerName, WELCOME_GIFT } from './lib/fund.js';
+import { linkReports, sendGifts } from './lib/employer.js';
+import { addYears, today, nextBirthday, ageOn, addDays } from './lib/dates.js';
+import { addPartnerGifts } from './lib/partners.js';
+import { registerPregnancy } from './lib/pregnancy.js';
+
+
+export function seed(db, partner = new SandboxInvestmentPartner()) {
+  const addUser = (email, pw, name, role, kyc, nationalId = null, phone = null) =>
+    db.prepare('INSERT INTO users (email, password_hash, name, role, kyc_status, national_id, phone) VALUES (?,?,?,?,?,?,?)').run(email, hashPassword(pw), name, role, kyc, nationalId, phone).lastInsertRowid;
+
+  addUser('admin@kfq.app', 'admin1234', 'מנהל מערכת', 'admin', 'none');
+  const parent = addUser('demo@kfq.app', 'demo1234', 'מיכל לוי', 'parent', 'verified', '000000018', '0501234567');
+
+  const givers = [
+    ['סבתא רחל', 'rachel@example.com', 'לנכדה/נכד האהוב, שתגדל/י בשמחה ❤️'],
+    ['סבא משה', 'moshe@example.com', 'עד 120! מסבא'],
+    ['דודה שירה', 'shira@example.com', 'מזל טוב! שתגשים/י את כל החלומות'],
+    ['דוד אבי', null, 'יום הולדת שמח'],
+    ['ההורים של יואב מהגן', null, 'מזל טוב מכל המשפחה'],
+    ['נועם מהכיתה', null, 'יום הולדת שמח חבר/ה!'],
+    ['סבתא אסתר', 'ester@example.com', 'בשבילך, לעתיד'],
+    ['השכנים, משפחת כהן', null, 'מזל טוב!'],
+  ];
+  let s = 7;
+  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+
+  const kids = [
+    { first: 'נועה', birth: '2019-05-12', avatar: '🦄', track: 'equity', provider: 'altshuler', goal: 'לימודים באוניברסיטה', goalAmount: 15000000, msg: 'נועה חוסכת לחלום הגדול שלה 🎓', code: 'noa2019demo', user: 'noa' },
+    { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'conservative', provider: 'meitav', firstProvider: 'altshuler', movedAt: '2024-09-01', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
+    { first: 'שירה', birth: '2005-01-15', avatar: '🎓', track: 'conservative', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'שירה השתחררה ומתחילה ללמוד. מתנה לעתיד שלה 🎓', code: 'shira2005demo', user: 'shira' },
+    { first: 'איתי', birth: '2013-11-03', avatar: '🚀', track: 'equity', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'איתי עולה לתורה בקרוב! במקום צ\'ק, מתנה שגדלה איתו 🚀', code: 'itay2013demo', user: 'itay' },
+  ];
+
+  for (const k of kids) {
+    const code = k.code;
+    const childId = db
+      .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, goal_text, goal_amount, public_message, provider, application_ref, account_opened_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(parent, k.first, 'לוי', k.birth, k.avatar, code, k.track, k.goal, k.goalAmount, k.msg, k.provider, newApplicationRef(), k.birth).lastInsertRowid;
+    db.prepare('UPDATE children SET kid_username=?, kid_pin_hash=? WHERE id=?').run(k.user, hashPassword('1234'), childId);
+    for (const d of DOCUMENTS)
+      db.prepare(`INSERT INTO child_documents (child_id, doc_type, status, file_name, uploaded_at) VALUES (?,?,?,?,?)`).run(childId, d.id, 'received', d.kind === 'upload' ? `${d.id}.pdf` : null, k.birth + ' 20:00:00');
+    const child = db.prepare('SELECT * FROM children WHERE id=?').get(childId);
+    child.partner_account_id = partner.openAccount({ child }).accountId;
+    db.prepare('UPDATE children SET partner_account_id=? WHERE id=?').run(child.partner_account_id, childId);
+    // Omer's parents moved his fund from Altshuler Shaham to Meitav.
+    if (k.firstProvider) db.prepare('UPDATE children SET prev_provider=?, provider_changed_at=? WHERE id=?').run(k.firstProvider, k.movedAt, childId);
+    // The first gift on each QR: the welcome deposit of the house it opened at, on that day.
+    const house = providerName(k.firstProvider || k.provider);
+    const wid = db
+      .prepare(`INSERT INTO contributions (child_id, giver_name, amount, message, status, method, source, payment_ref, paid_at, created_at) VALUES (?,?,?,?,'paid','provider','provider_gift',?,?,?)`)
+      .run(childId, house, WELCOME_GIFT, `ברוכים הבאים לחיסכון, ${k.first}! המתנה הראשונה שלך מ${house}.`, 'WELCOME-' + childId, k.birth + ' 08:00:00', k.birth + ' 08:00:00').lastInsertRowid;
+    investContribution(db, partner, child, db.prepare('SELECT * FROM contributions WHERE id=?').get(wid), k.birth);
+
+    for (let age = 0; age <= ageOn(k.birth); age++) {
+      const date = addYears(k.birth, age);
+      if (date > today()) break;
+      const ev = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(childId, 'birthday', age === 0 ? 'לידה' : `יום הולדת ${age}`, date).lastInsertRowid;
+      const n = 3 + Math.floor(rand() * 4);
+      for (let i = 0; i < n; i++) {
+        const [name, email, message] = givers[(age + i) % givers.length];
+        const amount = [5200, 10000, 18000, 20000, 36000, 50000][Math.floor(rand() * 6)] * (age === 0 ? 2 : 1);
+        const d = new Date(Date.parse(date) + Math.floor(rand() * 5) * 86400000).toISOString().slice(0, 10);
+        if (d > today()) continue;
+        const cid = db
+          .prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, unlock_age, status, payment_ref, paid_at, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+          .run(childId, ev, name, email, amount, message, i === 0 && age % 4 === 2 ? 18 : null, 'paid', 'SEED-' + childId + '-' + age + '-' + i, d + ' 10:00:00', d + ' 09:58:00').lastInsertRowid;
+        investContribution(db, partner, child, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), d);
+      }
+    }
+    const nb = nextBirthday(k.birth);
+    const turning = ageOn(k.birth) + 1;
+    if (turning === 13) db.prepare('INSERT INTO events (child_id, type, title, date, goal_amount) VALUES (?,?,?,?,?)').run(childId, 'bar_mitzvah', 'בר מצווה לאיתי', nb, 3000000);
+    else db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(childId, 'birthday', `יום הולדת ${turning}`, nb);
+  }
+  // Monthly gifts with half a year of history: grandma by card, grandpa by bank direct debit.
+  const sixMonthsAgo = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - 6, 10)).toISOString().slice(0, 10);
+  const kidId = (u) => db.prepare('SELECT id FROM children WHERE kid_username=?').get(u).id;
+  const addPledge = (user, name, email, amount, method, source = 'gift', message = 'כל חודש קצת, בשבילך') =>
+    db.prepare(`INSERT INTO pledges (child_id, token, giver_name, giver_email, amount, method, message, status, card_token, institution_code, mandate_ref, next_date, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(kidId(user), newPledgeToken(), name, email, amount, method, message, 'active', method === 'card' ? 'tok_seed' : null, method === 'masav' ? '52741' : null, method === 'masav' ? '700001' : null, sixMonthsAgo, source);
+  addPledge('noa', 'סבתא רחל', 'rachel@example.com', 10000, 'card');
+  addPledge('itay', 'סבא משה', 'moshe@example.com', 15000, 'masav');
+  addPledge('omer', 'דודה שירה', 'shira@example.com', 5000, 'card');
+  // Omer's own money: part of his waiter's pay every month by bank direct debit.
+  addPledge('omer', 'עומר', null, 40000, 'masav', 'waiting_tables', 'חלק מהמשכורת מהמסעדה');
+  const ctx = { db, partner, payments: new SandboxPayments(), notifier: { send() {} } };
+  while (runDuePledges(ctx).charged) {}
+
+  // Itay's own earnings: babysitting and dog walking, paid straight to his QR.
+  const itayRow = db.prepare("SELECT * FROM children WHERE kid_username='itay'").get();
+  for (const [source, payer, amount, method, daysAgo] of [
+    ['dog_walking', 'משפחת כהן', 8000, 'bit', 150], ['babysitting', 'משפחת אברהם', 12000, 'paybox', 110],
+    ['pocket_money', 'איתי', 5000, 'bit', 80], ['dog_walking', 'משפחת כהן', 8000, 'bit', 45], ['babysitting', 'משפחת אברהם', 15000, 'paybox', 12],
+  ]) {
+    const d = new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10);
+    const cid = db
+      .prepare(`INSERT INTO contributions (child_id, giver_name, amount, is_public, status, payment_ref, paid_at, created_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+      .run(itayRow.id, payer, amount, 0, 'paid', 'SEED-E-' + daysAgo, d + ' 18:00:00', d + ' 17:58:00', method, source).lastInsertRowid;
+    investContribution(db, partner, itayRow, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), d);
+  }
+
+  // Planned gifts through the years, one past withdrawal and one request waiting for the parent.
+  const wish = (user, title, icon, amount, date, by = 'parent', status = 'planned') =>
+    db.prepare('INSERT INTO wishes (child_id, title, icon, target_amount, target_date, created_by, status) VALUES (?,?,?,?,?,?,?)').run(kidId(user), title, icon, amount, date, by, status).lastInsertRowid;
+  wish('noa', 'אופניים', '🚲', 80000, '2027-05-12');
+  wish('noa', 'אייפד', '📱', 220000, '2029-05-12');
+  const itayBike = wish('itay', 'אופניים', '🚲', 60000, '2023-11-03', 'parent', 'done');
+  wish('itay', 'טיסה לבר מצווה', '✈️', 600000, '2026-11-03', 'child');
+  wish('itay', 'מחשב נייד', '💻', 400000, '2028-11-03', 'child');
+  wish('omer', 'רישיון נהיגה', '🚗', 700000, '2027-03-20', 'child');
+  const omerLaptop = wish('omer', 'מחשב לתואר', '💻', 500000, '2029-10-01', 'child');
+  const itay = db.prepare("SELECT * FROM children WHERE kid_username='itay'").get();
+  const wd = db.prepare(`INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, created_at) VALUES (?,?,?,?,?)`).run(itay.id, itayBike, 60000, 'child', '2023-11-05 10:00:00').lastInsertRowid;
+  executeWithdrawal(ctx, itay, db.prepare('SELECT * FROM withdrawals WHERE id=?').get(wd), { method: 'bit', destination: '050-1234567' }, '2023-11-05');
+  db.prepare(`INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, note, tax_estimate) VALUES (?,?,?,?,?,?)`).run(kidId('omer'), omerLaptop, 120000, 'child', 'מקדמה למחשב, אחסוך את השאר', 4200);
+
+  // A newborn whose QR is already collecting gifts while the parent finishes the fund documents,
+  // and another family's baby whose application waits for the investment house.
+  const newborn = (guardian, first, birth, avatar, provider, code, docs, status) => {
+    const id = db
+      .prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, provider, account_status, application_ref, public_message) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(guardian, first, guardian === parent ? 'לוי' : 'כהן', birth, avatar, code, 'equity', provider, status, newApplicationRef(), `${first} נולדה! במקום עוד בגד, מתנה שגדלה איתה 💕`).lastInsertRowid;
+    for (const d of DOCUMENTS.slice(0, docs))
+      db.prepare(`INSERT INTO child_documents (child_id, doc_type, status, file_name, uploaded_at) VALUES (?,?,?,?,?)`).run(id, d.id, 'received', d.kind === 'upload' ? `${d.id}.pdf` : null, birth + ' 20:00:00');
+    db.prepare(`INSERT INTO contributions (child_id, giver_name, amount, message, status, method, source, payment_ref, paid_at) VALUES (?,?,?,?,'paid','provider','provider_gift',?,?)`)
+      .run(id, providerName(provider), WELCOME_GIFT, `ברוכים הבאים לחיסכון, ${first}! המתנה הראשונה שלך מ${providerName(provider)}.`, 'WELCOME-' + id, birth + ' 08:00:00');
+    const ev = db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(id, 'birthday', 'לידה', birth).lastInsertRowid;
+    db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(id, 'birthday', 'יום הולדת 1', addYears(birth, 1));
+    givers.slice(0, 4).forEach(([name, email, message], i) => {
+      const d = new Date(Date.parse(birth) + (i + 2) * 86400000).toISOString().slice(0, 10);
+      db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, status, payment_ref, paid_at, method) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+        .run(id, ev, name, email, [36000, 18000, 50000, 26000][i], message, 'paid', 'SEED-NB-' + id + '-' + i, d + ' 11:00:00', ['bit', 'card', 'bank_transfer', 'paybox'][i]);
+    });
+    return id;
+  };
+  const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  newborn(parent, 'אלה', daysAgo(40), '🐣', 'altshuler', 'ella2026demo', 3, 'pending_docs');
+  // Parents deposit part of the event gifts: Omer's bar mitzvah, Ella's naming ceremony.
+  const omerRow = db.prepare("SELECT * FROM children WHERE kid_username='omer'").get();
+  const bm = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(omerRow.id, 'bar_mitzvah', 'בר המצווה של עומר', '2022-03-24').lastInsertRowid;
+  const bmc = db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, status, payment_ref, paid_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(omerRow.id, bm, 'מיכל לוי', 'demo@kfq.app', 1200000, 'חצי ממתנות הבר מצווה', 0, 'paid', 'SEED-BM', '2022-03-28 10:00:00', 'bank_transfer', 'event_gifts').lastInsertRowid;
+  investContribution(db, partner, omerRow, db.prepare('SELECT * FROM contributions WHERE id=?').get(bmc), '2022-03-28');
+  const ella = db.prepare("SELECT * FROM children WHERE gift_code='ella2026demo'").get();
+  const zb = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(ella.id, 'brita', 'הבריתה של אלה', daysAgo(30)).lastInsertRowid;
+  db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, status, payment_ref, paid_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(ella.id, zb, 'מיכל לוי', 'demo@kfq.app', 400000, 'מתנות מהבריתה', 0, 'paid', 'SEED-ZB', daysAgo(28) + ' 10:00:00', 'bank_transfer', 'event_gifts');
+  const yael = addUser('yael@example.com', 'demo1234', 'יעל כהן', 'parent', 'verified', '000000026', '0527654321');
+  newborn(yael, 'רוני', daysAgo(12), '🐥', 'more', 'roni2026demo', DOCUMENTS.length, 'in_review');
+
+  // An employer (fictional) that swapped its school-bag gift for a deposit into the newborn's QR.
+  const emp = db
+    .prepare(`INSERT INTO employers (slug, name, kind, email, password_hash, contact_name, logo, gift_amount, gift_message, occasions, occasion_amounts) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+    .run('alpha', 'אלפא טכנולוגיות', 'employer', 'hr@alpha.example', hashPassword('demo1234'), 'דנה רוזן, משאבי אנוש', '🏢', 50000, 'מזל טוב מכל המשפחה של אלפא! 💙', 'birth,bar_mitzvah,bat_mitzvah,enlistment',
+      JSON.stringify({ birth: 50000, bar_mitzvah: 36000, bat_mitzvah: 36000, enlistment: 50000 }))
+    .lastInsertRowid;
+  db.prepare(`INSERT INTO employers (slug, name, kind, email, password_hash, contact_name, logo) VALUES (?,?,?,?,?,?,?)`)
+    .run('beta-vaad', 'ועד עובדי בטא', 'committee', 'vaad@beta.example', hashPassword('demo1234'), 'יו"ר הוועד', '🤝');
+  const report = (name, email, num, baby, birth, by, occasion = 'birth', eventDate = null) =>
+    db.prepare('INSERT INTO birth_reports (employer_id, employee_name, employee_email, employee_number, baby_name, birth_date, reported_by, occasion, event_date) VALUES (?,?,?,?,?,?,?,?,?)').run(emp, name, email, num, baby, birth, by, occasion, eventDate).lastInsertRowid;
+  const ellaReport = report('מיכל לוי', 'demo@kfq.app', '10234', 'אלה', ella.birth_date, 'employee');
+  report('יעל כהן', 'yael@example.com', '10871', 'רוני', daysAgo(12), 'employee');
+  report('דניאל אברהם', 'daniel@example.com', '11502', 'תמר', daysAgo(6), 'hr');
+  report('נועם פרץ', 'noam@example.com', '12077', null, daysAgo(2), 'employee');
+  // Same parent, other occasions: Itay's bar mitzvah next month, Omer's enlistment after school.
+  report('מיכל לוי', 'demo@kfq.app', '10234', 'איתי', '2013-11-03', 'employee', 'bar_mitzvah', '2026-11-05');
+  report('מיכל לוי', 'demo@kfq.app', '10234', 'עומר', '2009-03-20', 'hr', 'enlistment', '2027-08-01');
+  linkReports(db);
+  const empRow = db.prepare('SELECT * FROM employers WHERE id=?').get(emp);
+  sendGifts({ db, partner, notifier: { send() {} } }, empRow, [ellaReport]);
+  db.prepare(`UPDATE birth_reports SET status='invited', invited_at=? WHERE employee_name='דניאל אברהם'`).run(daysAgo(5) + ' 09:00:00');
+
+  // Shira is 21: she has managed her own fund since 18 and can now move it into a regular
+  // investment provident fund. Gifts keep coming: enlistment, and soon her graduation.
+  const shira = db.prepare("SELECT * FROM children WHERE kid_username='shira'").get();
+  db.prepare('UPDATE children SET handed_over_at=? WHERE id=?').run(addYears(shira.birth_date, 18), shira.id);
+  const enl = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(shira.id, 'enlistment', 'הגיוס של שירה', '2023-03-12').lastInsertRowid;
+  [['סבתא אסתר', 100000, 'שתשמרי על עצמך ❤️'], ['דוד אבי', 50000, 'בהצלחה בצבא!'], ['מיכל לוי', 150000, 'גאים בך']].forEach(([name, amount, message], i) => {
+    const d = `2023-03-${String(12 + i).padStart(2, '0')}`;
+    const cid = db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, amount, message, status, payment_ref, paid_at, method) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(shira.id, enl, name, amount, message, 'paid', 'SEED-ENL-' + i, d + ' 12:00:00', ['bit', 'paybox', 'bank_transfer'][i]).lastInsertRowid;
+    investContribution(db, partner, shira, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), d);
+  });
+  db.prepare('INSERT INTO events (child_id, type, title, date, goal_amount) VALUES (?,?,?,?,?)').run(shira.id, 'graduation', 'סיום הלימודים של שירה', '2028-06-30', 1000000);
+
+  // Omer (17) is learning to drive: family gave toward lessons, and he asked to use part of his savings.
+  const omer = db.prepare("SELECT * FROM children WHERE kid_username='omer'").get();
+  const drv = db.prepare('INSERT INTO events (child_id, type, title, date, goal_amount) VALUES (?,?,?,?,?)').run(omer.id, 'driving', 'שיעורי נהיגה לעומר', addYears(today(), 0).slice(0, 8) + '28', 700000).lastInsertRowid;
+  [['סבא משה', 150000, 'סע בזהירות!'], ['דודה שירה', 50000, 'לשיעור הראשון 🚗']].forEach(([name, amount, message], i) => {
+    const d = new Date(Date.now() - (20 - i * 6) * 86400000).toISOString().slice(0, 10);
+    const cid = db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, amount, message, status, payment_ref, paid_at, method) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .run(omer.id, drv, name, amount, message, 'paid', 'SEED-DRV-' + i, d + ' 12:00:00', ['bank_transfer', 'bit'][i]).lastInsertRowid;
+    investContribution(db, partner, omer, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), d);
+  });
+  db.prepare(`INSERT INTO withdrawals (child_id, amount, requested_by, note, tax_estimate, purpose) VALUES (?,?,?,?,?,?)`).run(omer.id, 180000, 'child', 'חבילת 12 שיעורים בבית הספר לנהיגה', 6000, 'driving');
+
+  // Each child's savings story, so "plan vs actual" has real years to show: the parents'
+  // standing order since birth, Omer's babysitting and dog sitting from 15, Shira's share of
+  // her army pay, and planned gifts the kids took only part of.
+  const story = (user, fn) => fn(db.prepare('SELECT * FROM children WHERE kid_username=?').get(user));
+  const deposit = (c, giver, amount, date, source, pledgeId = null) => {
+    if (date > today()) return;
+    const cid = db.prepare(`INSERT INTO contributions (child_id, giver_name, amount, is_public, status, payment_ref, paid_at, created_at, method, source, pledge_id) VALUES (?,?,?,0,'paid',?,?,?,?,?,?)`)
+      .run(c.id, giver, amount, `SEED-S-${c.id}-${date}-${source}`, date + ' 09:00:00', date + ' 09:00:00', pledgeId ? 'masav' : 'bit', source, pledgeId).lastInsertRowid;
+    investContribution(db, partner, c, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), date);
+  };
+  const quarters = (from, to) => { const out = []; for (let d = from; d < to; ) { out.push(d); const x = new Date(d); x.setUTCMonth(x.getUTCMonth() + 3); d = x.toISOString().slice(0, 10); } return out; };
+  const nextMonth = (() => { const x = new Date(); x.setUTCDate(1); x.setUTCMonth(x.getUTCMonth() + 1); return x.toISOString().slice(0, 10); })();
+  for (const user of ['noa', 'itay', 'omer', 'shira']) story(user, (c) => {
+    // The standing order stops at 18, when the fund becomes the young adult's.
+    const adultAt = addYears(c.birth_date, 18);
+    const ended = adultAt <= today();
+    const pid = db.prepare(`INSERT INTO pledges (child_id, token, giver_name, giver_email, amount, method, message, status, institution_code, mandate_ref, next_date, source, charges) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(c.id, newPledgeToken(), 'מיכל לוי', 'demo@kfq.app', 10000, 'masav', 'הוראת קבע מההורים', ended ? 'cancelled' : 'active', '52741', '7001' + c.id, nextMonth, 'gift', 0).lastInsertRowid;
+    for (const d of quarters(addDays(c.birth_date, 30), ended ? adultAt : today())) deposit(c, 'מיכל לוי', 30000, d, 'gift', pid);
+  });
+  story('omer', (c) => quarters(addYears(c.birth_date, 15), today()).forEach((d, i) => deposit(c, i % 2 ? 'משפחת כהן' : 'משפחת אברהם', 30000, d, i % 2 ? 'dog_walking' : 'babysitting')));
+  story('shira', (c) => quarters('2023-04-10', '2025-03-10').forEach((d) => deposit(c, 'שירה', 45000, d, 'salary')));
+  const tookPart = (user, title, icon, planned, took, date) => story(user, (c) => {
+    const w = db.prepare('INSERT INTO wishes (child_id, title, icon, target_amount, target_date, created_by, status) VALUES (?,?,?,?,?,?,?)').run(c.id, title, icon, planned, date, 'child', 'planned').lastInsertRowid;
+    const id = db.prepare(`INSERT INTO withdrawals (child_id, wish_id, amount, requested_by, created_at) VALUES (?,?,?,?,?)`).run(c.id, w, took, 'child', date + ' 10:00:00').lastInsertRowid;
+    executeWithdrawal(ctx, c, db.prepare('SELECT * FROM withdrawals WHERE id=?').get(id), { method: 'bit', destination: '050-1234567' }, date);
+  });
+  tookPart('shira', 'שיעורי נהיגה', '🚗', 700000, 400000, '2022-03-01');
+  tookPart('shira', 'טיול אחרי הצבא', '✈️', 800000, 500000, '2025-05-20');
+  tookPart('omer', 'טלפון חדש', '📱', 300000, 150000, '2025-06-15');
+
+  const progress = {
+    shira: [['compound-interest', 5], ['risk-return', 6], ['fees', 6], ['scams', 6]],
+    noa: [['what-is-money', 3], ['three-jars', 3]],
+    itay: [['needs-wants', 4], ['compound-interest', 5], ['what-is-a-share', 5]],
+    omer: [['compound-interest', 5], ['what-is-a-share', 5], ['risk-return', 6], ['fees', 6], ['scams', 6]],
+  };
+  for (const [user, rows] of Object.entries(progress)) {
+    const { id } = db.prepare('SELECT id FROM children WHERE kid_username=?').get(user);
+    for (const [lid, stars] of rows) db.prepare('INSERT INTO lesson_progress (child_id, lesson_id, score) VALUES (?,?,?)').run(id, lid, stars);
+  }
+
+  // First-gift partners are on in the demo. Ella got gifts from her health fund and,
+  // with her parents' consent, from a formula brand; her parents expect another baby.
+  db.prepare(`UPDATE partners SET active=1`).run();
+  const ellaRow = db.prepare("SELECT * FROM children WHERE gift_code='ella2026demo'").get();
+  const pid = (slug) => db.prepare('SELECT id FROM partners WHERE slug=?').get(slug).id;
+  addPartnerGifts(db, () => {}, ellaRow, { healthFund: pid('maccabi'), consents: [pid('formula')] }, 0);
+  db.prepare(`UPDATE contributions SET paid_at=? WHERE child_id=? AND source='partner_gift'`).run(ellaRow.birth_date + ' 08:30:00', ellaRow.id);
+  registerPregnancy(db, { userId: parent, name: 'מיכל לוי', phone: '0501234567', email: 'demo@kfq.app', dueDate: addDays(today(), 26), partnerId: pid('maccabi') });
+
+  // The story families joined with their QR from birth (or from opening, for the newborns).
+  db.prepare(`UPDATE children SET created_at = COALESCE(account_opened_at, birth_date) || ' 09:00:00'`).run();
+  seedPopulation(db, partner);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const file = process.env.DB_PATH || path.resolve('data/kfq.db');
+  if (file !== ':memory:') for (const f of [file, file + '-wal', file + '-shm']) fs.rmSync(f, { force: true });
+  const db = openDb(file);
+  seed(db);
+  console.log('Seeded', file, '\n  parent: demo@kfq.app / demo1234\n  admin:  admin@kfq.app / admin1234\n  kids:   noa / itay / omer / shira, PIN 1234\n  gift pages: /g/noa2019demo  /g/itay2013demo  /g/omer2009demo');
+
+}
+
+/**
+ * A realistic population for the admin analytics: about five hundred fictional families
+ * who joined since January 2023, faster each month. Each QR has the house's welcome gift,
+ * the gifts from the day it opened and from every birthday since. Deterministic.
+ */
+function seedPopulation(db, partner) {
+  let s = 20231;
+  const rand = () => ((s = (s * 48271) % 2147483647) / 2147483647);
+  const pick = (weights) => { let x = rand() * weights.reduce((a, [, w]) => a + w, 0); for (const [v, w] of weights) if ((x -= w) <= 0) return v; return weights[0][0]; };
+  const PROV = [['altshuler', 26], ['meitav', 18], ['more', 14], ['analyst', 10], ['harel', 8], ['migdal', 7], ['clal', 6], ['phoenix', 5], ['yelin', 4], ['menora', 2]];
+  const TRK = [['equity', 55], ['conservative', 22], ['solid', 12], ['sp500', 7], ['balanced', 4]];
+  const FIRST = ['יונתן', 'מאיה', 'אריאל', 'תמר', 'נועם', 'שירה', 'איתן', 'יעל', 'עידו', 'הילה', 'דניאל', 'רוני', 'אורי', 'ליה', 'עמית', 'נגה', 'יואב', 'אביגיל', 'אלון', 'מיכל'];
+  const LAST = ['כהן', 'לוי', 'מזרחי', 'פרץ', 'ביטון', 'אברהם', 'פרידמן', 'שפירא', 'דהן', 'אזולאי', 'גבאי', 'חדד'];
+  const AV = ['🦁', '🐻', '🦊', '🐼', '🐨', '🐯', '🦄', '🐬', '🦋', '🐢', '🚀', '⭐'];
+  const pw = hashPassword('family-demo-' + 1);
+  const day = (d) => new Date(d).toISOString().slice(0, 10);
+  const now = today();
+  const DAY = 86400000;
+  const insUser = db.prepare('INSERT INTO users (email, password_hash, name, role, kyc_status, created_at) VALUES (?,?,?,?,?,?)');
+  const insChild = db.prepare(`INSERT INTO children (guardian_id, first_name, last_name, birth_date, avatar, gift_code, track, provider, account_status, application_ref, account_opened_at, opened_as_adult, handed_over_at, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const insGift = db.prepare(`INSERT INTO contributions (child_id, giver_name, amount, status, method, source, payment_ref, paid_at, created_at) VALUES (?,?,?,?,?,?,?,?,?)`);
+  const HF = db.prepare(`SELECT * FROM partners WHERE kind='health_fund'`).all();
+  const FORMULA = db.prepare(`SELECT * FROM partners WHERE kind='formula'`).get();
+  tx(db, () => {
+    let n = 0, guardian = null;
+    const start = Date.UTC(2023, 0, 1);
+    for (let m = 0; ; m++) {
+      const monthStart = Date.UTC(2023, m, 1);
+      if (day(monthStart) > now) break;
+      const monthEnd = Math.min(Date.UTC(2023, m + 1, 1) - DAY, Date.parse(now + 'T00:00:00Z'));
+      const span = (monthEnd - monthStart) / DAY + 1;
+      const joins = Math.round(3 * Math.pow(1.05, m) * (0.8 + rand() * 0.4) * (span / 30));
+      for (let j = 0; j < joins; j++, n++) {
+        const joinedMs = monthStart + Math.floor(rand() * span) * DAY;
+        const joined = day(joinedMs);
+        // Most QRs open for a newborn; some for older kids and a few for adults.
+        const kind = pick([['newborn', 55], ['kid', 25], ['teen', 15], ['adult', 5]]);
+        const ageDays = kind === 'newborn' ? Math.floor(rand() * 60) : kind === 'kid' ? 365 * (1 + Math.floor(rand() * 10)) : kind === 'teen' ? 365 * (11 + Math.floor(rand() * 7)) : 365 * (18 + Math.floor(rand() * 12));
+        const birth = day(joinedMs - ageDays * DAY - Math.floor(rand() * 300) * DAY * (kind === 'newborn' ? 0 : 1));
+        if (!guardian || rand() < 0.75) {
+          guardian = insUser.run(`family${n}@example.com`, pw, `משפחת ${LAST[n % LAST.length]}`, 'parent', 'verified', joined + ' 08:00:00').lastInsertRowid;
+          db.prepare('UPDATE users SET community=?, locale=? WHERE id=?').run(...((c) => [c, c === 'arab' && rand() < 0.7 ? 'ar' : 'he'])(pick([['general', 55], ['dati_leumi', 18], ['haredi', 12], ['arab', 15]])), guardian);
+        }
+        const provider = pick(PROV), track = pick(TRK);
+        const opens = day(joinedMs + 14 * DAY);
+        const active = opens <= now;
+        const adult = ageOn(birth, joined) >= 18;
+        const id = insChild.run(guardian, FIRST[(n * 7) % FIRST.length], LAST[n % LAST.length], birth, AV[n % AV.length], 'fam' + n + 'x' + (1000 + Math.floor(rand() * 9000)), track, provider,
+          active ? 'active' : 'pending_docs', newApplicationRef(), active ? opens : null, adult ? 1 : 0, ageOn(birth, now) >= 18 ? (adult ? joined : addYears(birth, 18)) : null, joined + ' 09:00:00').lastInsertRowid;
+        const child = { id, track, provider, birth_date: birth };
+        const partnerGift = (p, date) => gift(p.name, p.welcome_amount, date, 'partner_gift', `POP-P-${p.slug}-${id}`, p.id);
+        if (active) { child.partner_account_id = partner.openAccount({ child }).accountId; db.prepare('UPDATE children SET partner_account_id=? WHERE id=?').run(child.partner_account_id, id); }
+        const gift = (giver, amount, date, source, ref, partnerId = null) => {
+          if (date > now) return;
+          const cid = insGift.run(id, giver, amount, 'paid', source === 'provider_gift' ? 'provider' : source === 'partner_gift' ? 'partner' : 'bit', source, ref, date + ' 10:00:00', date + ' 10:00:00').lastInsertRowid;
+          if (partnerId) db.prepare('UPDATE contributions SET partner_id=? WHERE id=?').run(partnerId, cid);
+          if (active) investContribution(db, partner, child, db.prepare('SELECT * FROM contributions WHERE id=?').get(cid), date < opens ? opens : date);
+        };
+        gift(providerName(provider), WELCOME_GIFT, joined, 'provider_gift', 'POP-W-' + id);
+        // Partners' first gifts, and for newborns the expecting sign-up that led to the QR.
+        const fund = rand() < 0.7 ? HF[Math.floor(rand() * HF.length)] : null;
+        if (fund) { db.prepare('UPDATE children SET health_fund_id=? WHERE id=?').run(fund.id, id); partnerGift(fund, joined); }
+        if (kind === 'newborn' && rand() < 0.3) partnerGift(FORMULA, joined);
+        if (kind === 'newborn' && rand() < 0.45) db.prepare('INSERT INTO pregnancies (user_id, name, phone, due_date, partner_id, reminders, child_id, created_at) VALUES (?,?,?,?,?,?,?,?)')
+          .run(guardian, 'הורה', '0500000000', birth, fund?.id ?? null, '["week30","week36","birth"]', id, day(joinedMs - 90 * DAY) + ' 09:00:00');
+        gift('משפחה וחברים', (kind === 'newborn' ? 150000 : 60000) + Math.floor(rand() * 300000), day(joinedMs + 3 * DAY), 'gift', 'POP-J-' + id);
+        for (let a = ageOn(birth, joined) + 1; ; a++) {
+          const bd = addYears(birth, a);
+          if (bd > now) break;
+          gift('משפחה וחברים', 40000 + Math.floor(rand() * 210000), bd, 'gift', `POP-B-${id}-${a}`);
+        }
+      }
+    }
+    // Families expecting now: some came from a health fund's link.
+    for (let i = 0; i < 38; i++) {
+      const dueDate = day(Date.parse(now + 'T00:00:00Z') + Math.floor(rand() * 200 - 20) * DAY);
+      db.prepare('INSERT INTO pregnancies (name, phone, due_date, partner_id, created_at) VALUES (?,?,?,?,?)').run('הורה מצפה', '0500000000', dueDate, rand() < 0.6 ? HF[Math.floor(rand() * HF.length)].id : null, day(Date.parse(now + 'T00:00:00Z') - Math.floor(rand() * 60) * DAY) + ' 09:00:00');
+    }
+  });
+}
