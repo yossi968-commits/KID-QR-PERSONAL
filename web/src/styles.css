@@ -752,3 +752,4 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .seg.ms-seg { display: flex; max-width: 100%; overflow-x: auto; }
 .seg.ms-seg button { white-space: nowrap; flex: 0 0 auto; }
 @media (max-width: 640px) { .ms-kpis .kpis { grid-template-columns: repeat(2, 1fr); } }
+.ms-small td:first-child { white-space: normal; } .ms-small td.num { white-space: nowrap; }
