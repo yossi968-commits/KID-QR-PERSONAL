@@ -73,7 +73,7 @@ r.post('/advisor', h((req, res) => {
   notifier.send({ to: `advisor@${req.child.provider}.example`, subject: `בקשה לפגישה עם יועץ השקעות: ${name}`, body: `${name} ביקש/ה פגישה בנושא ${topic}.` });
   if (phaseOf(req.child) === 'minor') {
     const g = db.prepare('SELECT email FROM users WHERE id=?').get(req.child.guardian_id);
-    if (g) notifier.send({ to: g.email, subject: `${req.child.first_name} מבקש/ת פגישה עם יועץ ההשקעות של ${house}`, body: `הנושא: ${topic}. היועץ ייצור קשר לתיאום, ומומלץ שתהיו בפגישה.` });
+    if (g) notifier.send({ to: g.email, subject: `${req.child.first_name} מבקש/ת פגישה עם יועץ ההשקעות של ${house}`, body: `הנושא: ${topic}. היועץ ייצור קשר לתיאום. עד גיל 18 הפגישה מתקיימת יחד עם אחד ההורים, ושינוי מסלול דורש את חתימתכם.` });
   }
   res.status(201).json({ ok: true, house });
 }));

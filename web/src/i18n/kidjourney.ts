@@ -1,5 +1,14 @@
 /** The child's own savings story: stage by stage, where it stands now, and ideas for the next goal. */
 export const heKj = {
+  'kj.tracksTitle': 'לבחון מסלולים לפני שמחליטים',
+  'kj.tracksSub': 'מה יכול לקרות ל־{value} שיש לך היום בכל מסלול, בלי הפקדות נוספות:',
+  'kj.yours': 'המסלול שלך',
+  'kj.mean.solid': 'יותר אג״ח ופחות מניות. תנודות קטנות, וצמיחה צפויה נמוכה יותר. מתאים כשהיעד קרוב.',
+  'kj.mean.conservative': 'שילוב מאוזן של מניות ואג״ח. יש שנים טובות ושנים חלשות, בלי קפיצות גדולות.',
+  'kj.mean.adventurous': 'הרבה מניות. בשנה רעה הערך יכול לרדת ב־20% ויותר, ולאורך שנים רבות הצמיחה הצפויה גבוהה יותר. מתאים כשהיעד רחוק.',
+  'kj.beforeTitle': 'לפני שמחליטים',
+  'kj.adviceMinor': 'זה לא ייעוץ השקעות. לפני החלפת מסלול או הפקדות נוספות, מומלץ לקבוע פגישה עם יועץ ההשקעות של קופת הגמל להשקעה, יחד עם אחד ההורים. עד גיל 18 שינוי מסלול דורש את חתימת ההורים.',
+  'kj.bookMinor': 'קביעת פגישה עם יועץ, יחד עם הורה',
   'kj.title': 'המסע של החיסכון שלי',
   'kj.sub': 'מה היה בכל שלב, ואיפה אני עומד/ת היום',
   'kj.stage.early': 'עד כיתה א׳',
@@ -29,11 +38,20 @@ export const heKj = {
   'kj.advice': 'זה לא ייעוץ השקעות. אפשר לקבוע פגישה עם יועץ ההשקעות של קופת הגמל להשקעה, ולחשוב ביחד על התאמת מסלול ההשקעה ועל אפשרות להפקדות נוספות עבורך.',
   'kj.book': 'קביעת פגישה עם יועץ',
   'kj.booked': 'הבקשה נשלחה ל{house}. היועץ ייצור קשר לתיאום.',
-  'kj.bookedMinor': ' גם ההורים קיבלו הודעה, ומומלץ שיהיו בפגישה.',
+  'kj.bookedMinor': ' גם ההורים קיבלו הודעה, כדי שאחד מהם יגיע איתך לפגישה.',
 };
 type D = Record<keyof typeof heKj, string>;
 
 export const enKj: D = {
+  'kj.tracksTitle': 'Explore tracks before deciding',
+  'kj.tracksSub': 'What could happen to the {value} you have today on each track, with no more deposits:',
+  'kj.yours': 'your track',
+  'kj.mean.solid': 'More bonds, fewer stocks. Small ups and downs, lower expected growth. Suits a goal that is close.',
+  'kj.mean.conservative': 'A balanced mix of stocks and bonds. Good years and weaker years, without big jumps.',
+  'kj.mean.adventurous': 'Mostly stocks. In a bad year the value can fall 20% or more; over many years expected growth is higher. Suits a goal that is far away.',
+  'kj.beforeTitle': 'Before you decide',
+  'kj.adviceMinor': 'This is not investment advice. Before switching track or adding deposits, book a meeting with the investment advisor of your investment provident fund, together with one of your parents. Until 18 a track switch needs your parents\' signatures.',
+  'kj.bookMinor': 'Book an advisor meeting with a parent',
   'kj.title': 'My savings journey',
   'kj.sub': 'What happened at each stage, and where I stand today',
   'kj.stage.early': 'Before first grade',
@@ -63,10 +81,19 @@ export const enKj: D = {
   'kj.advice': 'This is not investment advice. You can book a meeting with the investment advisor of your investment provident fund to think together about fitting your track and about extra deposits for you.',
   'kj.book': 'Book a meeting with an advisor',
   'kj.booked': 'Request sent to {house}. The advisor will contact you to set a time.',
-  'kj.bookedMinor': ' Your parents were told too, and it is best they join.',
+  'kj.bookedMinor': ' Your parents were told too, so one of them can come with you.',
 };
 
 export const arKj: D = {
+  'kj.tracksTitle': 'افحص المسارات قبل أن تقرر',
+  'kj.tracksSub': 'ما الذي قد يحدث لمبلغ {value} الذي لديك اليوم في كل مسار، بدون إيداعات إضافية:',
+  'kj.yours': 'مسارك',
+  'kj.mean.solid': 'سندات أكثر وأسهم أقل. تقلبات صغيرة ونمو متوقع أقل. مناسب عندما يكون الهدف قريبًا.',
+  'kj.mean.conservative': 'مزيج متوازن من الأسهم والسندات. سنوات جيدة وسنوات أضعف، بدون قفزات كبيرة.',
+  'kj.mean.adventurous': 'أسهم في الغالب. في سنة سيئة قد تنخفض القيمة 20% أو أكثر، وعلى مدى سنوات طويلة يكون النمو المتوقع أعلى. مناسب عندما يكون الهدف بعيدًا.',
+  'kj.beforeTitle': 'قبل أن تقرر',
+  'kj.adviceMinor': 'هذه ليست استشارة استثمارية. قبل تغيير المسار أو إضافة إيداعات، يُنصح بحجز لقاء مع مستشار الاستثمار في الصندوق مع أحد الوالدين. حتى سن 18 يتطلب تغيير المسار توقيع الوالدين.',
+  'kj.bookMinor': 'حجز لقاء مع مستشار مع أحد الوالدين',
   'kj.title': 'رحلة توفيري',
   'kj.sub': 'ما حدث في كل مرحلة، وأين أقف اليوم',
   'kj.stage.early': 'قبل الصف الأول',
@@ -100,6 +127,15 @@ export const arKj: D = {
 };
 
 export const ruKj: D = {
+  'kj.tracksTitle': 'Сравни программы, прежде чем решать',
+  'kj.tracksSub': 'Что может стать с {value}, которые у тебя есть сегодня, в каждой программе, без новых взносов:',
+  'kj.yours': 'твоя программа',
+  'kj.mean.solid': 'Больше облигаций, меньше акций. Небольшие колебания и более низкий ожидаемый рост. Подходит, когда цель близко.',
+  'kj.mean.conservative': 'Сбалансированное сочетание акций и облигаций. Хорошие и слабые годы, без больших скачков.',
+  'kj.mean.adventurous': 'В основном акции. В плохой год стоимость может упасть на 20% и больше, но за много лет ожидаемый рост выше. Подходит, когда цель далеко.',
+  'kj.beforeTitle': 'Прежде чем решать',
+  'kj.adviceMinor': 'Это не инвестиционная консультация. Перед сменой программы или новыми взносами запишись на встречу с консультантом фонда вместе с одним из родителей. До 18 лет смена программы требует подписи родителей.',
+  'kj.bookMinor': 'Записаться к консультанту с родителем',
   'kj.title': 'Путь моих накоплений',
   'kj.sub': 'Что было на каждом этапе и где я сейчас',
   'kj.stage.early': 'До первого класса',
@@ -133,6 +169,15 @@ export const ruKj: D = {
 };
 
 export const frKj: D = {
+  'kj.tracksTitle': 'Explorer les profils avant de décider',
+  'kj.tracksSub': 'Ce que pourraient devenir les {value} que tu as aujourd’hui selon chaque profil, sans nouveaux dépôts :',
+  'kj.yours': 'ton profil',
+  'kj.mean.solid': 'Plus d’obligations, moins d’actions. Petites variations, croissance attendue plus faible. Adapté quand l’objectif est proche.',
+  'kj.mean.conservative': 'Un mélange équilibré d’actions et d’obligations. De bonnes et de moins bonnes années, sans grands sauts.',
+  'kj.mean.adventurous': 'Surtout des actions. Une mauvaise année, la valeur peut baisser de 20 % ou plus ; sur de nombreuses années, la croissance attendue est plus forte. Adapté quand l’objectif est lointain.',
+  'kj.beforeTitle': 'Avant de décider',
+  'kj.adviceMinor': 'Ceci n’est pas un conseil en investissement. Avant de changer de profil ou d’ajouter des dépôts, prends rendez-vous avec le conseiller du fonds, avec l’un de tes parents. Jusqu’à 18 ans, un changement de profil demande la signature des parents.',
+  'kj.bookMinor': 'Rendez-vous avec un conseiller et un parent',
   'kj.title': 'Le parcours de mon épargne',
   'kj.sub': 'Ce qui s’est passé à chaque étape, et où j’en suis aujourd’hui',
   'kj.stage.early': 'Avant le CP',

@@ -107,7 +107,7 @@ function Young({ d, lessons, reloadLessons }: P) {
               <button className="young-tile" onClick={() => go('wishes')}><span className="t-icon">🎁</span><b>{t('young.wishes')}</b></button>
             </div>
             <div className="bubble center"><div>🎓 {t('kid.at21')}</div><div className="young-big num" style={{ fontSize: '2rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
-            <KidJourney />
+            <KidJourney simple />
             {depositing && <div className="bubble"><DepositForm d={d} onCancel={() => setDepositing(false)} returnTab="home" /></div>}
           </div>
         )}

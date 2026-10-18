@@ -21,7 +21,7 @@ const sumIn = (y: Year) => y.in.gifts + y.in.monthly + y.in.work + y.in.army;
  * stage, where it stands today, and ideas for the next stage. No "plan vs actual": looking back
  * at a missed ideal only blames past choices, so this looks forward instead.
  */
-export function KidJourney({ adult }: { adult?: boolean }) {
+export function KidJourney({ adult, simple }: { adult?: boolean; simple?: boolean }) {
   const { t, fmtMoney } = useI18n();
   const [j, setJ] = useState<JourneyData | null>(null);
   const [sent, setSent] = useState<string | null>(null);
@@ -63,9 +63,14 @@ export function KidJourney({ adult }: { adult?: boolean }) {
     t('kj.rec.track'),
   ].filter(Boolean) as string[];
 
+  // Looking forward only: today's value at each risk level, with no further deposits.
+  const horizons = [18, 21].filter((a) => a > age + 0.25);
+  const ahead = (r: number, a: number) => Math.round(now * Math.pow(1 + r, a - age));
+  const minor = !adult && age < 18;
+
   const book = async () => {
     setBusy(true);
-    try { const r = await api<{ house: string }>('/kid/advisor', { body: {} }); setSent(t('kj.booked', { house: r.house }) + (adult ? '' : t('kj.bookedMinor'))); }
+    try { const r = await api<{ house: string }>('/kid/advisor', { body: {} }); setSent(t('kj.booked', { house: r.house }) + (minor ? t('kj.bookedMinor') : '')); }
     finally { setBusy(false); }
   };
 
@@ -107,9 +112,27 @@ export function KidJourney({ adult }: { adult?: boolean }) {
         <ul className="kj-recs">{recs.map((r, i) => <li key={i}>{r}</li>)}</ul>
       </div>
 
+      {!simple && horizons.length > 0 && (
+        <div className="stack" style={{ gap: 8 }}>
+          <h4 style={{ margin: 0 }}>🧭 {t('kj.tracksTitle')}</h4>
+          <p className="small muted" style={{ margin: 0 }}>{t('kj.tracksSub', { value: fmtMoney(now) })}</p>
+          <div className="kj-tracks">
+            {RISKS.map((r) => (
+              <div key={r.id} className={'kj-track' + (r.id === risk ? ' on' : '')}>
+                <div className="kj-track-head"><b>{t(`calc.risk.${r.id}` as any)}</b><span className="small muted">~{(r.rate * 100).toLocaleString('en', { maximumFractionDigits: 1 })}%{r.id === risk && <> · <em>{t('kj.yours')}</em></>}</span></div>
+                <p className="small" style={{ margin: 0 }}>{t(`kj.mean.${r.id}` as any)}</p>
+                <div className="kj-track-vals">{horizons.map((a) => <span key={a}>{t('calc.atAge', { age: a })} <b className="num">{fmtMoney(ahead(r.rate, a))}</b></span>)}</div>
+              </div>
+            ))}
+          </div>
+          <p className="tiny muted" style={{ margin: 0 }}>ⓘ {t('calc.noGuarantee')}</p>
+        </div>
+      )}
+
       <div className="kj-advice">
-        <p style={{ margin: 0 }}>ⓘ {t('kj.advice')}</p>
-        {sent ? <p className="kj-sent" role="status">✓ {sent}</p> : <button className="btn sm" onClick={book} disabled={busy}>📅 {t('kj.book')}</button>}
+        <b>{t('kj.beforeTitle')}</b>
+        <p style={{ margin: 0 }}>{t(minor ? 'kj.adviceMinor' : 'kj.advice')}</p>
+        {sent ? <p className="kj-sent" role="status">✓ {sent}</p> : <button className="btn sm" onClick={book} disabled={busy}>📅 {t(minor ? 'kj.bookMinor' : 'kj.book')}</button>}
       </div>
     </section>
   );
