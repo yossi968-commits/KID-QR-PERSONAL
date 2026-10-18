@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n';
 import { api } from '../../lib/api';
 import { Bars } from '../../components/Charts';
 import { AccountPill, Kpis, useLabels } from '../../components/ui';
-import { Milestone, MILESTONES, type MilestoneId } from './Milestones';
+import { Milestone, MILESTONES, type MilestoneId, type Scope } from './Milestones';
 
 function Page({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) {
   return (
@@ -23,6 +23,7 @@ export function AdminOverview() {
   const L = useLabels();
   const [s, setS] = useState<any>(null);
   const [when, setWhen] = useState<'now' | MilestoneId>('now');
+  const [scope, setScope] = useState<Scope>('il');
   useEffect(() => { api('/admin/stats').then(setS); }, []);
   if (!s) return null;
   const pick = (
@@ -31,9 +32,12 @@ export function AdminOverview() {
       <div className="seg ms-seg" role="tablist">
         {(['now', ...MILESTONES.map((m) => m.id)] as const).map((k) => <button key={k} role="tab" aria-selected={when === k} className={when === k ? 'on' : ''} onClick={() => setWhen(k)}>{t(k === 'now' ? 'ms.now' : (`ms.${k}` as any))}</button>)}
       </div>
+      {when !== 'now' && <div className="seg ms-seg" role="tablist" aria-label={t('ms.g.scope')}>
+        {(['il', 'global'] as const).map((k) => <button key={k} role="tab" aria-selected={scope === k} className={scope === k ? 'on' : ''} onClick={() => setScope(k)}>{t(`ms.g.${k}` as any)}</button>)}
+      </div>}
     </div>
   );
-  if (when !== 'now') return <Page title={t('admin.nav.overview')}>{pick}<Milestone id={when} /></Page>;
+  if (when !== 'now') return <Page title={t('admin.nav.overview')}>{pick}<Milestone id={when} scope={scope} /></Page>;
   return (
     <Page title={t('admin.nav.overview')}>
       {pick}
