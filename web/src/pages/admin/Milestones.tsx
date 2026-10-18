@@ -6,7 +6,7 @@ import { Kpis } from '../../components/ui';
  * realistic scenario ("מודל עסקי: מתנה שצומחת") and the partner-meeting deck (90-day pilot in 100
  * birthdays, ~₪5M seed). Projections, not data. Year-5 costs are an estimate; children per family is taken as about 1.35.
  */
-export type MilestoneId = 'm6' | 'm12' | 'm24' | 'm60';
+export type MilestoneId = 'm6' | 'm12' | 'm24' | 'm36' | 'm60';
 type M = {
   id: MilestoneId; families: number; children: number; share?: string; aum: number; birthdays: number;
   revenue: { fees: number; premium: number; feeShare: number; b2b: number }; costs: number; costsEstimated?: boolean; revenueEstimated?: boolean;
@@ -20,6 +20,7 @@ export const MILESTONES: M[] = [
   { id: 'm6', families: 1000, children: 1350, aum: 1.5e6, birthdays: 350, revenue: { fees: 12e3, premium: 10e3, feeShare: 2e3, b2b: 0 }, costs: 0.5e6, team: 3, employers: 0, partnerFees: 4e3, cum: -0.476e6, abroad: { countries: 0, children: 0, aum: 0, rev: 0, costs: 0, cum: 0 } },
   { id: 'm12', families: 3000, children: 4000, aum: 6.6e6, birthdays: 1100, revenue: { fees: 60e3, premium: 30e3, feeShare: 10e3, b2b: 0 }, costs: 1.0e6, team: 3, employers: 0, partnerFees: 25e3, cum: -0.9e6, abroad: { countries: 0, children: 0, aum: 0, rev: 0, costs: 0.5e6, cum: -0.5e6 } },
   { id: 'm24', families: 15000, children: 20000, aum: 52e6, birthdays: 6000, revenue: { fees: 350e3, premium: 150e3, feeShare: 100e3, b2b: 200e3 }, costs: 1.8e6, team: 6, employers: 25, partnerFees: 0.2e6, cum: -1.9e6, abroad: { countries: 1, children: 30000, aum: 15e6, rev: 0.3e6, costs: 2.5e6, cum: -2.7e6 } },
+  { id: 'm36', families: 40000, children: 54000, aum: 180e6, birthdays: 16000, revenue: { fees: 1.2e6, premium: 0.4e6, feeShare: 0.4e6, b2b: 0.6e6 }, costs: 2.6e6, team: 10, employers: 80, partnerFees: 0.8e6, cum: -1.9e6, abroad: { countries: 2, children: 150000, aum: 60e6, rev: 1.5e6, costs: 4.5e6, cum: -5.7e6 } },
   { id: 'm60', families: 190000, children: 256000, share: '8%', aum: 1.5e9, birthdays: 80000, revenue: { fees: 9e6, premium: 2e6, feeShare: 3.5e6, b2b: 0.5e6 }, costs: 9e6, costsEstimated: true, team: 35, employers: 600, partnerFees: 6.5e6, cum: 6.1e6, cumEstimated: true, abroad: { countries: 3, children: 800000, aum: 0.4e9, rev: 8e6, costs: 6e6, cum: -5.2e6 } },
 ];
 
