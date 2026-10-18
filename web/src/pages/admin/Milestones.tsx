@@ -11,13 +11,18 @@ type M = {
   id: MilestoneId; families: number; children: number; share?: string; aum: number; birthdays: number;
   revenue: { fees: number; premium: number; feeShare: number; b2b: number }; costs: number; costsEstimated?: boolean; revenueEstimated?: boolean;
   team: number; employers: number; partnerFees: number;
+  /** Cumulative result since launch; year 4 is not in the plan, so the year-5 figure is an estimate. */
+  cum: number; cumEstimated?: boolean;
 };
 export const MILESTONES: M[] = [
-  { id: 'm6', families: 1000, children: 1350, aum: 1.5e6, birthdays: 350, revenue: { fees: 12e3, premium: 10e3, feeShare: 2e3, b2b: 0 }, costs: 0.5e6, team: 3, employers: 0, partnerFees: 4e3 },
-  { id: 'm12', families: 3000, children: 4000, aum: 6.6e6, birthdays: 1100, revenue: { fees: 60e3, premium: 30e3, feeShare: 10e3, b2b: 0 }, costs: 1.0e6, team: 3, employers: 0, partnerFees: 25e3 },
-  { id: 'm24', families: 15000, children: 20000, aum: 52e6, birthdays: 6000, revenue: { fees: 350e3, premium: 150e3, feeShare: 100e3, b2b: 200e3 }, costs: 1.8e6, team: 6, employers: 25, partnerFees: 0.2e6 },
-  { id: 'm60', families: 190000, children: 256000, share: '8%', aum: 1.5e9, birthdays: 80000, revenue: { fees: 9e6, premium: 2e6, feeShare: 3.5e6, b2b: 0.5e6 }, costs: 9e6, costsEstimated: true, team: 35, employers: 600, partnerFees: 6.5e6 },
+  { id: 'm6', families: 1000, children: 1350, aum: 1.5e6, birthdays: 350, revenue: { fees: 12e3, premium: 10e3, feeShare: 2e3, b2b: 0 }, costs: 0.5e6, team: 3, employers: 0, partnerFees: 4e3, cum: -0.476e6 },
+  { id: 'm12', families: 3000, children: 4000, aum: 6.6e6, birthdays: 1100, revenue: { fees: 60e3, premium: 30e3, feeShare: 10e3, b2b: 0 }, costs: 1.0e6, team: 3, employers: 0, partnerFees: 25e3, cum: -0.9e6 },
+  { id: 'm24', families: 15000, children: 20000, aum: 52e6, birthdays: 6000, revenue: { fees: 350e3, premium: 150e3, feeShare: 100e3, b2b: 200e3 }, costs: 1.8e6, team: 6, employers: 25, partnerFees: 0.2e6, cum: -1.9e6 },
+  { id: 'm60', families: 190000, children: 256000, share: '8%', aum: 1.5e9, birthdays: 80000, revenue: { fees: 9e6, premium: 2e6, feeShare: 3.5e6, b2b: 0.5e6 }, costs: 9e6, costsEstimated: true, team: 35, employers: 600, partnerFees: 6.5e6, cum: 6.1e6, cumEstimated: true },
 ];
+
+/** Seed round in the partner deck. */
+const SEED = 5e6;
 
 export function Milestone({ id }: { id: MilestoneId }) {
   const { t, locale } = useI18n();
@@ -66,12 +71,24 @@ export function Milestone({ id }: { id: MilestoneId }) {
         </div>
       </div>
       <div className="card">
+        <div className="card-head"><h3>{t('ms.be.title')}</h3></div>
+        <table className="table ms-small"><tbody>
+          <tr><td>{t('ms.be.cum')}</td><td className="num"><b className={m.cum >= 0 ? 'pos' : 'neg'}>{big(m.cum)}{m.cumEstimated ? '*' : ''}</b></td></tr>
+          <tr><td>{t('ms.be.left')}</td><td className="num">{m.cum < 0 ? big(SEED + m.cum) : t('ms.be.repaid')}</td></tr>
+          <tr><td>{t('ms.be.maxBurn')}</td><td className="num">{big(-1.9e6)}</td></tr>
+          <tr><td>{t('ms.be.point')}</td><td className="num">{t('ms.be.pointV')}</td></tr>
+          <tr><td>{t('ms.be.profit')}</td><td className="num">{t('ms.be.profitV')}*</td></tr>
+          <tr><td>{t('ms.be.payback')}</td><td className="num">{t('ms.be.paybackV')}*</td></tr>
+        </tbody></table>
+        <p className="tiny muted" style={{ margin: '8px 0 0' }}>{t('ms.be.note')}</p>
+      </div>
+      <div className="card">
         <div className="card-head"><h3>{t('ms.path')}</h3></div>
         <div className="table-wrap"><table className="table">
-          <thead><tr><th>{t('ms.col.when')}</th><th className="num">{t('ms.children')}</th><th className="num">{t('ms.aum')}</th><th className="num">{t('ms.revenue')}</th><th className="num">{t('ms.result')}</th></tr></thead>
+          <thead><tr><th>{t('ms.col.when')}</th><th className="num">{t('ms.children')}</th><th className="num">{t('ms.aum')}</th><th className="num">{t('ms.revenue')}</th><th className="num">{t('ms.result')}</th><th className="num">{t('ms.be.cumCol')}</th></tr></thead>
           <tbody>{MILESTONES.map((x) => {
             const r = x.revenue.fees + x.revenue.premium + x.revenue.feeShare + x.revenue.b2b;
-            return <tr key={x.id} style={x.id === id ? { background: 'var(--brand-soft)', fontWeight: 600 } : undefined}><td>{t(`ms.${x.id}` as any)}</td><td className="num">{n(x.children)}</td><td className="num">{big(x.aum)}</td><td className="num">{big(r)}{x.revenueEstimated ? '*' : ''}</td><td className="num">{big(r - x.costs)}{x.costsEstimated ? '*' : ''}</td></tr>;
+            return <tr key={x.id} style={x.id === id ? { background: 'var(--brand-soft)', fontWeight: 600 } : undefined}><td>{t(`ms.${x.id}` as any)}</td><td className="num">{n(x.children)}</td><td className="num">{big(x.aum)}</td><td className="num">{big(r)}{x.revenueEstimated ? '*' : ''}</td><td className="num">{big(r - x.costs)}{x.costsEstimated ? '*' : ''}</td><td className="num">{big(x.cum)}{x.cumEstimated ? '*' : ''}</td></tr>;
           })}</tbody>
         </table></div>
         <p className="tiny muted" style={{ margin: '8px 0 0' }}>{t('ms.foot')}</p>
