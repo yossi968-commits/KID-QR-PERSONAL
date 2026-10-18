@@ -16,7 +16,7 @@ import { useLessons, LessonModal, type Lesson, type LessonsRes } from '../../com
 import { MethodPicker, goPay, useMethods } from '../../components/Pay';
 import { BackButton, LangButton } from '../../components/Shells';
 import { AgeTimeline, FutureHero } from '../../components/Future';
-import { Journey } from '../../components/Journey';
+import { KidJourney } from '../../components/KidJourney';
 import { Kpis, useLabels } from '../../components/ui';
 import { gradeLabel } from '../parent/Dashboard';
 import { useErr } from '../Auth';
@@ -107,7 +107,7 @@ function Young({ d, lessons, reloadLessons }: P) {
               <button className="young-tile" onClick={() => go('wishes')}><span className="t-icon">🎁</span><b>{t('young.wishes')}</b></button>
             </div>
             <div className="bubble center"><div>🎓 {t('kid.at21')}</div><div className="young-big num" style={{ fontSize: '2rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
-            <Journey path="/kid/journey" simple />
+            <KidJourney />
             {depositing && <div className="bubble"><DepositForm d={d} onCancel={() => setDepositing(false)} returnTab="home" /></div>}
           </div>
         )}
@@ -184,7 +184,7 @@ function Middle({ d, lessons, reloadLessons }: P) {
               <div className="card"><div className="small muted">{t('kid.at21')}</div><div className="big-num num" style={{ fontSize: '1.6rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
             </div>
             <GoalsCard d={d} onNew={() => go('goals')} />
-            <Journey path="/kid/journey" />
+            <KidJourney />
             <h3>{t('mid.badges')}</h3>
             <div className="badges">{badges.map(([i, l, on]) => <div key={l} className={'badge' + (on ? '' : ' locked')}><span className="b-icon">{i}</span>{l}</div>)}</div>
           </div>
@@ -246,7 +246,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
             {!self && <div className="banner small">🔑 {t('life.until18', { date: fmtDate(child.lifecycle.handoverDate), n: Math.max(0, Math.round((Date.parse(child.lifecycle.handoverDate) - Date.now()) / 86400000)) })}</div>}
             {self && <LifeTimeline child={child} />}
             <GoalsCard d={d} onNew={() => go('plan')} />
-            <Journey path="/kid/journey" />
+            <KidJourney adult={self} />
             <Kpis items={[
               { label: t('sen.fromFamily'), value: fmtMoney(p.deposited - p.earned) },
               { label: t('sen.fromMe'), value: fmtMoney(p.earned), sub: d.pledges.some((x) => x.status === 'active') ? t('sen.standing', { amount: fmtMoney(d.pledges.filter((x) => x.status === 'active').reduce((s, x) => s + x.amount, 0)) }) : undefined },

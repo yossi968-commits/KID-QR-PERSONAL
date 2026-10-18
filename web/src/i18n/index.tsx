@@ -10,14 +10,15 @@ import { heBlend, enBlend, arBlend } from './blend';
 import { ruBase } from './ru';
 import { frBase } from './fr';
 import { heJr, enJr, arJr, ruJr, frJr } from './journey';
+import { heKj, enKj, arKj, ruKj, frKj } from './kidjourney';
 
-const he = { ...heBase, ...heMore, ...heSector, ...heDesign, ...heCalc, ...heBlend, ...heJr };
-const en = { ...enBase, ...enMore, ...enSector, ...enDesign, ...enCalc, ...enBlend, ...enJr };
+const he = { ...heBase, ...heMore, ...heSector, ...heDesign, ...heCalc, ...heBlend, ...heJr, ...heKj };
+const en = { ...enBase, ...enMore, ...enSector, ...enDesign, ...enCalc, ...enBlend, ...enJr, ...enKj };
 type Dict = typeof he;
-const ar = { ...arBase, ...arSector, ...arDesign, ...arCalc, ...arBlend, ...arJr } as Dict;
+const ar = { ...arBase, ...arSector, ...arDesign, ...arCalc, ...arBlend, ...arJr, ...arKj } as Dict;
 // Russian and French each come as one full dictionary (missing keys fall back to Hebrew).
-const ru = { ...ruBase, ...ruJr } as Dict;
-const fr = { ...frBase, ...frJr } as Dict;
+const ru = { ...ruBase, ...ruJr, ...ruKj } as Dict;
+const fr = { ...frBase, ...frJr, ...frKj } as Dict;
 
 export type Locale = 'he' | 'en' | 'ar' | 'ru' | 'fr';
 export const LOCALES: Locale[] = ['he', 'en', 'ar', 'ru', 'fr'];

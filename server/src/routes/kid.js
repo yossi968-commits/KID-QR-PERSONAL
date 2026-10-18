@@ -7,7 +7,7 @@ import { childView, giftsFor, lessonsPayload, completeLesson } from '../lib/chil
 import { journeyFor } from '../lib/journey.js';
 import { plannerPayload, withdrawalLimit, taxEstimate, executeWithdrawal } from '../lib/wishes.js';
 import { phaseOf, graduate } from '../lib/lifecycle.js';
-import { nextSwitchDate, docsStatus, submitDocument, transferProvider } from '../lib/fund.js';
+import { nextSwitchDate, docsStatus, submitDocument, transferProvider, providerName } from '../lib/fund.js';
 import { switchTrack } from '../lib/portfolio.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
 import { EVENT_TYPES } from '../lib/contribute.js';
@@ -59,6 +59,23 @@ r.post('/wishes', h((req, res) => {
   const w = validWish(req.body);
   req.ctx.db.prepare('INSERT INTO wishes (child_id, title, icon, target_amount, target_date, created_by) VALUES (?,?,?,?,?,?)').run(req.child.id, w.title, w.icon, w.targetAmount, w.targetDate, 'child');
   res.status(201).json(plannerPayload(req.ctx.db, req.ctx.partner, req.child));
+}));
+
+/**
+ * "Book a meeting with the fund's investment advisor": the request goes to the investment house,
+ * and for a minor to the parents too, since they sign on any track change or extra deposits.
+ */
+r.post('/advisor', h((req, res) => {
+  const { db, notifier } = req.ctx;
+  const house = providerName(req.child.provider);
+  const name = `${req.child.first_name} ${req.child.last_name || ''}`.trim();
+  const topic = 'התאמת מסלול ההשקעה ובדיקת אפשרות להפקדות נוספות';
+  notifier.send({ to: `advisor@${req.child.provider}.example`, subject: `בקשה לפגישה עם יועץ השקעות: ${name}`, body: `${name} ביקש/ה פגישה בנושא ${topic}.` });
+  if (phaseOf(req.child) === 'minor') {
+    const g = db.prepare('SELECT email FROM users WHERE id=?').get(req.child.guardian_id);
+    if (g) notifier.send({ to: g.email, subject: `${req.child.first_name} מבקש/ת פגישה עם יועץ ההשקעות של ${house}`, body: `הנושא: ${topic}. היועץ ייצור קשר לתיאום, ומומלץ שתהיו בפגישה.` });
+  }
+  res.status(201).json({ ok: true, house });
 }));
 
 r.post('/withdrawals', h((req, res) => {

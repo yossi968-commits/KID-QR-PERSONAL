@@ -724,3 +724,18 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .theme-parent .topbar .back-btn { background: var(--surface); border-color: var(--line); color: var(--ink); }
 [dir='rtl'] .back-btn svg { transform: scaleX(-1); }
 .admin-main > .back-btn { margin-bottom: 12px; }
+/* The child's savings journey: stages, today, ideas */
+.kj-stages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.kj-stages > li { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); }
+.kj-stages > li.now { border-color: var(--growth); box-shadow: inset 0 0 0 1px var(--growth); }
+.kj-stage-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.kj-stage-head em { font-style: normal; font-weight: 700; color: var(--good); }
+.kj-row { display: flex; justify-content: space-between; gap: 8px; font-size: .9rem; color: var(--ink-2); }
+.kj-row b { color: var(--ink); }
+.kj-value { border-top: 1px dashed var(--line); padding-top: 4px; margin-top: 2px; }
+.kj-goal { padding-inline-start: 10px; color: var(--ink-2); }
+.kj-now { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--growth-soft); }
+.kj-now > b { font-size: 1.5rem; line-height: 1.2; }
+.kj-recs { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 4px; font-size: .95rem; }
+.kj-advice { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); font-size: .88rem; color: var(--ink-2); }
+.kj-sent { margin: 0; color: var(--good); font-weight: 600; }
