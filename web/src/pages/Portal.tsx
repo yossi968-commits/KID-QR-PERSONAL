@@ -51,8 +51,7 @@ export default function Portal() {
           {doors.map(([to, icon, title, desc]) => (
             <Link key={to} to={to} className="door">
               <div className="door-head"><div className="door-icon">{icon}</div><h3>{t(title as any)}</h3></div>
-              <p className="muted small" style={{ margin: 0 }}>{t(desc as any)}</p>
-              <span className="go">{t('portal.enter')}</span>
+              <p className="muted small" style={{ margin: 0 }}>{t(desc as any)} <span className="go">{t('portal.enter')}</span></p>
             </Link>
           ))}
         </div>
