@@ -4,10 +4,9 @@ import { Kpis } from '../../components/ui';
 /**
  * What this console could look like at points after launch, from the business plan's
  * realistic scenario ("מודל עסקי: מתנה שצומחת") and the partner-meeting deck (90-day pilot in 100
- * birthdays, ~₪5M seed, ~20% of children and ~₪7B AUM by year 10). Projections, not data. Year-5
- * costs and all year-10 money lines are estimates; children per family is taken as about 1.35.
+ * birthdays, ~₪5M seed). Projections, not data. Year-5 costs are an estimate; children per family is taken as about 1.35.
  */
-export type MilestoneId = 'm6' | 'm12' | 'm24' | 'm60' | 'm120';
+export type MilestoneId = 'm6' | 'm12' | 'm24' | 'm60';
 type M = {
   id: MilestoneId; families: number; children: number; share?: string; aum: number; birthdays: number;
   revenue: { fees: number; premium: number; feeShare: number; b2b: number }; costs: number; costsEstimated?: boolean; revenueEstimated?: boolean;
@@ -18,7 +17,6 @@ export const MILESTONES: M[] = [
   { id: 'm12', families: 3000, children: 4000, aum: 6.6e6, birthdays: 1100, revenue: { fees: 60e3, premium: 30e3, feeShare: 10e3, b2b: 0 }, costs: 1.0e6, team: 3, employers: 0, partnerFees: 25e3 },
   { id: 'm24', families: 15000, children: 20000, aum: 52e6, birthdays: 6000, revenue: { fees: 350e3, premium: 150e3, feeShare: 100e3, b2b: 200e3 }, costs: 1.8e6, team: 6, employers: 25, partnerFees: 0.2e6 },
   { id: 'm60', families: 190000, children: 256000, share: '8%', aum: 1.5e9, birthdays: 80000, revenue: { fees: 9e6, premium: 2e6, feeShare: 3.5e6, b2b: 0.5e6 }, costs: 9e6, costsEstimated: true, team: 35, employers: 600, partnerFees: 6.5e6 },
-  { id: 'm120', families: 475000, children: 640000, share: '20%', aum: 7e9, birthdays: 200000, revenue: { fees: 22e6, premium: 5e6, feeShare: 17.5e6, b2b: 1.5e6 }, costs: 20e6, costsEstimated: true, revenueEstimated: true, team: 60, employers: 1200, partnerFees: 30e6 },
 ];
 
 export function Milestone({ id }: { id: MilestoneId }) {

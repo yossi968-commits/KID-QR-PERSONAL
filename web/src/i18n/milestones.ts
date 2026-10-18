@@ -1,14 +1,13 @@
 /** Admin console "what it could look like" milestones from the business plan's realistic scenario. */
 export const heMs = {
   'ms.now': 'היום (נתוני הדמו)',
-  'ms.m6': 'חצי שנה', 'ms.m12': 'שנה', 'ms.m24': 'שנתיים', 'ms.m60': '5 שנים', 'ms.m120': '10 שנים',
+  'ms.m6': 'חצי שנה', 'ms.m12': 'שנה', 'ms.m24': 'שנתיים', 'ms.m60': '5 שנים',
   'ms.pick': 'תמונת מצב מתחילת המיזם',
   'ms.banner': 'תחזית לפי התכנית העסקית, תרחיש סביר. אלה לא נתונים אמיתיים.',
   'ms.m6.title': 'חצי שנה: מפיילוט לצמיחה', 'ms.m6.story': 'פיילוט של 90 יום ב־100 ימי הולדת עם גוף פיננסי מוביל, ומזכר עקרונות על חלוקת הכנסות. משם הצמיחה מגיעה מהזמנות יום הולדת בלבד.',
   'ms.m12.title': 'שנה: צמיחה בלי פרסום', 'ms.m12.story': 'כל יום הולדת מביא בערך משפחה חדשה. עדיין הפסד, ממומן מגיוס סיד של כ־5 מיליון ₪.',
   'ms.m24.title': 'שנתיים: תחילת B2B', 'ms.m24.story': 'מעסיקים וועדי עובדים נותנים מתנות לידה דרך האפליקציה. השנה האחרונה בהפסד לפני האיזון בשנה השלישית.',
   'ms.m60.title': '5 שנים: הפצה דרך הגוף הפיננסי', 'ms.m60.story': 'הגוף הפיננסי השותף מציע את המוצר ללקוחותיו שיש להם ילדים, ובערך 8% מהילדים בישראל עם QR פעיל.',
-  'ms.m120.title': '10 שנים: הדור הראשון מגיע ל־21', 'ms.m120.story': 'כ־20% מהילדים בישראל עם QR. הילדים הראשונים בוחרים פנסיה והשתלמות אצל הגוף השותף, לקוח ששווה לו בערך פי 40 מחשבון הילד.',
   'ms.children': 'ילדים עם QR', 'ms.families': '{n} משפחות', 'ms.ofKids': '{p} מהילדים בישראל',
   'ms.aum': 'נכסים מנוהלים', 'ms.atPartner': 'אצל השותף המפוקח',
   'ms.revenue': 'הכנסות האפליקציה', 'ms.periodHalf': 'בחצי השנה הראשונה', 'ms.periodYear': 'בשנה האחרונה',
@@ -20,20 +19,19 @@ export const heMs = {
   'ms.kpiTitle': 'יעדי מדדים מהתכנית',
   'ms.kpi.deposit': 'מוזמנים שמפקידים', 'ms.kpi.newFam': 'משפחות חדשות לכל יום הולדת', 'ms.kpi.avg': 'סכום ממוצע להפקדה', 'ms.kpi.perChild': 'הפקדות לילד בשנה', 'ms.kpi.ret': 'תשואה שנתית מונחת',
   'ms.path': 'המסלול לפי התכנית', 'ms.col.when': 'מתחילת המיזם',
-  'ms.foot': 'מבוסס על "מודל עסקי: מתנה שצומחת" ומצגת פגישת ההיכרות, תרחיש ריאלי, ישראל בלבד. ילדים ונכסים בשנה 10 מהמצגת. חצי שנה היא הערכת ביניים שלי. * לא מופיע בתכנית, הערכה שלי.',
+  'ms.foot': 'מבוסס על "מודל עסקי: מתנה שצומחת" ומצגת פגישת ההיכרות, תרחיש ריאלי, ישראל בלבד. חצי שנה היא הערכת ביניים שלי. * לא מופיע בתכנית, הערכה שלי.',
   'ms.k': '{n} אלף ₪', 'ms.mil': '{n} מיליון ₪', 'ms.bil': '{n} מיליארד ₪',
 };
 type D = Record<keyof typeof heMs, string>;
 export const enMs: D = {
   'ms.now': 'Today (demo data)',
-  'ms.m6': '6 months', 'ms.m12': '1 year', 'ms.m24': '2 years', 'ms.m60': '5 years', 'ms.m120': '10 years',
+  'ms.m6': '6 months', 'ms.m12': '1 year', 'ms.m24': '2 years', 'ms.m60': '5 years',
   'ms.pick': 'Snapshot since launch',
   'ms.banner': 'Projection from the business plan, realistic scenario. Not real data.',
   'ms.m6.title': '6 months: pilot to growth', 'ms.m6.story': 'A 90-day pilot in 100 birthdays with a leading financial partner and an MOU on revenue share. From there, growth comes only from birthday invites.',
   'ms.m12.title': '1 year: growth without ads', 'ms.m12.story': 'Each birthday brings about one new family. Still a loss, funded by a seed round of about ₪5M.',
   'ms.m24.title': '2 years: B2B starts', 'ms.m24.story': 'Employers and workers\' committees give birth gifts through the app. The last loss year before break-even in year 3.',
   'ms.m60.title': '5 years: distribution through the financial partner', 'ms.m60.story': 'The financial partner offers the product to its clients with children; about 8% of Israel\'s children have an active QR.',
-  'ms.m120.title': '10 years: the first kids reach 21', 'ms.m120.story': 'About 20% of Israel\'s children have a QR. The first ones pick pension and study funds at the partner, a client worth about 40 times the child account.',
   'ms.children': 'Children with a QR', 'ms.families': '{n} families', 'ms.ofKids': '{p} of Israel\'s children',
   'ms.aum': 'Assets under management', 'ms.atPartner': 'held by the regulated partner',
   'ms.revenue': 'App revenue', 'ms.periodHalf': 'in the first six months', 'ms.periodYear': 'in the last year',
@@ -45,6 +43,6 @@ export const enMs: D = {
   'ms.kpiTitle': 'Metric targets from the plan',
   'ms.kpi.deposit': 'Invitees who deposit', 'ms.kpi.newFam': 'New families per birthday', 'ms.kpi.avg': 'Average deposit', 'ms.kpi.perChild': 'Deposits per child a year', 'ms.kpi.ret': 'Assumed annual return',
   'ms.path': 'The path in the plan', 'ms.col.when': 'Since launch',
-  'ms.foot': 'Based on the business plan and the partner-meeting deck, realistic scenario, Israel only. Year-10 children and assets come from the deck. Six months is my interpolation. * Not in the plan; my estimate.',
+  'ms.foot': 'Based on the business plan and the partner-meeting deck, realistic scenario, Israel only. Six months is my interpolation. * Not in the plan; my estimate.',
   'ms.k': '₪{n}K', 'ms.mil': '₪{n}M', 'ms.bil': '₪{n}B',
 };
