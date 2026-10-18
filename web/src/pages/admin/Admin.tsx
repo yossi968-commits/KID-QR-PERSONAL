@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n';
 import { api } from '../../lib/api';
 import { Bars } from '../../components/Charts';
 import { AccountPill, Kpis, useLabels } from '../../components/ui';
+import { Milestone, MILESTONES, type MilestoneId } from './Milestones';
 
 function Page({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) {
   return (
@@ -21,10 +22,21 @@ export function AdminOverview() {
   const { t, fmtMoney } = useI18n();
   const L = useLabels();
   const [s, setS] = useState<any>(null);
+  const [when, setWhen] = useState<'now' | MilestoneId>('now');
   useEffect(() => { api('/admin/stats').then(setS); }, []);
   if (!s) return null;
+  const pick = (
+    <div className="stack" style={{ gap: 6 }}>
+      <span className="small muted">{t('ms.pick')}</span>
+      <div className="seg ms-seg" role="tablist">
+        {(['now', ...MILESTONES.map((m) => m.id)] as const).map((k) => <button key={k} role="tab" aria-selected={when === k} className={when === k ? 'on' : ''} onClick={() => setWhen(k)}>{t(k === 'now' ? 'ms.now' : (`ms.${k}` as any))}</button>)}
+      </div>
+    </div>
+  );
+  if (when !== 'now') return <Page title={t('admin.nav.overview')}>{pick}<Milestone id={when} /></Page>;
   return (
     <Page title={t('admin.nav.overview')}>
+      {pick}
       <Kpis items={[
         { label: t('admin.aum'), value: fmtMoney(s.aum) }, { label: t('admin.volume'), value: fmtMoney(s.giftVolume), sub: `${s.gifts} ${t('admin.gifts')}` },
         { label: t('admin.recurring'), value: fmtMoney(s.monthlyRecurring), sub: `${s.activePledges} ${t('admin.activePledges')}` },

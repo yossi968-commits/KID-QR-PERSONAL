@@ -747,3 +747,8 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .kj-track-vals { display: flex; gap: 14px; flex-wrap: wrap; font-size: .88rem; color: var(--ink-2); }
 .kj-track-vals b { color: var(--ink); }
 @media (min-width: 720px) { .kj-tracks { grid-template-columns: repeat(3, 1fr); } }
+/* admin milestones */
+.ms-kpis .kpis { grid-template-columns: repeat(3, 1fr); }
+.seg.ms-seg { display: flex; max-width: 100%; overflow-x: auto; }
+.seg.ms-seg button { white-space: nowrap; flex: 0 0 auto; }
+@media (max-width: 640px) { .ms-kpis .kpis { grid-template-columns: repeat(2, 1fr); } }
