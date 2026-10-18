@@ -40,7 +40,7 @@ export const heJr = {
   'jr.ofPlanned': 'מתוך {amount}',
   'jr.all': 'כל {n} השנים',
   'jr.less': 'רק השנים האחרונות',
-  'jr.planDef': 'התכנית האופטימלית: הורים 100 ₪ בחודש, סבא וסבתא 300 ₪ בשנה, 20 מתנות של 100 ₪ בשנה, עבודה 100 ₪ בחודש בגילים 14–18 ו־150 ₪ בחודש מהמשכורת הצבאית בגילים 18–21, בלי משיכות.',
+  'jr.planDef': 'התכנית האופטימלית, אותו תרחיש כמו במחשבון "כמה זה יכול להיות": {rows}. בלי משיכות, במסלול {risk}.',
 };
 type D = Record<keyof typeof heJr, string>;
 export const enJr: D = {
@@ -84,7 +84,7 @@ export const enJr: D = {
   'jr.ofPlanned': 'of {amount}',
   'jr.all': 'All {n} years',
   'jr.less': 'Recent years only',
-  'jr.planDef': 'Best-case plan: parents ₪100 a month, grandparents ₪300 a year, 20 gifts of ₪100 a year, work ₪100 a month at 14–18 and ₪150 a month of army pay at 18–21, with no withdrawals.',
+  'jr.planDef': 'Best-case plan, the same scenario as the "How much could it be?" calculator: {rows}. No withdrawals, {risk} track.',
 };
 export const arJr: D = {
   'jr.title': 'الخطة مقابل الواقع',
@@ -127,7 +127,7 @@ export const arJr: D = {
   'jr.ofPlanned': 'من أصل {amount}',
   'jr.all': 'كل السنوات ({n})',
   'jr.less': 'السنوات الأخيرة فقط',
-  'jr.planDef': 'الخطة المثلى: الوالدان 100 ₪ شهريًا، الجد والجدة 300 ₪ سنويًا، 20 هدية بقيمة 100 ₪ سنويًا، عمل 100 ₪ شهريًا في سن 14–18 و150 ₪ شهريًا من راتب الخدمة في سن 18–21، بدون سحب.',
+  'jr.planDef': 'الخطة المثلى، نفس سيناريو الحاسبة: {rows}. بدون سحب، في مسار {risk}.',
 };
 const calcRu = { 'calc.row.work': 'Работа', 'calc.row.workHint': 'Заработал(а) бебиситтером или выгуливая собак', 'calc.row.army': 'Армейская зарплата', 'calc.row.armyHint': 'Часть солдатской зарплаты в накопления', 'calc.ages': 'Возраст {from}–{to}' };
 const calcFr = { 'calc.row.work': 'Travail', 'calc.row.workHint': 'Gagné en baby-sitting ou dog-sitting', 'calc.row.army': 'Solde militaire', 'calc.row.armyHint': 'Une partie de la solde épargnée', 'calc.ages': 'De {from} à {to} ans' };
@@ -143,7 +143,7 @@ export const ruJr: Record<string, string> = { ...calcRu,
   'jr.col.age': 'Возраст', 'jr.col.in': 'Внесено', 'jr.col.planIn': 'По плану', 'jr.col.out': 'Снято на подарки', 'jr.col.value': 'Стоимость в конце года', 'jr.col.planValue': 'По плану',
   'jr.soFar': 'пока', 'jr.kind.monthly': 'Постоянное поручение', 'jr.kind.gifts': 'Подарки', 'jr.kind.work': 'Работа', 'jr.kind.army': 'Армия', 'jr.withdrawal': 'Снятие', 'jr.ofPlanned': 'из {amount}',
   'jr.all': 'Все {n} лет', 'jr.less': 'Только последние годы',
-  'jr.planDef': 'Оптимальный план: родители 100 ₪ в месяц, бабушка и дедушка 300 ₪ в год, 20 подарков по 100 ₪ в год, работа 100 ₪ в месяц в 14–18 лет и 150 ₪ в месяц из армейской зарплаты в 18–21, без снятий.',
+  'jr.planDef': 'Оптимальный план, тот же сценарий, что и в калькуляторе: {rows}. Без снятий, программа «{risk}».',
 };
 export const frJr: Record<string, string> = { ...calcFr,
   'jr.title': 'Prévu et réalisé', 'jr.titleKid': 'Le voyage de mon épargne', 'jr.sub': '{n} ans, année par année', 'jr.actual': 'Réalisé', 'jr.plan': 'Plan optimal',
@@ -157,5 +157,5 @@ export const frJr: Record<string, string> = { ...calcFr,
   'jr.col.age': 'Âge', 'jr.col.in': 'Versé', 'jr.col.planIn': 'Prévu', 'jr.col.out': 'Retiré pour cadeaux', 'jr.col.value': 'Valeur en fin d\'année', 'jr.col.planValue': 'Valeur prévue',
   'jr.soFar': 'à ce jour', 'jr.kind.monthly': 'Virement permanent', 'jr.kind.gifts': 'Cadeaux', 'jr.kind.work': 'Travail', 'jr.kind.army': 'Armée', 'jr.withdrawal': 'Retrait', 'jr.ofPlanned': 'sur {amount}',
   'jr.all': 'Les {n} années', 'jr.less': 'Dernières années seulement',
-  'jr.planDef': 'Plan optimal : parents 100 ₪ par mois, grands-parents 300 ₪ par an, 20 cadeaux de 100 ₪ par an, travail 100 ₪ par mois de 14 à 18 ans et 150 ₪ par mois de solde militaire de 18 à 21 ans, sans retraits.',
+  'jr.planDef': 'Plan optimal, le même scénario que le calculateur : {rows}. Sans retraits, profil {risk}.',
 };

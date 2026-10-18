@@ -139,7 +139,7 @@ export function Journey({ path, simple, self }: { path: string; simple?: boolean
           {j.years.length > 6 && <button className="btn ghost sm" onClick={() => setAll(!all)}>{all ? t('jr.less') : t('jr.all', { n: j.years.length })}</button>}
         </div>
       )}
-      <p className="tiny muted" style={{ margin: 0 }}>{t('jr.planDef')}</p>
+      <p className="tiny muted" style={{ margin: 0 }}>{t('jr.planDef', { risk: riskName(mine), rows: DEFAULT_ROWS.map((r) => `${t(`calc.row.${r.key}` as any)} ${fmtMoney(r.amount * 100)} × ${r.times}${r.from != null || r.to != null ? ` (${t('calc.ages', { from: r.from ?? 0, to: r.to ?? 21 })})` : ''}`).join(', ') })}</p>
     </section>
   );
 }
