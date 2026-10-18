@@ -8,6 +8,7 @@ const he = {
   'nav.login': 'כניסה',
   'nav.register': 'הרשמה',
   'nav.logout': 'יציאה',
+  'nav.back': 'חזרה',
   'nav.profile': 'פרופיל',
   'lang.toggle': 'English',
 

@@ -1,4 +1,4 @@
-import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useI18n, LOCALES, type Locale } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { api, type User } from '../lib/api';
@@ -27,6 +27,22 @@ export function Logo({ sub, to = '/' }: { sub?: string; to?: string }) {
   return <Link to={to} className="logo"><img src={iconUrl} alt="" />{t('appName')}{sub && <small>{sub}</small>}</Link>;
 }
 
+/**
+ * Back to the screen you were on before. With no earlier screen in this visit (opened from a link),
+ * it goes to the area's home. Hidden on the home screen itself.
+ */
+export function BackButton({ home, show }: { home: string; show?: boolean }) {
+  const { t } = useI18n();
+  const nav = useNavigate();
+  const loc = useLocation();
+  if (!(show ?? (loc.pathname !== home || loc.search !== ''))) return null;
+  return (
+    <button type="button" className="back-btn" aria-label={t('nav.back')} title={t('nav.back')} onClick={() => (loc.key !== 'default' ? nav(-1) : nav(home))}>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    </button>
+  );
+}
+
 /** Public pages: entry portal, logins, gift page and checkout. */
 export function PublicShell() {
   const { t } = useI18n();
@@ -34,6 +50,7 @@ export function PublicShell() {
     <div className="shell theme-parent">
       <header className="topbar">
         <div className="container">
+          <BackButton home="/" />
           <Logo />
           <span className="spacer" />
           <nav className="nav">
@@ -60,6 +77,7 @@ export function ParentShell() {
     <div className="shell theme-parent">
       <header className="topbar">
         <div className="container">
+          <BackButton home="/parent" />
           <Logo sub={t('parent.area')} to="/parent" />
           <span className="spacer" />
           <nav className="nav">
@@ -100,7 +118,7 @@ export function AdminShell() {
           <LangButton className="" />
           <button onClick={() => { logout(); nav('/'); }}>⎋ {t('nav.logout')}</button>
         </aside>
-        <div className="admin-main"><Outlet /></div>
+        <div className="admin-main"><BackButton home="/admin" /><Outlet /></div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ export const ruBase: Record<string, string> = {
   "nav.login": "Вход",
   "nav.register": "Регистрация",
   "nav.logout": "Выход",
+  "nav.back": "Назад",
   "nav.profile": "Профиль",
   "lang.toggle": "English",
   "land.heroTitle": "Вместо очередной игрушки — подарок, который к 21 году вырастет вдвое",

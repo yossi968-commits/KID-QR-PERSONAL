@@ -717,3 +717,10 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .gate { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: #0B1B2B; }
 .gate-card { width: min(360px, 100%); text-align: center; }
 .gate-card input { font-size: 1.4rem; text-align: center; letter-spacing: 0.3em; }
+/* Back button: same place on every screen, next to the logo or name */
+.back-btn { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; padding: 0; }
+.back-btn:hover { border-color: var(--brand); }
+.topbar .back-btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.25); color: var(--header-ink); }
+.theme-parent .topbar .back-btn { background: var(--surface); border-color: var(--line); color: var(--ink); }
+[dir='rtl'] .back-btn svg { transform: scaleX(-1); }
+.admin-main > .back-btn { margin-bottom: 12px; }

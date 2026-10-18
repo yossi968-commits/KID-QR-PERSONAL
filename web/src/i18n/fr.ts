@@ -9,6 +9,7 @@ export const frBase: Record<string, string> = {
   "nav.login": "Connexion",
   "nav.register": "Inscription",
   "nav.logout": "Déconnexion",
+  "nav.back": "Retour",
   "nav.profile": "Profil",
   "lang.toggle": "English",
   "land.heroTitle": "Au lieu d'un jouet de plus, un cadeau qui vaudra deux fois plus à 21 ans",

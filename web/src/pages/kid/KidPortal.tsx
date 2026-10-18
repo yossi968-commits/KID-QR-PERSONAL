@@ -14,7 +14,7 @@ import QrPanel from '../../components/QrPanel';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
 import { useLessons, LessonModal, type Lesson, type LessonsRes } from '../../components/Lessons';
 import { MethodPicker, goPay, useMethods } from '../../components/Pay';
-import { LangButton } from '../../components/Shells';
+import { BackButton, LangButton } from '../../components/Shells';
 import { AgeTimeline, FutureHero } from '../../components/Future';
 import { Journey } from '../../components/Journey';
 import { Kpis, useLabels } from '../../components/ui';
@@ -58,7 +58,7 @@ type P = { d: KidData; lessons: LessonsRes; reloadLessons: () => void };
 function useTab<T extends string>(tabs: readonly T[]) {
   const [sp, setSp] = useSearchParams();
   const tab = (tabs.includes(sp.get('tab') as T) ? sp.get('tab') : tabs[0]) as T;
-  return [tab, (k: T) => { setSp({ tab: k }, { replace: true }); window.scrollTo(0, 0); }] as const;
+  return [tab, (k: T) => { setSp({ tab: k }); window.scrollTo(0, 0); }] as const;
 }
 
 function Logout({ className = 'btn ghost sm' }: { className?: string }) {
@@ -81,6 +81,7 @@ function Young({ d, lessons, reloadLessons }: P) {
   return (
     <div className="shell theme-young" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="container kid-top">
+        <BackButton home="/kid" show={tab !== YOUNG_TABS[0]} />
         <span style={{ fontSize: 30 }}>{child.avatar}</span><b>{child.firstName}</b>
         <span className="spacer" />
         <span className="pill gold" style={{ fontSize: '1rem' }}>⭐ {lessons.totalStars}</span>
@@ -157,6 +158,7 @@ function Middle({ d, lessons, reloadLessons }: P) {
   return (
     <div className="shell theme-middle">
       <div className="container mid-top">
+        <BackButton home="/kid" show={tab !== MID_TABS[0]} />
         <span style={{ fontSize: 28 }}>{child.avatar}</span>
         <div><b>{child.firstName}</b><div className="small muted">{t('mid.level', { n: level })} · {gradeLabel(t, child.grade)}</div></div>
         <span className="spacer" />
@@ -225,6 +227,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
     <div className="shell theme-senior">
       <header className="sen-top">
         <div className="container row" style={{ flexWrap: 'nowrap' }}>
+          <BackButton home="/kid" show={tab !== TABS[0]} />
           <b style={{ whiteSpace: 'nowrap' }}>{child.firstName}</b>
           <nav className="sen-nav" aria-label={t('kid.nav')}>{TABS.map((k) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)}>{t(`sen.tab.${k}` as any)}</button>)}</nav>
           <span className="spacer" />

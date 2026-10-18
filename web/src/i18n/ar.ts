@@ -9,6 +9,7 @@ export const arBase: Record<string, string> = {
   "nav.login": "تسجيل الدخول",
   "nav.register": "التسجيل",
   "nav.logout": "تسجيل الخروج",
+  "nav.back": "رجوع",
   "nav.profile": "الملف الشخصي",
   "lang.toggle": "English",
   "land.heroTitle": "بدلًا من لعبة أخرى، هدية تساوي الضعف عند سن 21",

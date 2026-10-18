@@ -64,7 +64,7 @@ export default function ChildPage() {
       )}
       <div className="tabs" role="tablist">
         {tabs.map((k) => (
-          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setSp({ tab: k }, { replace: true })}>
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setSp({ tab: k })}>
             {t(`ctab.${k}` as any)}{k === 'fund' && data.documents.missing.length > 0 && <span className="pill gold num" style={{ marginInlineStart: 6 }}>{data.documents.missing.length}</span>}
           </button>
         ))}

@@ -10,6 +10,7 @@ const en: Dict = {
   'nav.login': 'Log in',
   'nav.register': 'Sign up',
   'nav.logout': 'Log out',
+  'nav.back': 'Back',
   'nav.profile': 'Profile',
   'lang.toggle': 'עברית',
 

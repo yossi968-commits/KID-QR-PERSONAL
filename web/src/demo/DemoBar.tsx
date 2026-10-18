@@ -16,7 +16,7 @@ export default function DemoBar() {
   useEffect(() => {
     const root = document.getElementById('root')!;
     const place = () => {
-      const top = root.querySelector('.topbar, .kid-top, .sen-top');
+      const top = root.querySelector('.topbar, .kid-top, .mid-top, .sen-top');
       if (top && top.nextSibling !== host) top.after(host);
       if (!top && host.isConnected) host.remove();
       setUnder(!!top);

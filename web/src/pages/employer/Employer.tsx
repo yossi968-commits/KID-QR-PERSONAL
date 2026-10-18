@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n';
 import { useAuth } from '../../lib/auth';
 import { api, publicOrigin, OCCASIONS, type BirthReport, type Employer } from '../../lib/api';
 import { Kpis } from '../../components/ui';
-import { LangButton, Logo } from '../../components/Shells';
+import { BackButton, LangButton, Logo } from '../../components/Shells';
 import { useErr } from '../Auth';
 
 /** Employers and workers' committees: formal B2B console. */
@@ -18,6 +18,7 @@ export function EmployerShell() {
     <div className="shell theme-employer">
       <header className="topbar">
         <div className="container">
+          <BackButton home="/employer" />
           <Logo sub={t('employer.area')} to="/employer" />
           <span className="spacer" />
           <nav className="nav">
