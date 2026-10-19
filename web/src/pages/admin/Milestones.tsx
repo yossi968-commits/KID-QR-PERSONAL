@@ -3,8 +3,8 @@ import { Kpis } from '../../components/ui';
 
 /**
  * What this console could look like at points after launch, from the business plan's
- * realistic scenario ("מודל עסקי: מתנה שצומחת") and the partner-meeting deck (90-day pilot in 100
- * birthdays, ~₪5M seed). Projections, not data. Year-5 costs are an estimate; children per family is taken as about 1.35.
+ * realistic scenario, draft 2.0 (October 2026): 90-day pilot in 100
+ * birthdays, ~₪9M raise. Projections, not data. Year-5 costs are an estimate; children per family is taken as about 1.35.
  */
 export type MilestoneId = 'm6' | 'm12' | 'm24' | 'm36' | 'm60';
 type M = {
@@ -17,20 +17,20 @@ type M = {
   abroad: { countries: number; children: number; aum: number; rev: number; costs: number; cum: number };
 };
 export const MILESTONES: M[] = [
-  { id: 'm6', families: 1000, children: 1350, aum: 1.5e6, birthdays: 350, revenue: { fees: 12e3, premium: 10e3, feeShare: 2e3, b2b: 0 }, costs: 0.5e6, team: 3, employers: 0, partnerFees: 4e3, cum: -0.476e6, abroad: { countries: 0, children: 0, aum: 0, rev: 0, costs: 0, cum: 0 } },
-  { id: 'm12', families: 3000, children: 4000, aum: 6.6e6, birthdays: 1100, revenue: { fees: 60e3, premium: 30e3, feeShare: 10e3, b2b: 0 }, costs: 1.0e6, team: 3, employers: 0, partnerFees: 25e3, cum: -0.9e6, abroad: { countries: 0, children: 0, aum: 0, rev: 0, costs: 0.5e6, cum: -0.5e6 } },
-  { id: 'm24', families: 15000, children: 20000, aum: 52e6, birthdays: 6000, revenue: { fees: 350e3, premium: 150e3, feeShare: 100e3, b2b: 200e3 }, costs: 1.8e6, team: 6, employers: 25, partnerFees: 0.2e6, cum: -1.9e6, abroad: { countries: 1, children: 30000, aum: 15e6, rev: 0.3e6, costs: 2.5e6, cum: -2.7e6 } },
-  { id: 'm36', families: 40000, children: 54000, aum: 180e6, birthdays: 16000, revenue: { fees: 1.2e6, premium: 0.4e6, feeShare: 0.4e6, b2b: 0.6e6 }, costs: 2.6e6, team: 10, employers: 80, partnerFees: 0.8e6, cum: -1.9e6, abroad: { countries: 2, children: 150000, aum: 60e6, rev: 1.5e6, costs: 4.5e6, cum: -5.7e6 } },
-  { id: 'm60', families: 190000, children: 256000, share: '8%', aum: 1.5e9, birthdays: 80000, revenue: { fees: 9e6, premium: 2e6, feeShare: 3.5e6, b2b: 0.5e6 }, costs: 9e6, costsEstimated: true, team: 35, employers: 600, partnerFees: 6.5e6, cum: 6.1e6, cumEstimated: true, abroad: { countries: 3, children: 800000, aum: 0.4e9, rev: 8e6, costs: 6e6, cum: -5.2e6 } },
+  { id: 'm6', families: 1650, children: 4000, aum: 1.5e6, birthdays: 800, revenue: { fees: 2e4, premium: 2e3, feeShare: 1e3, b2b: 0 }, costs: 1.4e6, team: 3, employers: 0, partnerFees: 1e4, cum: -1.4e6, abroad: { countries: 0, children: 0, aum: 0, rev: 0, costs: 0, cum: 0 } },
+  { id: 'm12', families: 6700, children: 16200, aum: 10.7e6, birthdays: 8100, revenue: { fees: 15e4, premium: 1e4, feeShare: 1e4, b2b: 0 }, costs: 2.58e6, team: 5, employers: 10, partnerFees: 7e4, cum: -3.22e6, abroad: { countries: 0, children: 0, aum: 0, rev: 0, costs: 4e5, cum: -4e5 } },
+  { id: 'm24', families: 29400, children: 71400, share: '2%', aum: 107e6, birthdays: 43800, revenue: { fees: 131e4, premium: 9e4, feeShare: 9e4, b2b: 0 }, costs: 4.76e6, team: 7, employers: 60, partnerFees: 7e5, cum: -6.48e6, abroad: { countries: 1, children: 5e3, aum: 6e6, rev: 4e4, costs: 4e5, cum: -7.6e5 } },
+  { id: 'm36', families: 71600, children: 174e3, share: '5%', aum: 377e6, birthdays: 122700, revenue: { fees: 368e4, premium: 5e5, feeShare: 36e4, b2b: 0 }, costs: 6.17e6, team: 9, employers: 150, partnerFees: 2.32e6, cum: -8.11e6, abroad: { countries: 2, children: 4e4, aum: 55e6, rev: 32e4, costs: 5e5, cum: -9.4e5 } },
+  { id: 'm60', families: 230200, children: 559300, share: '17%', aum: 1935e6, birthdays: 449300, revenue: { fees: 1348e4, premium: 183e4, feeShare: 216e4, b2b: 0 }, costs: 9.2e6, costsEstimated: true, team: 14, employers: 400, partnerFees: 10.97e6, cum: 2.2e6, cumEstimated: true, abroad: { countries: 3, children: 3e5, aum: 716e6, rev: 32e5, costs: 7e5, cum: 2.19e6 } },
 ];
 
-/** Seed round in the partner deck; going abroad also needs a Series A of about ₪20M in year 2 (my estimate). */
-const SEED = 5e6, SERIES_A = 20e6;
+/** Draft 2.0: about ₪9M raised for Israel; abroad adds about ₪1M (the global partner funds its own launch). */
+const SEED = 9e6, SERIES_A = 1e6;
 export type Scope = 'il' | 'global';
 /** Break-even facts per scope. Israel follows the plan (year 4 interpolated); global is my estimate. */
 const BE = {
-  il: { maxBurnYear: 2, maxBurn: -1.9e6, point: 3, profit: 4, payback: 5 },
-  global: { maxBurnYear: 3, maxBurn: -7.6e6, point: 4, profit: 4, payback: 7 },
+  il: { maxBurnYear: 3, maxBurn: -8.11e6, point: 4, profit: 4, payback: 5 },
+  global: { maxBurnYear: 3, maxBurn: -9.05e6, point: 4, profit: 4, payback: 5 },
 };
 
 export function Milestone({ id, scope = 'il' }: { id: MilestoneId; scope?: Scope }) {
@@ -83,10 +83,10 @@ export function Milestone({ id, scope = 'il' }: { id: MilestoneId; scope?: Scope
           <div className="card-head"><h3>{t('ms.kpiTitle')}</h3></div>
           <table className="table ms-small"><tbody>
             <tr><td>{t('ms.kpi.deposit')}</td><td className="num">30%+</td></tr>
-            <tr><td>{t('ms.kpi.newFam')}</td><td className="num">1+</td></tr>
+            <tr><td>{t('ms.kpi.newFam')}</td><td className="num">0.25</td></tr>
             <tr><td>{t('ms.kpi.avg')}</td><td className="num">₪80</td></tr>
             <tr><td>{t('ms.kpi.perChild')}</td><td className="num">₪2,200</td></tr>
-            <tr><td>{t('ms.kpi.ret')}</td><td className="num">6%</td></tr>
+            <tr><td>{t('ms.kpi.ret')}</td><td className="num">6.5%</td></tr>
           </tbody></table>
         </div>
       </div>
