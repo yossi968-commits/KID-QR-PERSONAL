@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { DEMO } from '../lib/api';
 import { QrCanvas, giftUrl, cardPng } from './Qr';
+import { QrScanner } from './QrScanner';
 
 /** The child's lifelong QR with share actions. `mode` picks the wording: gifts or work payments. */
 export default function QrPanel({ child, mode = 'gift' }: { child: { firstName: string; avatar: string; giftCode: string }; mode?: 'gift' | 'work' }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const nav = useNavigate();
   const url = giftUrl(child.giftCode);
   const share = `${t(mode === 'work' ? 'qr.shareWork' : 'qr.shareText', { name: child.firstName })} ${url}`;
   const download = async () => {
@@ -37,6 +40,9 @@ export default function QrPanel({ child, mode = 'gift' }: { child: { firstName: 
           {!DEMO && <button className="btn secondary" onClick={() => window.print()}>🖨️ {t('qr.print')}</button>}
           <Link className="btn ghost" to={`/g/${child.giftCode}`}>{t('qr.open')}</Link>
         </div>
+        {/* A QR on your own screen can't be pointed at, so scan one from another phone, a print or a photo. */}
+        <button type="button" className="btn gold block" onClick={() => setScanning(true)}>📷 {t('scan.button')}</button>
+        {scanning && <QrScanner onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); nav('/g/' + c); }} />}
       </div>
     </div>
   );
