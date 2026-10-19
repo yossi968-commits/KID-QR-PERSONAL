@@ -7,7 +7,7 @@ import { portfolioSummary, switchTrack } from '../lib/portfolio.js';
 import { pledgeView } from '../lib/pledges.js';
 import { plannerPayload, withdrawalLimit, executeWithdrawal, taxEstimate } from '../lib/wishes.js';
 import { PAYOUT_METHODS } from '../adapters/payments.js';
-import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef, addWelcomeGift, transferProvider, copySiblingDocs } from '../lib/fund.js';
+import { PROVIDERS, DEFAULT_PROVIDER, docsStatus, submitDocument, nextSwitchDate, newApplicationRef, addWelcomeGift, transferProvider, copySiblingDocs, providerName } from '../lib/fund.js';
 import { addPartnerGifts, investNow } from '../lib/partners.js';
 import { linkBirth } from '../lib/pregnancy.js';
 import { startContribution, EVENT_TYPES } from '../lib/contribute.js';
@@ -129,6 +129,21 @@ r.post('/:id/track', h((req, res) => {
   db.prepare('UPDATE children SET track_changed_at=? WHERE id=?').run(today(), c.id);
   audit(db, req.user.id, 'track_switched', { childId: c.id, from: c.track, to: req.body.track });
   res.json(out);
+}));
+
+/**
+ * A parent books a meeting with the fund's investment advisor for a minor: the investment house
+ * gets the request and the meeting is held with the parent (track switches need their signature).
+ */
+r.post('/:id/advisor', h((req, res) => {
+  const { db, notifier } = req.ctx;
+  const c = loadChild(req);
+  const house = providerName(c.provider);
+  const name = `${c.first_name} ${c.last_name || ''}`.trim();
+  const topic = 'התאמת מסלול ההשקעה ובדיקת אפשרות להפקדות נוספות';
+  notifier.send({ to: `advisor@${c.provider}.example`, subject: `בקשה לפגישה עם יועץ השקעות: ${name}`, body: `ההורה ביקש/ה פגישה עבור ${name}, בנושא ${topic}. הפגישה תתקיים עם ההורה.` });
+  audit(db, req.user.id, 'advisor_requested', { childId: c.id });
+  res.status(201).json({ ok: true, house });
 }));
 
 /** Move the fund to another investment house. Until 18 both parents sign, as for a track switch. */

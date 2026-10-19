@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { FutureHero, FutureTiles } from '../../components/Future';
 import { ScenarioCalc, riskForTrack } from '../../components/ScenarioCalc';
 import { Journey } from '../../components/Journey';
+import { AdvisorCard } from '../../components/KidJourney';
 import { ProviderName } from '../../components/ProviderMark';
 import { useI18n } from '../../i18n';
 import { api, type ChildData } from '../../lib/api';
@@ -124,6 +125,7 @@ function Overview({ data, go }: { data: ChildData; go: (tab: string) => void }) 
         </div>
       </div>
       <Journey path={`/children/${child.id}/journey`} self={false} />
+      {child.age < 18 && child.accountStatus === 'active' && <AdvisorCard childId={child.id} name={child.firstName} />}
       <ScenarioCalc name={child.firstName} startValue={p.value} startAge={(Date.now() - new Date(child.birthDate).getTime()) / 31557600000} risk={riskForTrack(child.track)} />
       <div className="grid grid-2">
         <div className="card">

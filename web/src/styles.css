@@ -753,3 +753,9 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .seg.ms-seg button { white-space: nowrap; flex: 0 0 auto; }
 @media (max-width: 640px) { .ms-kpis .kpis { grid-template-columns: repeat(2, 1fr); } }
 .ms-small td:first-child { white-space: normal; } .ms-small td.num { white-space: nowrap; }
+/* kid home: personal QR shortcut; "today" box readable in every kid theme */
+.my-qr-btn { display: flex; align-items: center; gap: 14px; width: 100%; font: inherit; color: var(--ink); cursor: pointer; border: 1px solid var(--line); text-align: start; }
+.my-qr-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 1.6rem; background: var(--brand); color: var(--brand-ink); flex: none; }
+.my-qr-go { margin-inline-start: auto; font-size: 1.6rem; color: var(--muted); }
+[dir='ltr'] .my-qr-go { transform: scaleX(-1); }
+.kj-now { background: color-mix(in srgb, var(--growth) 16%, var(--surface)); color: var(--ink); }

@@ -55,6 +55,18 @@ export default function KidPortal() {
 
 type P = { d: KidData; lessons: LessonsRes; reloadLessons: () => void };
 
+/** A clear way back to the child's personal QR from the home screen. */
+function MyQrButton({ onClick }: { onClick: () => void }) {
+  const { t } = useI18n();
+  return (
+    <button className="card my-qr-btn" onClick={onClick}>
+      <span className="my-qr-ic" aria-hidden>▦</span>
+      <span className="stack" style={{ gap: 2, textAlign: 'start' }}><b>{t('kj.myQr')}</b><span className="small muted">{t('kj.myQrSub')}</span></span>
+      <span aria-hidden className="my-qr-go">‹</span>
+    </button>
+  );
+}
+
 function useTab<T extends string>(tabs: readonly T[]) {
   const [sp, setSp] = useSearchParams();
   const tab = (tabs.includes(sp.get('tab') as T) ? sp.get('tab') : tabs[0]) as T;
@@ -183,6 +195,7 @@ function Middle({ d, lessons, reloadLessons }: P) {
               <div className="card"><div className="small muted">{t('mid.fromMe')}</div><div className="big-num num" style={{ fontSize: '1.6rem', color: 'var(--accent)' }}>{fmtMoney(p.earned)}</div></div>
               <div className="card"><div className="small muted">{t('kid.at21')}</div><div className="big-num num" style={{ fontSize: '1.6rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
             </div>
+            <MyQrButton onClick={() => go('qr')} />
             <GoalsCard d={d} onNew={() => go('goals')} />
             <KidJourney />
             <h3>{t('mid.badges')}</h3>
@@ -245,6 +258,7 @@ function Senior({ d, lessons, reloadLessons }: P) {
             </FutureHero>
             {!self && <div className="banner small">🔑 {t('life.until18', { date: fmtDate(child.lifecycle.handoverDate), n: Math.max(0, Math.round((Date.parse(child.lifecycle.handoverDate) - Date.now()) / 86400000)) })}</div>}
             {self && <LifeTimeline child={child} />}
+            <MyQrButton onClick={() => go('qr')} />
             <GoalsCard d={d} onNew={() => go('plan')} />
             <KidJourney adult={self} />
             <Kpis items={[

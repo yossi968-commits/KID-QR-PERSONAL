@@ -70,7 +70,7 @@ export function KidJourney({ adult, simple }: { adult?: boolean; simple?: boolea
 
   const book = async () => {
     setBusy(true);
-    try { const r = await api<{ house: string }>('/kid/advisor', { body: {} }); setSent(t('kj.booked', { house: r.house }) + (minor ? t('kj.bookedMinor') : '')); }
+    try { const r = await api<{ house: string }>('/kid/advisor', { body: {} }); setSent(t('kj.booked', { house: r.house })); }
     finally { setBusy(false); }
   };
 
@@ -132,8 +132,28 @@ export function KidJourney({ adult, simple }: { adult?: boolean; simple?: boolea
       <div className="kj-advice">
         <b>{t('kj.beforeTitle')}</b>
         <p style={{ margin: 0 }}>{t(minor ? 'kj.adviceMinor' : 'kj.advice')}</p>
-        {sent ? <p className="kj-sent" role="status">✓ {sent}</p> : <button className="btn sm" onClick={book} disabled={busy}>📅 {t(minor ? 'kj.bookMinor' : 'kj.book')}</button>}
+        {/* Until 18 only a parent books the advisor, from the parent screen (AdvisorCard). */}
+        {!minor && (sent ? <p className="kj-sent" role="status">✓ {sent}</p> : <button className="btn sm" onClick={book} disabled={busy}>📅 {t('kj.book')}</button>)}
       </div>
     </section>
+  );
+}
+
+/** Parent screen: book the fund's investment advisor for a child under 18 (only a parent can). */
+export function AdvisorCard({ childId, name }: { childId: number | string; name: string }) {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState('');
+  const book = async () => {
+    setBusy(true);
+    try { const r = await api<{ house: string }>(`/children/${childId}/advisor`, { body: {} }); setSent(t('kj.booked', { house: r.house }) + t('kj.bookedMinor')); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="card kj-advice">
+      <b>{t('kj.beforeTitle')}</b>
+      <p style={{ margin: 0 }}>{t('kj.parentAdvice', { name })}</p>
+      {sent ? <p className="kj-sent" role="status">✓ {sent}</p> : <button className="btn sm" onClick={book} disabled={busy}>📅 {t('kj.bookMinor')}</button>}
+    </div>
   );
 }

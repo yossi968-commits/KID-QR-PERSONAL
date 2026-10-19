@@ -7,8 +7,8 @@ export const heKj = {
   'kj.mean.conservative': 'שילוב מאוזן של מניות ואג״ח. יש שנים טובות ושנים חלשות, בלי קפיצות גדולות.',
   'kj.mean.adventurous': 'הרבה מניות. בשנה רעה הערך יכול לרדת ב־20% ויותר, ולאורך שנים רבות הצמיחה הצפויה גבוהה יותר. מתאים כשהיעד רחוק.',
   'kj.beforeTitle': 'לפני שמחליטים',
-  'kj.adviceMinor': 'זה לא ייעוץ השקעות. לפני החלפת מסלול או הפקדות נוספות, מומלץ לקבוע פגישה עם יועץ ההשקעות של קופת הגמל להשקעה, יחד עם אחד ההורים. עד גיל 18 שינוי מסלול דורש את חתימת ההורים.',
-  'kj.bookMinor': 'קביעת פגישה עם יועץ, יחד עם הורה',
+  'kj.adviceMinor': 'זה לא ייעוץ השקעות. עד גיל 18, פגישה עם יועץ ההשקעות של קופת הגמל להשקעה נקבעת רק על ידי ההורים, ממסך ההורה. רוצה לבחון מסלול אחר או הפקדות נוספות? ספר להורים, והם יוכלו לקבוע פגישה.',
+  'kj.bookMinor': 'קביעת פגישה עם יועץ ההשקעות',
   'kj.title': 'המסע של החיסכון שלי',
   'kj.sub': 'מה היה בכל שלב, ואיפה אני עומד/ת היום',
   'kj.stage.early': 'עד כיתה א׳',
@@ -38,7 +38,9 @@ export const heKj = {
   'kj.advice': 'זה לא ייעוץ השקעות. אפשר לקבוע פגישה עם יועץ ההשקעות של קופת הגמל להשקעה, ולחשוב ביחד על התאמת מסלול ההשקעה ועל אפשרות להפקדות נוספות עבורך.',
   'kj.book': 'קביעת פגישה עם יועץ',
   'kj.booked': 'הבקשה נשלחה ל{house}. היועץ ייצור קשר לתיאום.',
-  'kj.bookedMinor': ' גם ההורים קיבלו הודעה, כדי שאחד מהם יגיע איתך לפגישה.',
+  'kj.bookedMinor': ' הפגישה תתקיים איתך כהורה. שינוי מסלול עד גיל 18 דורש את חתימת שני ההורים.',
+  'kj.parentAdvice': 'זה לא ייעוץ השקעות. אפשר לקבוע פגישה עם יועץ ההשקעות של קופת הגמל להשקעה, כדי לבחון את מסלול ההשקעה של {name} ואת האפשרות להפקדות נוספות. עד גיל 18 רק הורה קובע את הפגישה.',
+  'kj.myQr': 'הקוד האישי שלי', 'kj.myQrSub': 'לסריקה, לשיתוף ולתשלומים על עבודה',
 };
 type D = Record<keyof typeof heKj, string>;
 
@@ -50,8 +52,8 @@ export const enKj: D = {
   'kj.mean.conservative': 'A balanced mix of stocks and bonds. Good years and weaker years, without big jumps.',
   'kj.mean.adventurous': 'Mostly stocks. In a bad year the value can fall 20% or more; over many years expected growth is higher. Suits a goal that is far away.',
   'kj.beforeTitle': 'Before you decide',
-  'kj.adviceMinor': 'This is not investment advice. Before switching track or adding deposits, book a meeting with the investment advisor of your investment provident fund, together with one of your parents. Until 18 a track switch needs your parents\' signatures.',
-  'kj.bookMinor': 'Book an advisor meeting with a parent',
+  'kj.adviceMinor': 'This is not investment advice. Until 18, a meeting with the investment advisor of your investment provident fund is booked only by your parents, from the parent screen. Want to look at another track or extra deposits? Tell your parents and they can book it.',
+  'kj.bookMinor': 'Book a meeting with the investment advisor',
   'kj.title': 'My savings journey',
   'kj.sub': 'What happened at each stage, and where I stand today',
   'kj.stage.early': 'Before first grade',
@@ -81,7 +83,9 @@ export const enKj: D = {
   'kj.advice': 'This is not investment advice. You can book a meeting with the investment advisor of your investment provident fund to think together about fitting your track and about extra deposits for you.',
   'kj.book': 'Book a meeting with an advisor',
   'kj.booked': 'Request sent to {house}. The advisor will contact you to set a time.',
-  'kj.bookedMinor': ' Your parents were told too, so one of them can come with you.',
+  'kj.bookedMinor': ' The meeting is with you as the parent. Until 18 a track switch needs both parents’ signatures.',
+  'kj.parentAdvice': 'This is not investment advice. You can book a meeting with the investment advisor of the investment provident fund to review {name}’s track and the option of extra deposits. Until 18 only a parent books the meeting.',
+  'kj.myQr': 'My personal QR', 'kj.myQrSub': 'To scan, share and get paid for work',
 };
 
 export const arKj: D = {
@@ -92,8 +96,8 @@ export const arKj: D = {
   'kj.mean.conservative': 'مزيج متوازن من الأسهم والسندات. سنوات جيدة وسنوات أضعف، بدون قفزات كبيرة.',
   'kj.mean.adventurous': 'أسهم في الغالب. في سنة سيئة قد تنخفض القيمة 20% أو أكثر، وعلى مدى سنوات طويلة يكون النمو المتوقع أعلى. مناسب عندما يكون الهدف بعيدًا.',
   'kj.beforeTitle': 'قبل أن تقرر',
-  'kj.adviceMinor': 'هذه ليست استشارة استثمارية. قبل تغيير المسار أو إضافة إيداعات، يُنصح بحجز لقاء مع مستشار الاستثمار في الصندوق مع أحد الوالدين. حتى سن 18 يتطلب تغيير المسار توقيع الوالدين.',
-  'kj.bookMinor': 'حجز لقاء مع مستشار مع أحد الوالدين',
+  'kj.adviceMinor': 'هذه ليست استشارة استثمارية. حتى سن 18 يحجز الوالدان فقط اللقاء مع مستشار الاستثمار، من شاشة الوالدين. تريد فحص مسار آخر أو إيداعات إضافية؟ أخبر والديك ليحجزا اللقاء.',
+  'kj.bookMinor': 'حجز لقاء مع مستشار الاستثمار',
   'kj.title': 'رحلة توفيري',
   'kj.sub': 'ما حدث في كل مرحلة، وأين أقف اليوم',
   'kj.stage.early': 'قبل الصف الأول',
@@ -123,7 +127,9 @@ export const arKj: D = {
   'kj.advice': 'هذه ليست استشارة استثمارية. يمكنك حجز لقاء مع مستشار الاستثمار في صندوق التوفير للاستثمار، والتفكير معًا في ملاءمة المسار وإمكانية إيداعات إضافية لك.',
   'kj.book': 'حجز لقاء مع مستشار',
   'kj.booked': 'تم إرسال الطلب إلى {house}. سيتواصل المستشار معك لتحديد موعد.',
-  'kj.bookedMinor': ' تم إبلاغ الوالدين أيضًا، ويُفضّل أن يحضرا.',
+  'kj.bookedMinor': ' اللقاء معك كوالد. حتى سن 18 يتطلب تغيير المسار توقيع الوالدين.',
+  'kj.parentAdvice': 'هذه ليست استشارة استثمارية. يمكنك حجز لقاء مع مستشار الاستثمار في الصندوق لفحص مسار {name} وإمكانية إيداعات إضافية. حتى سن 18 يحجز اللقاء أحد الوالدين فقط.',
+  'kj.myQr': 'رمزي الشخصي', 'kj.myQrSub': 'للمسح والمشاركة والدفع مقابل العمل',
 };
 
 export const ruKj: D = {
@@ -134,8 +140,8 @@ export const ruKj: D = {
   'kj.mean.conservative': 'Сбалансированное сочетание акций и облигаций. Хорошие и слабые годы, без больших скачков.',
   'kj.mean.adventurous': 'В основном акции. В плохой год стоимость может упасть на 20% и больше, но за много лет ожидаемый рост выше. Подходит, когда цель далеко.',
   'kj.beforeTitle': 'Прежде чем решать',
-  'kj.adviceMinor': 'Это не инвестиционная консультация. Перед сменой программы или новыми взносами запишись на встречу с консультантом фонда вместе с одним из родителей. До 18 лет смена программы требует подписи родителей.',
-  'kj.bookMinor': 'Записаться к консультанту с родителем',
+  'kj.adviceMinor': 'Это не инвестиционная консультация. До 18 лет встречу с консультантом фонда назначают только родители, на экране родителя. Хочешь рассмотреть другую программу или доп. взносы? Скажи родителям.',
+  'kj.bookMinor': 'Записаться к инвестиционному консультанту',
   'kj.title': 'Путь моих накоплений',
   'kj.sub': 'Что было на каждом этапе и где я сейчас',
   'kj.stage.early': 'До первого класса',
@@ -165,7 +171,9 @@ export const ruKj: D = {
   'kj.advice': 'Это не инвестиционная консультация. Можно записаться на встречу с инвестиционным консультантом фонда и вместе подумать о подходящей программе и о дополнительных взносах для тебя.',
   'kj.book': 'Записаться к консультанту',
   'kj.booked': 'Запрос отправлен в {house}. Консультант свяжется для согласования времени.',
-  'kj.bookedMinor': ' Родители тоже получили сообщение, им лучше прийти на встречу.',
+  'kj.bookedMinor': ' Встреча проходит с вами как с родителем. До 18 лет смена программы требует подписи обоих родителей.',
+  'kj.parentAdvice': 'Это не инвестиционная консультация. Можно записаться к консультанту фонда, чтобы обсудить программу {name} и возможность доп. взносов. До 18 лет встречу назначает только родитель.',
+  'kj.myQr': 'Мой личный QR', 'kj.myQrSub': 'Сканировать, делиться и получать оплату',
 };
 
 export const frKj: D = {
@@ -176,8 +184,8 @@ export const frKj: D = {
   'kj.mean.conservative': 'Un mélange équilibré d’actions et d’obligations. De bonnes et de moins bonnes années, sans grands sauts.',
   'kj.mean.adventurous': 'Surtout des actions. Une mauvaise année, la valeur peut baisser de 20 % ou plus ; sur de nombreuses années, la croissance attendue est plus forte. Adapté quand l’objectif est lointain.',
   'kj.beforeTitle': 'Avant de décider',
-  'kj.adviceMinor': 'Ceci n’est pas un conseil en investissement. Avant de changer de profil ou d’ajouter des dépôts, prends rendez-vous avec le conseiller du fonds, avec l’un de tes parents. Jusqu’à 18 ans, un changement de profil demande la signature des parents.',
-  'kj.bookMinor': 'Rendez-vous avec un conseiller et un parent',
+  'kj.adviceMinor': 'Ceci n’est pas un conseil en investissement. Jusqu’à 18 ans, seul un parent prend rendez-vous avec le conseiller du fonds, depuis l’écran parent. Tu veux étudier un autre profil ou des dépôts en plus ? Parles-en à tes parents.',
+  'kj.bookMinor': 'Prendre rendez-vous avec le conseiller',
   'kj.title': 'Le parcours de mon épargne',
   'kj.sub': 'Ce qui s’est passé à chaque étape, et où j’en suis aujourd’hui',
   'kj.stage.early': 'Avant le CP',
@@ -207,5 +215,7 @@ export const frKj: D = {
   'kj.advice': 'Ceci n’est pas un conseil en investissement. Tu peux prendre rendez-vous avec le conseiller du fonds pour réfléchir ensemble au profil d’investissement et à des dépôts supplémentaires pour toi.',
   'kj.book': 'Prendre rendez-vous avec un conseiller',
   'kj.booked': 'Demande envoyée à {house}. Le conseiller te contactera pour fixer un rendez-vous.',
-  'kj.bookedMinor': ' Tes parents ont été prévenus aussi, mieux vaut qu’ils viennent.',
+  'kj.bookedMinor': ' Le rendez-vous a lieu avec vous, le parent. Jusqu’à 18 ans, un changement de profil demande la signature des deux parents.',
+  'kj.parentAdvice': 'Ceci n’est pas un conseil en investissement. Vous pouvez prendre rendez-vous avec le conseiller du fonds pour revoir le profil de {name} et la possibilité de dépôts en plus. Jusqu’à 18 ans, seul un parent prend ce rendez-vous.',
+  'kj.myQr': 'Mon QR personnel', 'kj.myQrSub': 'Pour scanner, partager et être payé',
 };

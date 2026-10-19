@@ -62,19 +62,16 @@ r.post('/wishes', h((req, res) => {
 }));
 
 /**
- * "Book a meeting with the fund's investment advisor": the request goes to the investment house,
- * and for a minor to the parents too, since they sign on any track change or extra deposits.
+ * "Book a meeting with the fund's investment advisor": the request goes to the investment house.
+ * Only from 18; until then a parent books it from the parent screen (POST /children/:id/advisor).
  */
 r.post('/advisor', h((req, res) => {
-  const { db, notifier } = req.ctx;
+  const { notifier } = req.ctx;
+  if (phaseOf(req.child) === 'minor') throw new HttpError(403, 'parent_books_advisor');
   const house = providerName(req.child.provider);
   const name = `${req.child.first_name} ${req.child.last_name || ''}`.trim();
   const topic = 'התאמת מסלול ההשקעה ובדיקת אפשרות להפקדות נוספות';
   notifier.send({ to: `advisor@${req.child.provider}.example`, subject: `בקשה לפגישה עם יועץ השקעות: ${name}`, body: `${name} ביקש/ה פגישה בנושא ${topic}.` });
-  if (phaseOf(req.child) === 'minor') {
-    const g = db.prepare('SELECT email FROM users WHERE id=?').get(req.child.guardian_id);
-    if (g) notifier.send({ to: g.email, subject: `${req.child.first_name} מבקש/ת פגישה עם יועץ ההשקעות של ${house}`, body: `הנושא: ${topic}. היועץ ייצור קשר לתיאום. עד גיל 18 הפגישה מתקיימת יחד עם אחד ההורים, ושינוי מסלול דורש את חתימתכם.` });
-  }
   res.status(201).json({ ok: true, house });
 }));
 
