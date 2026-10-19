@@ -883,6 +883,7 @@ export const ruBase: Record<string, string> = {
   "scan.gallery": "Выбрать из фото",
   "scan.notOurs": "Это не код QR Li&VeLa. Попробуйте другой.",
   "scan.noneInPhoto": "На фото не найден QR-код. Попробуйте более чёткое фото поближе.",
+  "scan.reading": "Читаем фото…",
   "scan.close": "Закрыть",
   "scan.framed": "Встроенный просмотр блокирует камеру и фото.",
   "scan.openBrowser": "Откройте приложение в браузере",

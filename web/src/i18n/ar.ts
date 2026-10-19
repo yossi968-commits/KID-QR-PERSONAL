@@ -883,6 +883,7 @@ export const arBase: Record<string, string> = {
   "scan.gallery": "اختيار من الصور",
   "scan.notOurs": "هذا ليس رمزًا من QR Li&VeLa. جرّبوا رمزًا آخر.",
   "scan.noneInPhoto": "لم نجد رمز QR في الصورة. جرّبوا صورة أوضح وأقرب.",
+  "scan.reading": "جارٍ قراءة الصورة…",
   "scan.close": "إغلاق",
   "scan.framed": "هذا العرض المضمَّن يحجب الكاميرا والصور.",
   "scan.openBrowser": "افتحوا التطبيق في المتصفح",

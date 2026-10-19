@@ -12,13 +12,32 @@ export function codeFromQr(text: string): string | null {
   return /^[a-z0-9_-]{4,40}$/i.test(s) ? s.toLowerCase() : null;
 }
 
-function decode(source: CanvasImageSource, w: number, h: number, canvas: HTMLCanvasElement, max = 1024) {
-  const scale = Math.min(1, max / Math.max(w, h));
-  canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
+/** Draws `source` (or its crop sx,sy,sw,sh) scaled so the long side is at most `max`, then looks for a QR. */
+function decode(source: CanvasImageSource, w: number, h: number, canvas: HTMLCanvasElement, max = 1024, crop?: [number, number, number, number]) {
+  const [sx, sy, sw, sh] = crop ?? [0, 0, w, h];
+  const scale = Math.min(1, max / Math.max(sw, sh));
+  canvas.width = Math.round(sw * scale); canvas.height = Math.round(sh * scale);
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
   return jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' })?.data ?? null;
+}
+
+type Detector = { detect: (s: CanvasImageSource) => Promise<{ rawValue: string }[]> };
+/** The browser's own QR reader where there is one (Android Chrome, newer Safari); it copes with photos better than jsQR. */
+const nativeDetector = (): Detector | null => {
+  const BD = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
+  try { return BD ? new BD({ formats: ['qr_code'] }) : null; } catch { return null; }
+};
+
+/** Loads a picked photo. An <img> first: it follows the photo's rotation and reads HEIC on iPhone. */
+function loadPhoto(file: File): Promise<HTMLImageElement | ImageBitmap> {
+  return new Promise<HTMLImageElement>((ok, bad) => {
+    const url = URL.createObjectURL(file), el = new Image();
+    el.onload = () => { ok(el); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+    el.onerror = () => { URL.revokeObjectURL(url); bad(new Error('img')); };
+    el.src = url;
+  }).catch(() => createImageBitmap(file));
 }
 
 /** The public demo; the single-file demo runs inside a frame that may block the camera and the file picker. */
@@ -66,34 +85,35 @@ export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Phone photos are large and QR codes small in them, so try a few sizes; older iOS lacks createImageBitmap for some files. */
+  /** Phone photos are large and QR codes small in them, so try the native reader, a few sizes, then crops of the middle. */
+  const [reading, setReading] = useState(false);
   const fromPhoto = async (file?: File) => {
     if (!file) return;
-    setErr('');
+    setErr(''); setReading(true);
     try {
-      let img: ImageBitmap | HTMLImageElement;
-      try { img = await createImageBitmap(file); }
-      catch {
-        img = await new Promise<HTMLImageElement>((ok, bad) => {
-          const url = URL.createObjectURL(file), el = new Image();
-          el.onload = () => { URL.revokeObjectURL(url); ok(el); }; el.onerror = bad; el.src = url;
-        });
-      }
+      const img = await loadPhoto(file);
       const w = (img as HTMLImageElement).naturalWidth || img.width, h = (img as HTMLImageElement).naturalHeight || img.height;
       let text: string | null = null;
-      for (const max of [1024, 800, 1400, 600]) { text = decode(img, w, h, canvas.current, max); if (text && codeFromQr(text)) break; }
+      const nd = nativeDetector();
+      if (nd) { try { text = (await nd.detect(img)).map((r) => r.rawValue).find((v) => codeFromQr(v)) ?? null; } catch { /* fall back to jsQR */ } }
+      const tries: [number, [number, number, number, number]?][] = [[1024], [800], [1400], [600], [2000]];
+      for (const f of [0.7, 0.5]) tries.push([1024, [w * (1 - f) / 2, h * (1 - f) / 2, w * f, h * f]]);
+      for (const [max, crop] of tries) {
+        if (text && codeFromQr(text)) break;
+        const r = decode(img, w, h, canvas.current, max, crop); if (r) text = r;
+        await new Promise((r) => setTimeout(r, 0));
+      }
       if (!found(text)) setErr((e) => e || t('scan.noneInPhoto'));
     } catch { setErr(t('scan.noneInPhoto')); }
+    finally { setReading(false); }
   };
-  // iOS ignores clicks on display:none inputs, so the file inputs stay in the layout, just invisible,
-  // and real buttons open them (a label around the input does not open the picker in some in-app browsers).
-  const camInput = useRef<HTMLInputElement>(null), galInput = useRef<HTMLInputElement>(null);
+  // The invisible input covers its button, so the tap lands on the input itself: no label or scripted click,
+  // which some phone browsers ignore (iOS also ignores display:none inputs).
   const pick = (capture: boolean) => (
-    <input ref={capture ? camInput : galInput} type="file" accept="image/*" {...(capture ? { capture: 'environment' as const } : {})}
-      tabIndex={-1} aria-hidden style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
-      onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; fromPhoto(f); }} />
+    <input type="file" accept="image/*" {...(capture ? { capture: 'environment' as const } : {})} aria-label={t(capture ? 'scan.photo' : 'scan.gallery')}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', fontSize: 100 }}
+      onChange={(e) => { const f = e.target.files?.[0]; fromPhoto(f); e.target.value = ''; }} />
   );
-
   return (
     <Modal onClose={onClose}>
       <div className="card-head"><h3 style={{ margin: 0 }}>📷 {t('scan.title')}</h3><button className="link" onClick={onClose} aria-label={t('scan.close')}>✕</button></div>
@@ -106,10 +126,10 @@ export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void;
       <p className="small muted center" style={{ margin: '10px 0' }}>{t('scan.hint')}</p>
       {err && <div className="error" role="alert">{err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-        <button type="button" className="btn secondary" onClick={() => camInput.current?.click()}>📷 {t('scan.photo')}</button>
-        <button type="button" className="btn secondary" onClick={() => galInput.current?.click()}>🖼️ {t('scan.gallery')}</button>
+        <div className="btn secondary" style={{ position: 'relative', overflow: 'hidden' }} aria-hidden>📷 {t('scan.photo')}{pick(true)}</div>
+        <div className="btn secondary" style={{ position: 'relative', overflow: 'hidden' }} aria-hidden>🖼️ {t('scan.gallery')}{pick(false)}</div>
       </div>
-      <div style={{ position: 'relative', height: 0, overflow: 'hidden' }}>{pick(true)}{pick(false)}</div>
+      {reading && <p className="small muted center" style={{ marginTop: 8 }}>{t('scan.reading')}</p>}
       {DEMO && framed && state === 'nocam' && (
         <p className="small muted center" style={{ marginTop: 12 }}>
           {t('scan.framed')} <a href={PAGES_URL} target="_blank" rel="noopener">{t('scan.openBrowser')}</a>

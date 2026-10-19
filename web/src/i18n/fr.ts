@@ -883,6 +883,7 @@ export const frBase: Record<string, string> = {
   "scan.gallery": "Choisir dans les photos",
   "scan.notOurs": "Ce n'est pas un code QR Li&VeLa. Essayez-en un autre.",
   "scan.noneInPhoto": "Aucun code QR trouvé sur la photo. Essayez une photo plus nette et plus proche.",
+  "scan.reading": "Lecture de la photo…",
   "scan.close": "Fermer",
   "scan.framed": "Cette vue intégrée bloque l'appareil photo et les photos.",
   "scan.openBrowser": "Ouvrir l'application dans le navigateur",
