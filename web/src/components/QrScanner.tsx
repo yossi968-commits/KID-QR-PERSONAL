@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { DEMO } from '../lib/api';
 import jsQR from 'jsqr';
 import Modal from './Modal';
 import { useI18n } from '../i18n';
@@ -20,6 +21,10 @@ function decode(source: CanvasImageSource, w: number, h: number, canvas: HTMLCan
   return jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' })?.data ?? null;
 }
 
+/** The public demo; the single-file demo runs inside a frame that may block the camera and the file picker. */
+const PAGES_URL = 'https://yossi968-commits.github.io/KID-QR-PERSONAL/';
+const framed = (() => { try { return window.top !== window.self; } catch { return true; } })();
+
 /** Camera scanner with a photo fallback (for browsers or frames where the camera is blocked). */
 export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void; onClose: () => void }) {
   const { t } = useI18n();
@@ -40,7 +45,11 @@ export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void;
     (async () => {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('no camera');
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        // Some in-app browsers never answer the camera request, so give up after a few seconds.
+        stream = await Promise.race([
+          navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }),
+          new Promise<never>((_, bad) => setTimeout(() => bad(new Error('camera timeout')), 8000)),
+        ]);
         if (stopped) return;
         const v = video.current!;
         v.srcObject = stream; await v.play(); setState('live');
@@ -76,9 +85,12 @@ export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void;
       if (!found(text)) setErr((e) => e || t('scan.noneInPhoto'));
     } catch { setErr(t('scan.noneInPhoto')); }
   };
-  // iOS ignores clicks on display:none inputs, so the file inputs stay in the layout, just invisible.
+  // iOS ignores clicks on display:none inputs, so the file inputs stay in the layout, just invisible,
+  // and real buttons open them (a label around the input does not open the picker in some in-app browsers).
+  const camInput = useRef<HTMLInputElement>(null), galInput = useRef<HTMLInputElement>(null);
   const pick = (capture: boolean) => (
-    <input type="file" accept="image/*" {...(capture ? { capture: 'environment' as const } : {})} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+    <input ref={capture ? camInput : galInput} type="file" accept="image/*" {...(capture ? { capture: 'environment' as const } : {})}
+      tabIndex={-1} aria-hidden style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
       onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; fromPhoto(f); }} />
   );
 
@@ -94,9 +106,15 @@ export function QrScanner({ onCode, onClose }: { onCode: (code: string) => void;
       <p className="small muted center" style={{ margin: '10px 0' }}>{t('scan.hint')}</p>
       {err && <div className="error" role="alert">{err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-        <label className="btn secondary" style={{ position: 'relative', overflow: 'hidden' }}>📷 {t('scan.photo')}{pick(true)}</label>
-        <label className="btn secondary" style={{ position: 'relative', overflow: 'hidden' }}>🖼️ {t('scan.gallery')}{pick(false)}</label>
+        <button type="button" className="btn secondary" onClick={() => camInput.current?.click()}>📷 {t('scan.photo')}</button>
+        <button type="button" className="btn secondary" onClick={() => galInput.current?.click()}>🖼️ {t('scan.gallery')}</button>
       </div>
+      <div style={{ position: 'relative', height: 0, overflow: 'hidden' }}>{pick(true)}{pick(false)}</div>
+      {DEMO && framed && state === 'nocam' && (
+        <p className="small muted center" style={{ marginTop: 12 }}>
+          {t('scan.framed')} <a href={PAGES_URL} target="_blank" rel="noopener">{t('scan.openBrowser')}</a>
+        </p>
+      )}
     </Modal>
   );
 }

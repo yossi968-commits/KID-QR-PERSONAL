@@ -884,6 +884,8 @@ export const frBase: Record<string, string> = {
   "scan.notOurs": "Ce n'est pas un code QR Li&VeLa. Essayez-en un autre.",
   "scan.noneInPhoto": "Aucun code QR trouvé sur la photo. Essayez une photo plus nette et plus proche.",
   "scan.close": "Fermer",
+  "scan.framed": "Cette vue intégrée bloque l'appareil photo et les photos.",
+  "scan.openBrowser": "Ouvrir l'application dans le navigateur",
   "scan.or": "ou",
   "app.title": "L'application sur téléphone et ordinateur",
   "app.lead": "Le même espace personnel sur tous vos appareils : une icône sur l'écran d'accueil de l'iPhone et d'Android, et un site complet sur ordinateur. Connexion avec votre numéro de teoudat zehout et un code à 6 chiffres envoyé sur votre téléphone.",
