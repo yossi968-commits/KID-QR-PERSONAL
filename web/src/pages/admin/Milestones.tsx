@@ -84,7 +84,7 @@ export function Milestone({ id, scope = 'il' }: { id: MilestoneId; scope?: Scope
           <table className="table ms-small"><tbody>
             <tr><td>{t('ms.kpi.deposit')}</td><td className="num">30%+</td></tr>
             <tr><td>{t('ms.kpi.newFam')}</td><td className="num">0.25</td></tr>
-            <tr><td>{t('ms.kpi.avg')}</td><td className="num">₪80</td></tr>
+            <tr><td>{t('ms.kpi.avg')}</td><td className="num">₪220</td></tr>
             <tr><td>{t('ms.kpi.perChild')}</td><td className="num">₪2,200</td></tr>
             <tr><td>{t('ms.kpi.ret')}</td><td className="num">6.5%</td></tr>
           </tbody></table>
