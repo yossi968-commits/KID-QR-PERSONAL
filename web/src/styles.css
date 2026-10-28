@@ -553,8 +553,9 @@ footer.site { padding-block: 28px 40px; color: var(--muted); font-size: 0.82rem;
 .step-head h3 { margin: 0; }
 
 /* "How much could it be" calculator */
-.risk-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.risk-pick .chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; }
+.risk-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+/* Long track names (Russian, French) break inside the chip instead of widening the page */
+.risk-pick .chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
 .risk-pick .chip b { font-size: 1.15rem; font-family: var(--font-display); }
 .calc-rows { display: flex; flex-direction: column; gap: 8px; }
 .calc-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface-2); }
@@ -759,3 +760,16 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
 .my-qr-go { margin-inline-start: auto; font-size: 1.6rem; color: var(--muted); }
 [dir='ltr'] .my-qr-go { transform: scaleX(-1); }
 .kj-now { background: color-mix(in srgb, var(--growth) 16%, var(--surface)); color: var(--ink); }
+
+/* Narrow Android phones (360px and less): kids' headers and the level card fit without sideways scroll */
+@media (max-width: 400px) {
+  .kid-top, .mid-top { gap: 6px; }
+  .kid-top .lang-select, .mid-top .lang-select, .sen-top .lang-select { padding-inline: 6px; max-width: 5.5em; text-overflow: ellipsis; }
+  .kid-top .btn.sm, .mid-top .btn.sm, .sen-top .btn.sm { padding-inline: 8px; }
+  .level-card { gap: 14px; padding: 16px; }
+  .level-card > * { min-width: 0; }
+  .ring { width: 92px; height: 92px; }
+  .ring > div { width: 72px; height: 72px; }
+  .ring b { font-size: 1.5rem; }
+  .risk-pick .chip { font-size: 0.85rem; }
+}

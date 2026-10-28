@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, HashRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DEMO } from './lib/api';
 import DemoBar from './demo/DemoBar';
 import AccessGate from './demo/AccessGate';
@@ -24,8 +24,9 @@ import PayPage from './pages/PayPage';
 import PledgePage from './pages/PledgePage';
 import Thanks from './pages/Thanks';
 
-// The demo build runs inside a sandboxed frame, so routing stays in memory.
-const Router = DEMO ? MemoryRouter : BrowserRouter;
+// The single-file demo runs inside a sandboxed frame, so routing stays in memory. The published Pages
+// build keeps the screen in the URL hash, so Android's back button steps back a screen instead of closing the app.
+const Router = !DEMO ? BrowserRouter : import.meta.env.VITE_PAGES ? HashRouter : MemoryRouter;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
