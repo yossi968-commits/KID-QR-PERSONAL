@@ -23,9 +23,25 @@ const noDemoBackend = (): Plugin => ({
   load: (id) => (id === '\0no-mock-api' ? 'export function mockApi() { throw new Error("demo backend not built"); }' : null),
 });
 
+/**
+ * GitHub Pages answers unknown paths (the manifest's home-screen shortcuts such as ./login/parent)
+ * with 404.html; send them to the same screen in the hash-routed app.
+ */
+const pagesFallback = (): Plugin => ({
+  name: 'pages-404',
+  apply: 'build',
+  generateBundle() {
+    this.emitFile({
+      type: 'asset',
+      fileName: '404.html',
+      source: `<!doctype html><meta charset="utf-8"><script>var p=location.pathname.split('/');location.replace('/'+p[1]+'/'+location.search+'#/'+p.slice(2).join('/'))</script>`,
+    });
+  },
+});
+
 // `vite build --mode demo` produces a self-contained build with the backend running in the browser.
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), ...(mode === 'demo' ? [demoAuth()] : [noDemoBackend()])],
+  plugins: [react(), ...(mode === 'demo' ? [demoAuth()] : [noDemoBackend()]), ...(process.env.VITE_PAGES ? [pagesFallback()] : [])],
   server: { port: 5173, proxy: { '/api': 'http://localhost:3000' } },
   ...(mode === 'demo' && {
     base: './',
