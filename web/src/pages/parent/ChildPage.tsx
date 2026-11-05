@@ -9,6 +9,7 @@ import { useI18n } from '../../i18n';
 import { api, type ChildData } from '../../lib/api';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
 import QrPanel from '../../components/QrPanel';
+import BirthdayPosts from '../../components/BirthdayPosts';
 import { Kpis, Loading, Signed, useLabels } from '../../components/ui';
 import { gradeLabel } from './Dashboard';
 import Money from './Money';
@@ -80,7 +81,7 @@ export default function ChildPage() {
         </div>
       )}
       {tab === 'fund' && <FundTab data={data} reload={load} fresh={sp.get('new') === '1'} />}
-      {tab === 'qr' && <QrPanel child={child} />}
+      {tab === 'qr' && <><QrPanel child={child} /><BirthdayPosts child={child} /></>}
       {tab === 'events' && <EventsTab data={data} reload={load} />}
       {tab === 'learn' && <LearnTab childId={child.id} />}
       {tab === 'settings' && <SettingsTab data={data} reload={load} />}
