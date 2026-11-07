@@ -231,7 +231,10 @@ export default function BirthdayPosts({ child }: { child: { firstName: string; g
   const heb = locale === 'he';
   const L = heb ? LABELS.he : LABELS.en;
   const [level, setLevel] = useState<Level>(levelForGrade(child.grade));
-  const [boy, setBoy] = useState(true);
+  // Gender isn't stored on the child, so the parent's pick is remembered per child on this device.
+  const gKey = `bp-gender-${child.giftCode}`;
+  const [boy, setBoyState] = useState(() => { try { return localStorage.getItem(gKey) !== 'f'; } catch { return true; } });
+  const setBoy = (b: boolean) => { setBoyState(b); try { localStorage.setItem(gKey, b ? 'm' : 'f'); } catch {} };
   const [platform, setPlatform] = useState<Platform>('whatsapp');
   const url = giftUrl(child.giftCode);
   const make = () => (heb ? HE : EN)[level][platform]({ name: child.firstName, age: turningAge(child.birthDate, child.nextBirthday), url, boy });

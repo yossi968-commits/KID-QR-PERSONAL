@@ -81,7 +81,7 @@ export default function ChildPage() {
         </div>
       )}
       {tab === 'fund' && <FundTab data={data} reload={load} fresh={sp.get('new') === '1'} />}
-      {tab === 'qr' && <><QrPanel child={child} /><BirthdayPosts child={child} /></>}
+      {tab === 'qr' && <><QrPanel child={child} />{child.lifecycle.phase === 'minor' && <BirthdayPosts child={child} />}</>}
       {tab === 'events' && <EventsTab data={data} reload={load} />}
       {tab === 'learn' && <LearnTab childId={child.id} />}
       {tab === 'settings' && <SettingsTab data={data} reload={load} />}
