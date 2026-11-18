@@ -4,24 +4,19 @@ import { today } from './dates.js';
 import { investContribution } from './portfolio.js';
 
 /**
- * The child's money sits in a קופת גמל להשקעה (investment provident fund) opened in
- * the child's name at an investment house the parent picks. The names below are
- * houses that offer the product; integrations are sandboxed examples until a
+ * The child's money sits in a פוליסת חיסכון (savings policy) opened in the
+ * child's name at an insurance company the parent picks. The names below are
+ * insurers that offer the product; integrations are sandboxed examples until a
  * partnership is signed with each one.
  */
 export const PROVIDERS = [
-  { id: 'altshuler', name: 'אלטשולר שחם', nameEn: 'Altshuler Shaham', nameAr: 'ألتشولر شاحام' },
-  { id: 'meitav', name: 'מיטב', nameEn: 'Meitav', nameAr: 'ميتاف' },
-  { id: 'more', name: 'מור', nameEn: 'More', nameAr: 'مور' },
-  { id: 'analyst', name: 'אנליסט', nameEn: 'Analyst', nameAr: 'أناليست' },
-  { id: 'yelin', name: 'ילין לפידות', nameEn: 'Yelin Lapidot', nameAr: 'يلين لبيدوت' },
   { id: 'harel', name: 'הראל', nameEn: 'Harel', nameAr: 'هرئيل' },
   { id: 'migdal', name: 'מגדל', nameEn: 'Migdal', nameAr: 'مجدال' },
   { id: 'clal', name: 'כלל', nameEn: 'Clal', nameAr: 'كلال' },
   { id: 'phoenix', name: 'הפניקס', nameEn: 'The Phoenix', nameAr: 'هفينيكس' },
   { id: 'menora', name: 'מנורה מבטחים', nameEn: 'Menora Mivtachim', nameAr: 'منوراه مفطحيم' },
 ];
-export const DEFAULT_PROVIDER = 'altshuler';
+export const DEFAULT_PROVIDER = 'harel';
 export const providerName = (id) => PROVIDERS.find((p) => p.id === id)?.name || id;
 
 /**
@@ -41,7 +36,7 @@ export function addWelcomeGift(db, partner, child) {
 }
 
 /**
- * Move the fund to another investment house (ניוד between קופות גמל להשקעה: no tax,
+ * Move the fund to another investment house (ניוד between פוליסות חיסכון: no tax,
  * no withdrawal). The units carry over to a new account at the new house; in
  * production the houses settle it over a few business days. Before the fund opens
  * it simply changes which house the application goes to.
@@ -58,12 +53,12 @@ export function transferProvider({ db, partner, notifier }, child, provider) {
     db.prepare('UPDATE children SET provider=?, partner_account_id=?, prev_provider=?, provider_changed_at=? WHERE id=?').run(provider, accountId, from, date, child.id);
     db.prepare('INSERT INTO audit_log (user_id, action, details) VALUES (?,?,?)').run(null, 'provider_transferred', JSON.stringify({ childId: child.id, from, to: provider, fromAccount, toAccount: accountId }));
     const g = db.prepare('SELECT email FROM users WHERE id=?').get(child.guardian_id);
-    if (g) notifier.send({ to: g.email, subject: `הקופה של ${child.first_name} עוברת ל${providerName(provider)}`, body: child.account_status === 'active' ? `הכסף עובר מ${providerName(from)} כמו שהוא, באותו מסלול, בלי מס ובלי משיכה. מספר החשבון החדש: ${accountId}.` : 'בקשת הפתיחה תוגש לבית ההשקעות החדש.' });
+    if (g) notifier.send({ to: g.email, subject: `הפוליסה של ${child.first_name} עוברת ל${providerName(provider)}`, body: child.account_status === 'active' ? `הכסף עובר מ${providerName(from)} כמו שהוא, באותו מסלול, בלי מס ובלי משיכה. מספר החשבון החדש: ${accountId}.` : 'בקשת הפתיחה תוגש לחברת הביטוח החדשה.' });
     return { provider, providerName: providerName(provider), from, accountId, changedAt: date };
   });
 }
 
-/** 2026 yearly deposit ceiling per saver (by ID) for קופת גמל להשקעה, in agorot. */
+/** 2026 yearly deposit ceiling per saver (by ID) for פוליסת חיסכון, in agorot. */
 export const ANNUAL_CEILING = 8364100;
 
 /**
@@ -92,10 +87,10 @@ export function copySiblingDocs(db, sibling, child) {
 
 /** Opened from 18: the fund is in the saver's own name, and only they sign. */
 export const ADULT_DOCUMENTS = [
-  { id: 'holder_id', kind: 'upload' },            // ת"ז של בעל/ת הקופה כולל ספח
+  { id: 'holder_id', kind: 'upload' },            // ת"ז של בעל/ת הפוליסה כולל ספח
   { id: 'bank_confirmation', kind: 'upload' },
   { id: 'kyc_form', kind: 'form' },
-  { id: 'application_signed', kind: 'sign' },     // טופס הצטרפות חתום ע"י בעל/ת הקופה
+  { id: 'application_signed', kind: 'sign' },     // טופס הצטרפות חתום ע"י בעל/ת הפוליסה
 ];
 export const documentsFor = (child) => (child.opened_as_adult ? ADULT_DOCUMENTS : DOCUMENTS);
 
@@ -138,7 +133,7 @@ export function submitDocument({ db, notifier }, child, docId, body) {
   if (!status.missing.length && child.account_status === 'pending_docs') {
     db.prepare(`UPDATE children SET account_status='in_review' WHERE id=?`).run(child.id);
     const g = db.prepare('SELECT email FROM users WHERE id=?').get(child.guardian_id);
-    notifier.send({ to: g.email, subject: `המסמכים של ${child.first_name} הועברו ל${providerName(child.provider)}`, body: 'נעדכן ברגע שהקופה תיפתח. המתנות שכבר התקבלו יושקעו מיד עם הפתיחה.' });
+    notifier.send({ to: g.email, subject: `המסמכים של ${child.first_name} הועברו ל${providerName(child.provider)}`, body: 'נעדכן ברגע שהפוליסה תיפתח. המתנות שכבר התקבלו יושקעו מיד עם הפתיחה.' });
   }
   return docsStatus(db, db.prepare('SELECT * FROM children WHERE id=?').get(child.id));
 }
@@ -169,7 +164,7 @@ export function remindMissingDocs({ db, notifier }, date = today()) {
   for (const c of kids) {
     const n = docsStatus(db, c).missing.length;
     const g = db.prepare('SELECT email FROM users WHERE id=?').get(c.guardian_id);
-    notifier.send({ to: g.email, subject: `נשארו ${n} מסמכים לפתיחת הקופה של ${c.first_name}`, body: 'הקוד כבר פעיל ומקבל מתנות. כדי שהן יושקעו, צריך להשלים את המסמכים באפליקציה.' });
+    notifier.send({ to: g.email, subject: `נשארו ${n} מסמכים לפתיחת הפוליסה של ${c.first_name}`, body: 'הקוד כבר פעיל ומקבל מתנות. כדי שהן יושקעו, צריך להשלים את המסמכים באפליקציה.' });
     db.prepare('UPDATE children SET docs_reminded_at=? WHERE id=?').run(date, c.id);
   }
   return { reminded: kids.length };

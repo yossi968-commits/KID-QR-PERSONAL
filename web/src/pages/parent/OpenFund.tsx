@@ -11,7 +11,7 @@ export const AVATARS = ['🦁', '🐻', '🦊', '🐼', '🐨', '🐯', '🦄', 
 const STEPS = ['identity', 'house', 'child', 'track'] as const;
 
 /**
- * Open a child's קופת גמל להשקעה and personal QR in four short steps. Documents are
+ * Open a child's פוליסת חיסכון and personal QR in four short steps. Documents are
  * a checklist on the next screen: the QR works right away and the parent can finish later.
  */
 export default function OpenFund() {

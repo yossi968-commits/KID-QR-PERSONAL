@@ -52,7 +52,7 @@ export default function AccessGate({ children }: { children: ReactNode }) {
   return (
     <div className="gate" dir="rtl">
       <form className="card stack gate-card" onSubmit={submit}>
-        <h2 style={{ margin: 0 }}>🔒 QR Li&amp;VeLa</h2>
+        <h2 style={{ margin: 0 }}>🔒 QRUV</h2>
         <p className="muted" style={{ margin: 0 }}>תצוגה פרטית. הקלידו את קוד הגישה שקיבלתם.<br /><span dir="ltr">Private preview. Enter your access code.</span></p>
         <input inputMode="numeric" autoFocus dir="ltr" value={code} onChange={(e) => { setCode(e.target.value); setBad(false); }} aria-label="קוד גישה" placeholder="••••••" />
         {bad && <p style={{ margin: 0, color: 'var(--danger, #d33)' }}>קוד שגוי · Wrong code</p>}

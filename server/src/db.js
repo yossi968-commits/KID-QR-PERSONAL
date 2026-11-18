@@ -231,7 +231,7 @@ function migrate(db) {
   if (!cols.has('withdraw_pct')) db.exec('ALTER TABLE children ADD COLUMN withdraw_pct INTEGER NOT NULL DEFAULT 25');
   if (!cols.has('kid_pin_hash')) db.exec('ALTER TABLE children ADD COLUMN kid_pin_hash TEXT');
   // Investment provident fund at the chosen house; existing children were opened before checklists.
-  if (!cols.has('provider')) db.exec(`ALTER TABLE children ADD COLUMN provider TEXT NOT NULL DEFAULT 'altshuler'`);
+  if (!cols.has('provider')) db.exec(`ALTER TABLE children ADD COLUMN provider TEXT NOT NULL DEFAULT 'harel'`);
   if (!cols.has('account_status')) db.exec(`ALTER TABLE children ADD COLUMN account_status TEXT NOT NULL DEFAULT 'active'`);
   if (!cols.has('application_ref')) db.exec('ALTER TABLE children ADD COLUMN application_ref TEXT');
   if (!cols.has('account_opened_at')) db.exec('ALTER TABLE children ADD COLUMN account_opened_at TEXT');

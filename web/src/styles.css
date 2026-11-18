@@ -1,5 +1,5 @@
 /*
- * QR Li&VeLa design system.
+ * QRUV design system.
  * Brand: deep blue (#102A43) and white lead; mint (#20B486) marks growth; warm yellow
  * (#F4C95D) is for special moments only (birthdays, gifts, milestones); light blue
  * (#EAF2F8) for info areas. Type: Heebo (Hebrew), Inter (English), Rubik (Arabic and kids).
@@ -773,3 +773,8 @@ em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-m
   .ring b { font-size: 1.5rem; }
   .risk-pick .chip { font-size: 0.85rem; }
 }
+
+/* QRUV brand line: "You / We / Their future", three lines. */
+.brand-tagline { margin: 0 0 14px; display: flex; flex-direction: column; align-items: flex-start; font-family: Inter, system-ui, sans-serif; font-weight: 700; font-size: 1.05rem; line-height: 1.25; letter-spacing: .01em; color: #fff; }
+[dir="rtl"] .brand-tagline { align-items: flex-end; }
+.brand-tagline .tl-future { color: var(--accent); }

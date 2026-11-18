@@ -6,10 +6,10 @@ import { addDays, today } from './dates.js';
  * Reminders stop once a QR is opened for a baby born near the due date.
  */
 export const STAGES = [
-  { id: 'week30', offset: -70, text: (g, by) => `${by}: עוד כ־10 שבועות ללידה. כבר אפשר להכין את ה־QR האישי של התינוק/ת ב־QR Li&VeLa, ואורחי הברית/הבריתה ייתנו מתנה שגדלה איתו/ה.` },
+  { id: 'week30', offset: -70, text: (g, by) => `${by}: עוד כ־10 שבועות ללידה. כבר אפשר להכין את ה־QR האישי של התינוק/ת ב־QRUV, ואורחי הברית/הבריתה ייתנו מתנה שגדלה איתו/ה.` },
   { id: 'week36', offset: -28, text: (g, by) => `${by}: עוד חודש ללידה! בעזרת השם, אחרי הלידה אל תשכחו לפתוח QR אישי לתינוק/ת. זה לוקח 3 דקות.` },
   { id: 'birth', offset: 3, text: (g, by) => `${by}: מזל טוב! 🎉 זה הזמן לפתוח לתינוק/ת QR אישי, כדי שכל מתנה מהמשפחה ומהחברים תושקע לעתיד.` },
-  { id: 'after', offset: 21, text: (g, by) => `${by}: עוד לא פתחתם QR לתינוק/ת? המתנות הראשונות מבית ההשקעות ומהשותפים מחכות.` },
+  { id: 'after', offset: 21, text: (g, by) => `${by}: עוד לא פתחתם QR לתינוק/ת? המתנות הראשונות מחברת הביטוח ומהשותפים מחכות.` },
 ];
 
 export const pregnancyView = (g) => ({ id: g.id, name: g.name, dueDate: g.due_date, partnerId: g.partner_id, remindersSent: JSON.parse(g.reminders || '[]'), childId: g.child_id, createdAt: g.created_at });
@@ -30,9 +30,9 @@ export function runPregnancyReminders({ db, notifier }, date = today()) {
     // Only the latest stage that is due, so a late sign-up doesn't get a burst of messages.
     const due = STAGES.filter((s) => addDays(g.due_date, s.offset) <= date && !done.includes(s.id)).pop();
     if (!due || addDays(g.due_date, due.offset) < addDays(date, -14)) continue;
-    const by = g.partner_name ? `${g.partner_name} ו־QR Li&VeLa` : 'QR Li&VeLa';
-    if (g.phone) notifier.send({ channel: 'sms', to: g.phone, subject: 'QR Li&VeLa', body: due.text(g, by) });
-    if (g.email) notifier.send({ to: g.email, subject: 'QR Li&VeLa: תזכורת לפתיחת QR לתינוק/ת', body: due.text(g, by) });
+    const by = g.partner_name ? `${g.partner_name} ו־QRUV` : 'QRUV';
+    if (g.phone) notifier.send({ channel: 'sms', to: g.phone, subject: 'QRUV', body: due.text(g, by) });
+    if (g.email) notifier.send({ to: g.email, subject: 'QRUV: תזכורת לפתיחת QR לתינוק/ת', body: due.text(g, by) });
     const stagesDone = STAGES.filter((s) => addDays(g.due_date, s.offset) <= addDays(g.due_date, due.offset)).map((s) => s.id);
     db.prepare('UPDATE pregnancies SET reminders=? WHERE id=?').run(JSON.stringify([...new Set([...done, ...stagesDone])]), g.id);
     sent++;

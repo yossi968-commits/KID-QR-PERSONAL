@@ -29,7 +29,7 @@ export const heCalc = {
   'calc.dep': 'הופקד',
   'calc.grown': 'צמיחה',
   'calc.note': 'החישוב מהלידה, הפקדות פרוסות על פני השנה, לפני דמי ניהול ומס.',
-  'calc.noteFrom': 'החישוב מהיום (גיל {age}, {amount} בקופה), הפקדות פרוסות על פני השנה, לפני דמי ניהול ומס.',
+  'calc.noteFrom': 'החישוב מהיום (גיל {age}, {amount} בפוליסה), הפקדות פרוסות על פני השנה, לפני דמי ניהול ומס.',
 };
 
 export const enCalc: Record<keyof typeof heCalc, string> = {

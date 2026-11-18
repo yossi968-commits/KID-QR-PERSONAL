@@ -1,7 +1,7 @@
 import type { Dict } from './he';
 
 const en: Dict = {
-  appName: 'QR Li&VeLa',
+  appName: 'QRUV',
   tagline: 'A birthday gift that grows up with your child',
   'nav.home': 'Home',
   'nav.dashboard': 'My kids',
@@ -15,12 +15,12 @@ const en: Dict = {
   'lang.toggle': 'עברית',
 
   'land.heroTitle': 'Instead of another toy, a gift worth twice as much at 21',
-  'land.heroSub': 'Every child gets a personal, lifelong QR code. Grandparents, aunts, uncles and friends scan it and give, and the money is invested with a regulated investment house until age 21.',
+  'land.heroSub': 'Every child gets a personal, lifelong QR code. Grandparents, aunts, uncles and friends scan it and give, and the money is invested in a savings policy at a regulated insurance company until age 21.',
   'land.ctaStart': 'Create a code for your child',
   'land.ctaDemo': 'See a sample gift page',
   'land.howTitle': 'How it works',
   'land.how1t': 'Open a code',
-  'land.how1d': 'Verify your identity and the investment house opens an account in your child\'s name. Takes minutes.',
+  'land.how1d': 'Verify your identity and the insurance company opens a savings policy in your child\'s name. Takes minutes.',
   'land.how2t': 'Share it',
   'land.how2d': 'On the party invitation, in the class WhatsApp group, or on a printed card.',
   'land.how3t': 'Gifts get invested',
@@ -33,7 +33,7 @@ const en: Dict = {
   'land.layer3t': 'Financial education',
   'land.layer3d': 'Short age-based lessons from 4 to 21, with stars and rewards.',
   'land.layer4t': 'Technology layer',
-  'land.layer4d': 'Money is held by a regulated investment house. We connect families to the capital market.',
+  'land.layer4d': 'Money is held by a regulated insurance company. We connect families to the capital market.',
   'land.calcTitle': 'What could it become?',
   'land.calcGivers': 'Givers per year',
   'land.calcAmount': 'Average gift',
@@ -42,7 +42,7 @@ const en: Dict = {
   'land.scanTitle': 'Have a child\'s code?',
   'land.scanPlaceholder': 'Type the code',
   'land.scanGo': 'Give',
-  'land.trust': 'Funds are held by an investment house regulated by the Israel Securities Authority. The app does not manage investments.',
+  'land.trust': 'Funds are held in a savings policy at an insurance company regulated by the Capital Market, Insurance and Savings Authority. The app does not manage investments.',
   'land.footer': 'Demo build: investments and payments run in a sandbox. Not investment advice.',
 
   'auth.loginTitle': 'Log in',
@@ -59,9 +59,9 @@ const en: Dict = {
 
   'onb.title': 'Let\'s open the first code',
   'onb.kycTitle': 'Verify the parent',
-  'onb.kycDesc': 'The investment house must identify the guardian before opening an account for a minor.',
+  'onb.kycDesc': 'The insurance company must identify the guardian before opening an account for a minor.',
   'onb.nationalId': 'National ID number',
-  'onb.consent': 'I accept the terms and the transfer of my details to the investment house to open the account',
+  'onb.consent': 'I accept the terms and the transfer of my details to the insurance company to open the policy',
   'onb.verify': 'Verify',
   'onb.verified': 'Identity verified',
   'onb.childTitle': 'Child details',
@@ -194,7 +194,7 @@ const en: Dict = {
   'gift.turningToday': 'It\'s {name}\'s birthday today! 🎉',
   'gift.age': '{name}, age {n}',
   'gift.title': 'A gift for {name}\'s future',
-  'gift.explain': 'Your gift is invested in an account in {name}\'s name at a regulated investment house and stays there until 21.',
+  'gift.explain': 'Your gift is invested in a savings policy in {name}\'s name at a regulated insurance company and stays there until 21.',
   'gift.amount': 'Gift amount',
   'gift.other': 'Other amount',
   'gift.worth21': 'At 21 this could be about {amount}',
@@ -212,7 +212,7 @@ const en: Dict = {
   'gift.people': '{n} people already gave a gift for the future',
   'gift.notFound': 'We could not find that code. Check the link again.',
   'gift.limits': 'Min {min}, max {max} per gift',
-  'gift.secure': 'Secure payment · money goes straight to the child\'s account at the investment house',
+  'gift.secure': 'Secure payment · money goes straight to the child\'s savings policy at the insurance company',
 
   'pay.title': 'Secure payment',
   'pay.sandbox': 'Sandbox: no real money is charged',
