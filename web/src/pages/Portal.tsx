@@ -27,6 +27,8 @@ export default function Portal() {
       <section className="portal-hero">
         <div className="container hero-grid">
           <div>
+            {/* Brand line, kept in English in every language, three lines as the brand shows it. */}
+            <p className="brand-tagline" dir="ltr" lang="en"><span>You</span><span>We</span><span className="tl-future">Their future</span></p>
             <div className="eyebrow" style={{ color: 'var(--accent)' }}>{t('portal.eyebrow')}</div>
             <h1 style={{ marginTop: 10 }}><Hl text={t('portal.title')} /></h1>
             <p className="lead">{t('portal.lead')}</p>

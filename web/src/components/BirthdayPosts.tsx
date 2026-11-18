@@ -20,7 +20,7 @@ const HE: Record<Level, Record<Platform, (v: Vars) => string>> = {
       const g = (m: string, f: string) => (boy ? m : f);
       return `🎂 ${name} ${g('בן', 'בת')} ${age} השבוע!
 
-השנה, במקום עוד צעצוע, אפשר לתת ${g('לו', 'לה')} מתנה לעתיד: כל שקל דרך QR-Livela מושקע בחשבון על ${g('שמו', 'שמה')} עד גיל 21 🌱
+השנה, במקום עוד צעצוע, אפשר לתת ${g('לו', 'לה')} מתנה לעתיד: כל שקל דרך QRUV מושקע בחשבון על ${g('שמו', 'שמה')} עד גיל 21 🌱
 ${g('הוא', 'היא')} אפילו רואה באפליקציה איך העץ ${g('שלו', 'שלה')} גדל 🌳
 
 לוקח דקה, גם בביט 👇
@@ -35,7 +35,7 @@ ${g('הוא ביקש', 'היא ביקשה')} עוגה עם סוכריות. אנ�
 סריקה אחת, מתנה שגדלה ${g('איתו', 'איתה')} עד גיל 21 🌳
 הקישור למתנה בביו 👆
 
-#QRLivela #יוםהולדתשמח #מתנהלעתיד #חיסכוןלכלילד`;
+#QRUV #יוםהולדתשמח #מתנהלעתיד #חיסכוןלכלילד`;
     },
     facebook: ({ name, age, url, boy }) => {
       const g = (m: string, f: string) => (boy ? m : f);
@@ -43,7 +43,7 @@ ${g('הוא ביקש', 'היא ביקשה')} עוגה עם סוכריות. אנ�
 
 ${g('הוא כבר קורא לבד, רוכב על אופניים', 'היא כבר קוראת לבד, רוכבת על אופניים')} בלי גלגלי עזר, ${g('ומסביר', 'ומסבירה')} לנו מה זה ריבית דריבית 😄
 
-בשנים האחרונות המתנות ${g('שלו', 'שלה')} ממשפחה וחברים לא נעלמות במגירה. הן מושקעות על ${g('שמו', 'שמה')} דרך QR-Livela, ${g('והוא רואה', 'והיא רואה')} באפליקציה את העץ ${g('שלו', 'שלה')} גדל ${g('ולומד', 'ולומדת')} שם במשחק מה זה חיסכון 🌳
+בשנים האחרונות המתנות ${g('שלו', 'שלה')} ממשפחה וחברים לא נעלמות במגירה. הן מושקעות על ${g('שמו', 'שמה')} דרך QRUV, ${g('והוא רואה', 'והיא רואה')} באפליקציה את העץ ${g('שלו', 'שלה')} גדל ${g('ולומד', 'ולומדת')} שם במשחק מה זה חיסכון 🌳
 
 מי שרוצה להצטרף לחגיגה, זה לוקח דקה (ביט, כרטיס אשראי או Apple Pay):
 ${url}
@@ -56,7 +56,7 @@ ${url}
       const g = (m: string, f: string) => (boy ? m : f);
       return `🎉 ${name} ${g('בן', 'בת')} ${age}!
 
-${g('הוא גדל', 'היא גדלה')} כל כך מהר, וגם החיסכון ${g('שלו', 'שלה')}. מי שרוצה לפרגן, מתנה דרך QR-Livela נכנסת לחשבון השקעה על ${g('שמו', 'שמה')} ומחכה ${g('לו', 'לה')} עד גיל 21 🌱
+${g('הוא גדל', 'היא גדלה')} כל כך מהר, וגם החיסכון ${g('שלו', 'שלה')}. מי שרוצה לפרגן, מתנה דרך QRUV נכנסת לחשבון השקעה על ${g('שמו', 'שמה')} ומחכה ${g('לו', 'לה')} עד גיל 21 🌱
 
 סורקים או לוחצים, בוחרים סכום, ואפשר לצרף ברכה (גם כזאת שתיפתח רק בגיל 18 💌):
 ${url}
@@ -70,7 +70,7 @@ ${g('הוא כבר יודע', 'היא כבר יודעת')} מה ${g('הוא רו
 כל מתנה דרך הקוד ${g('שלו', 'שלה')} מושקעת על ${g('שמו', 'שמה')} עד גיל 21 📈
 הקישור בביו, ואפשר גם לסרוק את הקוד בתמונה השנייה 👆
 
-#QRLivela #יוםהולדת #מתנהלעתיד #חטיבה`;
+#QRUV #יוםהולדת #מתנהלעתיד #חטיבה`;
     },
     facebook: ({ name, age, url, boy }) => {
       const g = (m: string, f: string) => (boy ? m : f);
@@ -78,7 +78,7 @@ ${g('הוא כבר יודע', 'היא כבר יודעת')} מה ${g('הוא רו
 
 זה הגיל שבו פתאום יש דעות, חברים, תוכניות ומסכים 😅 וזה גם הגיל שבו ${g('הוא התחיל', 'היא התחילה')} להבין מה זה כסף ולמה כדאי לתת לו זמן לגדול.
 
-מאז שנולד${g('', 'ה')}, המתנות ${g('שלו', 'שלה')} מושקעות בחשבון על ${g('שמו', 'שמה')} דרך QR-Livela, בבית השקעות מפוקח, עד גיל 21. היום ${g('הוא עוקב', 'היא עוקבת')} אחרי החיסכון באפליקציה ${g('ולומד', 'ולומדת')} בעצמ${g('ו', 'ה')} איך זה עובד.
+מאז שנולד${g('', 'ה')}, המתנות ${g('שלו', 'שלה')} מושקעות בחשבון על ${g('שמו', 'שמה')} דרך QRUV, בבית השקעות מפוקח, עד גיל 21. היום ${g('הוא עוקב', 'היא עוקבת')} אחרי החיסכון באפליקציה ${g('ולומד', 'ולומדת')} בעצמ${g('ו', 'ה')} איך זה עובד.
 
 מי שרוצה לפרגן, לתת מתנה ולהשאיר ברכה:
 ${url}
@@ -91,7 +91,7 @@ ${url}
       const g = (m: string, f: string) => (boy ? m : f);
       return `${name} ${g('בן', 'בת')} ${age} 🎉
 
-עוד רגע צבא, רישיון, לימודים ודירה ראשונה. מי שרוצה לפרגן, מתנה דרך QR-Livela נכנסת לחיסכון ${g('שלו', 'שלה')} ומושקעת על ${g('שמו', 'שמה')} עד גיל 21:
+עוד רגע צבא, רישיון, לימודים ודירה ראשונה. מי שרוצה לפרגן, מתנה דרך QRUV נכנסת לחיסכון ${g('שלו', 'שלה')} ומושקעת על ${g('שמו', 'שמה')} עד גיל 21:
 ${url}
 
 ובגיל 18 ${g('הוא מקבל', 'היא מקבלת')} את הניהול לידיים ${g('שלו', 'שלה')} 💪`;
@@ -100,16 +100,16 @@ ${url}
       const g = (m: string, f: string) => (boy ? m : f);
       return `${name} · ${age} 🎂
 ${g('הוא כבר מתכנן', 'היא כבר מתכננת')} את הצעד הבא. אנחנו בונים ${g('לו', 'לה')} את הבסיס.
-מתנה דרך QR-Livela מושקעת על ${g('שמו', 'שמה')} עד גיל 21, ובגיל 18 ${g('הוא מנהל', 'היא מנהלת')} אותה ${g('בעצמו', 'בעצמה')} 🚀
+מתנה דרך QRUV מושקעת על ${g('שמו', 'שמה')} עד גיל 21, ובגיל 18 ${g('הוא מנהל', 'היא מנהלת')} אותה ${g('בעצמו', 'בעצמה')} 🚀
 הקישור בביו 👆
 
-#QRLivela #יוםהולדת #תיכון #מתנהלעתיד`;
+#QRUV #יוםהולדת #תיכון #מתנהלעתיד`;
     },
     facebook: ({ name, age, url, boy }) => {
       const g = (m: string, f: string) => (boy ? m : f);
       return `${g('הבן', 'הבת')} שלנו ${name} ${g('בן', 'בת')} ${age} 🌟
 
-מה שהתחיל כקוד קטן ביום ההולדת הראשון ${g('שלו', 'שלה')} הפך לחיסכון אמיתי ${g('שלו', 'שלה')}. כל השנים משפחה וחברים נתנו מתנות דרך QR-Livela, והכסף הושקע על ${g('שמו', 'שמה')} בבית השקעות מפוקח.
+מה שהתחיל כקוד קטן ביום ההולדת הראשון ${g('שלו', 'שלה')} הפך לחיסכון אמיתי ${g('שלו', 'שלה')}. כל השנים משפחה וחברים נתנו מתנות דרך QRUV, והכסף הושקע על ${g('שמו', 'שמה')} בבית השקעות מפוקח.
 
 היום ${g('הוא עוקב', 'היא עוקבת')} אחריו ${g('בעצמו', 'בעצמה')}, ובגיל 18 הניהול עובר ${g('אליו', 'אליה')}. בגיל 21 ${g('הוא יצא', 'היא תצא')} לדרך עם בסיס ${g('שבנה', 'שבנתה')} יחד עם כל מי ${g('שאוהב אותו', 'שאוהב אותה')}.
 
@@ -125,7 +125,7 @@ const EN: Record<Level, Record<Platform, (v: Vars) => string>> = {
   elementary: {
     whatsapp: ({ name, age, url }) => `🎂 ${name} turns ${age} this week!
 
-This year, instead of another toy, you can give a gift for the future: every shekel through QR-Livela is invested in an account in ${name}'s name until age 21 🌱
+This year, instead of another toy, you can give a gift for the future: every shekel through QRUV is invested in an account in ${name}'s name until age 21 🌱
 
 Takes a minute 👇
 ${url}
@@ -136,12 +136,12 @@ Cake with sprinkles, please. And one more wish from us: that everyone who loves 
 One scan, a gift that grows until 21 🌳
 Gift link in bio 👆
 
-#QRLivela #HappyBirthday #GiftForTheFuture`,
+#QRUV #HappyBirthday #GiftForTheFuture`,
     facebook: ({ name, age, url }) => `Our ${name} is ${age} today! 🎉
 
 Reading alone, riding without training wheels, and explaining compound interest to us 😄
 
-For a few years now, gifts from family and friends don't vanish in a drawer. They're invested in ${name}'s name through QR-Livela, and ${name} watches the money tree grow in the app 🌳
+For a few years now, gifts from family and friends don't vanish in a drawer. They're invested in ${name}'s name through QRUV, and ${name} watches the money tree grow in the app 🌳
 
 Want to join the celebration? It takes a minute:
 ${url}
@@ -151,7 +151,7 @@ Greetings in the comments are very welcome ❤️`,
   middle: {
     whatsapp: ({ name, age, url }) => `🎉 ${name} is ${age}!
 
-Growing so fast, and so are the savings. A gift through QR-Livela goes into an investment account in ${name}'s name and waits there until age 21 🌱
+Growing so fast, and so are the savings. A gift through QRUV goes into an investment account in ${name}'s name and waits there until age 21 🌱
 
 Scan or tap, pick an amount, add a greeting (even one that only opens at 18 💌):
 ${url}
@@ -162,12 +162,12 @@ Already knows what they want to be. We just make sure there's something to start
 Every gift through the code is invested until 21 📈
 Link in bio, or scan the code in the second photo 👆
 
-#QRLivela #Birthday #GiftForTheFuture`,
+#QRUV #Birthday #GiftForTheFuture`,
     facebook: ({ name, age, url }) => `${name} is ${age} 🎂
 
 The age of opinions, friends, plans and screens 😅 and also the age of starting to understand money and why it's worth giving it time to grow.
 
-Since birth, gifts have been invested in ${name}'s name through QR-Livela, at a regulated investment house, until age 21. Now ${name} follows the savings in the app and learns how it works.
+Since birth, gifts have been invested in ${name}'s name through QRUV, at a regulated investment house, until age 21. Now ${name} follows the savings in the app and learns how it works.
 
 Want to give a gift and leave a greeting?
 ${url}
@@ -177,19 +177,19 @@ Happy birthday to our ${name} ❤️`,
   high: {
     whatsapp: ({ name, age, url }) => `${name} is ${age} 🎉
 
-Army, licence, studies and a first apartment are just around the corner. A gift through QR-Livela goes into ${name}'s savings, invested until age 21:
+Army, licence, studies and a first apartment are just around the corner. A gift through QRUV goes into ${name}'s savings, invested until age 21:
 ${url}
 
 And at 18, ${name} takes over managing it 💪`,
     instagram: ({ name, age }) => `${name} · ${age} 🎂
 Planning the next step. We're building the base.
-Gifts through QR-Livela are invested until 21, and from 18 ${name} manages them 🚀
+Gifts through QRUV are invested until 21, and from 18 ${name} manages them 🚀
 Link in bio 👆
 
-#QRLivela #Birthday #GiftForTheFuture`,
+#QRUV #Birthday #GiftForTheFuture`,
     facebook: ({ name, age, url }) => `Our ${name} is ${age} 🌟
 
-What started as a small code on the first birthday became real savings. For years family and friends gave gifts through QR-Livela, invested in ${name}'s name at a regulated investment house.
+What started as a small code on the first birthday became real savings. For years family and friends gave gifts through QRUV, invested in ${name}'s name at a regulated investment house.
 
 Today ${name} follows it in the app, takes over at 18, and at 21 sets off with a base built together with everyone who loves them.
 
