@@ -71,12 +71,12 @@ export const heSector = {
 
   'sib.button': 'QR לאח/ות',
   'sib.title': 'QR לאח או לאחות של {name}',
-  'sib.desc': 'מילאנו את מה שכבר ידוע מהמשפחה. המסמכים המשפחתיים שכבר נמסרו לבית ההשקעות יועתקו, ונשאר רק להשלים את מה שאישי לילד החדש.',
+  'sib.desc': 'מילאנו את מה שכבר ידוע מהמשפחה. המסמכים המשפחתיים שכבר נמסרו לחברת הביטוח יועתקו, ונשאר רק להשלים את מה שאישי לילד החדש.',
   'sib.reused': '📄 {n} מסמכים הועתקו מהתיק של האח/ות. נשאר להשלים רק את מה שאישי.',
   'sib.banner': 'פתחתם QR לילד הראשון? לפתוח לאח או לאחות לוקח דקה.',
 
   'open.partnersTitle': 'מתנות ראשונות מהשותפים',
-  'open.partnersDesc': 'בנוסף למתנת הפתיחה של בית ההשקעות, השותפים שלנו נותנים מתנה ראשונה לכל QR חדש.',
+  'open.partnersDesc': 'בנוסף למתנת הפתיחה של חברת הביטוח, השותפים שלנו נותנים מתנה ראשונה לכל QR חדש.',
   'open.healthFund': 'באיזו קופת חולים הילד/ה?',
   'open.healthFundNone': 'לא לציין',
   'open.healthFundGift': 'מתנה של {amount} מ{name}',
@@ -87,7 +87,7 @@ export const heSector = {
 
   'expPub.eyebrow': 'להורים לעתיד',
   'expPub.title': 'עוד מעט נולד/ת. בואו נכין לו/ה QR אישי',
-  'expPub.lead': 'הירשמו עכשיו ונשלח לכם תזכורות בשלבים המתקדמים של ההריון ואחרי הלידה, בעזרת השם, לפתוח לתינוק QR אישי וקופת חיסכון. המשפחה תוכל לתת מתנות ישר לחיסכון שלו.',
+  'expPub.lead': 'הירשמו עכשיו ונשלח לכם תזכורות בשלבים המתקדמים של ההריון ואחרי הלידה, בעזרת השם, לפתוח לתינוק QR אישי ופוליסת חיסכון. המשפחה תוכל לתת מתנות ישר לחיסכון שלו.',
   'expPub.from': 'בשיתוף {name}',
   'expPub.name': 'שם ההורה',
   'expPub.phone': 'טלפון נייד',
@@ -199,12 +199,12 @@ export const enSector: Record<keyof typeof heSector, string> = {
 
   'sib.button': 'QR for a sibling',
   'sib.title': 'A QR for {name}\'s brother or sister',
-  'sib.desc': 'We filled in what the family already gave us. Family documents already with the investment house are copied; only what is personal to the new child is left.',
+  'sib.desc': 'We filled in what the family already gave us. Family documents already with the insurance company are copied; only what is personal to the new child is left.',
   'sib.reused': '📄 {n} documents copied from the sibling\'s file. Only the personal ones are left.',
   'sib.banner': 'Opened a QR for your first child? Opening one for a sibling takes a minute.',
 
   'open.partnersTitle': 'First gifts from partners',
-  'open.partnersDesc': 'On top of the investment house\'s welcome gift, our partners give a first gift to every new QR.',
+  'open.partnersDesc': 'On top of the insurance company\'s welcome gift, our partners give a first gift to every new QR.',
   'open.healthFund': 'Which health fund is the child with?',
   'open.healthFundNone': 'Prefer not to say',
   'open.healthFundGift': '{amount} gift from {name}',

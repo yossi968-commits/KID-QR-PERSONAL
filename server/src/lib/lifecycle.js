@@ -7,7 +7,7 @@ import { PROVIDERS, providerName } from './fund.js';
  *   minor   (0–17)  the guardians manage the fund; both sign withdrawals and track switches.
  *   adult   (18–21+) the fund is the young adult's: they manage it themselves and decide
  *                    what the parents may still see.
- *   graduated        from 21 the young adult moves the savings into a regular קופת גמל
+ *   graduated        from 21 the young adult moves the savings into a regular פוליסת חיסכון
  *                    להשקעה in their own name (a transfer between funds, not a withdrawal,
  *                    so no tax is due). The QR stays active for gifts: enlistment,
  *                    graduation, a wedding.
@@ -45,13 +45,13 @@ export function runHandovers({ db, notifier }, date = today()) {
   for (const c of due) {
     db.prepare('UPDATE children SET handed_over_at=? WHERE id=?').run(date, c.id);
     const g = db.prepare('SELECT email FROM users WHERE id=?').get(c.guardian_id);
-    notifier.send({ to: g.email, subject: `${c.first_name} בן/בת 18: הקופה עוברת לניהולו/ה`, body: 'מהיום הקופה בניהול עצמי. תוכלו להמשיך לראות אותה אם יאשר/תאשר, ולתת מתנות דרך ה־QR כמו כולם.' });
+    notifier.send({ to: g.email, subject: `${c.first_name} בן/בת 18: הפוליסה עוברת לניהולו/ה`, body: 'מהיום הפוליסה בניהול עצמי. תוכלו להמשיך לראות אותה אם יאשר/תאשר, ולתת מתנות דרך ה־QR כמו כולם.' });
   }
   return { handedOver: due.length };
 }
 
 /**
- * Move the savings into a regular קופת גמל להשקעה in the young adult's name, at the same
+ * Move the savings into a regular פוליסת חיסכון in the young adult's name, at the same
  * or another investment house. Units carry over as they are (a fund transfer, not a sale).
  */
 export function graduate({ db, partner }, child, { provider }) {

@@ -43,10 +43,10 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
 
   const kids = [
-    { first: 'נועה', birth: '2019-05-12', avatar: '🦄', track: 'equity', provider: 'altshuler', goal: 'לימודים באוניברסיטה', goalAmount: 15000000, msg: 'נועה חוסכת לחלום הגדול שלה 🎓', code: 'noa2019demo', user: 'noa' },
-    { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'conservative', provider: 'meitav', firstProvider: 'altshuler', movedAt: '2024-09-01', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
-    { first: 'שירה', birth: '2005-01-15', avatar: '🎓', track: 'conservative', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'שירה השתחררה ומתחילה ללמוד. מתנה לעתיד שלה 🎓', code: 'shira2005demo', user: 'shira' },
-    { first: 'איתי', birth: '2013-11-03', avatar: '🚀', track: 'equity', provider: 'altshuler', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'איתי עולה לתורה בקרוב! במקום צ\'ק, מתנה שגדלה איתו 🚀', code: 'itay2013demo', user: 'itay' },
+    { first: 'נועה', birth: '2019-05-12', avatar: '🦄', track: 'equity', provider: 'harel', goal: 'לימודים באוניברסיטה', goalAmount: 15000000, msg: 'נועה חוסכת לחלום הגדול שלה 🎓', code: 'noa2019demo', user: 'noa' },
+    { first: 'עומר', birth: '2009-03-20', avatar: '⭐', track: 'conservative', provider: 'migdal', firstProvider: 'harel', movedAt: '2024-09-01', goal: 'תואר ראשון ורישיון נהיגה', goalAmount: 12000000, msg: 'עומר בכיתה י"ב ומתכנן את השנים שאחרי הצבא', code: 'omer2009demo', user: 'omer' },
+    { first: 'שירה', birth: '2005-01-15', avatar: '🎓', track: 'conservative', provider: 'harel', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'שירה השתחררה ומתחילה ללמוד. מתנה לעתיד שלה 🎓', code: 'shira2005demo', user: 'shira' },
+    { first: 'איתי', birth: '2013-11-03', avatar: '🚀', track: 'equity', provider: 'harel', goal: 'דירה ראשונה', goalAmount: 40000000, msg: 'איתי עולה לתורה בקרוב! במקום צ\'ק, מתנה שגדלה איתו 🚀', code: 'itay2013demo', user: 'itay' },
   ];
 
   for (const k of kids) {
@@ -152,7 +152,7 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
     return id;
   };
   const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
-  newborn(parent, 'אלה', daysAgo(40), '🐣', 'altshuler', 'ella2026demo', 3, 'pending_docs');
+  newborn(parent, 'אלה', daysAgo(40), '🐣', 'harel', 'ella2026demo', 3, 'pending_docs');
   // Parents deposit part of the event gifts: Omer's bar mitzvah, Ella's naming ceremony.
   const omerRow = db.prepare("SELECT * FROM children WHERE kid_username='omer'").get();
   const bm = db.prepare('INSERT INTO events (child_id, type, title, date, active) VALUES (?,?,?,?,0)').run(omerRow.id, 'bar_mitzvah', 'בר המצווה של עומר', '2022-03-24').lastInsertRowid;
@@ -164,7 +164,7 @@ export function seed(db, partner = new SandboxInvestmentPartner()) {
   db.prepare(`INSERT INTO contributions (child_id, event_id, giver_name, giver_email, amount, message, is_public, status, payment_ref, paid_at, method, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(ella.id, zb, 'מיכל לוי', 'demo@kfq.app', 400000, 'מתנות מהבריתה', 0, 'paid', 'SEED-ZB', daysAgo(28) + ' 10:00:00', 'bank_transfer', 'event_gifts');
   const yael = addUser('yael@example.com', 'demo1234', 'יעל כהן', 'parent', 'verified', '000000026', '0527654321');
-  newborn(yael, 'רוני', daysAgo(12), '🐥', 'more', 'roni2026demo', DOCUMENTS.length, 'in_review');
+  newborn(yael, 'רוני', daysAgo(12), '🐥', 'clal', 'roni2026demo', DOCUMENTS.length, 'in_review');
 
   // An employer (fictional) that swapped its school-bag gift for a deposit into the newborn's QR.
   const emp = db
@@ -286,7 +286,7 @@ function seedPopulation(db, partner) {
   let s = 20231;
   const rand = () => ((s = (s * 48271) % 2147483647) / 2147483647);
   const pick = (weights) => { let x = rand() * weights.reduce((a, [, w]) => a + w, 0); for (const [v, w] of weights) if ((x -= w) <= 0) return v; return weights[0][0]; };
-  const PROV = [['altshuler', 26], ['meitav', 18], ['more', 14], ['analyst', 10], ['harel', 8], ['migdal', 7], ['clal', 6], ['phoenix', 5], ['yelin', 4], ['menora', 2]];
+  const PROV = [['harel', 30], ['migdal', 24], ['clal', 18], ['phoenix', 16], ['menora', 12]];
   const TRK = [['equity', 55], ['conservative', 22], ['solid', 12], ['sp500', 7], ['balanced', 4]];
   const FIRST = ['יונתן', 'מאיה', 'אריאל', 'תמר', 'נועם', 'שירה', 'איתן', 'יעל', 'עידו', 'הילה', 'דניאל', 'רוני', 'אורי', 'ליה', 'עמית', 'נגה', 'יואב', 'אביגיל', 'אלון', 'מיכל'];
   const LAST = ['כהן', 'לוי', 'מזרחי', 'פרץ', 'ביטון', 'אברהם', 'פרידמן', 'שפירא', 'דהן', 'אזולאי', 'גבאי', 'חדד'];

@@ -24,7 +24,7 @@ export function settleContribution({ db, partner, notifier }, x, paymentRef, dat
   if (open) investContribution(db, partner, child, x, date);
   const guardian = db.prepare('SELECT email FROM users WHERE id=?').get(child.guardian_id);
   const monthly = x.pledge_id ? ' (מתנה חודשית)' : '';
-  notifier.send({ to: guardian.email, subject: `🎁 ${x.giver_name} שלח/ה מתנה לעתיד של ${child.first_name}${monthly}`, body: `₪${x.amount / 100} ${open ? 'הושקעו בחשבון' : 'ממתינים ויושקעו עם פתיחת הקופה'}. ${x.message || ''}` });
+  notifier.send({ to: guardian.email, subject: `🎁 ${x.giver_name} שלח/ה מתנה לעתיד של ${child.first_name}${monthly}`, body: `₪${x.amount / 100} ${open ? 'הושקעו בחשבון' : 'ממתינים ויושקעו עם פתיחת הפוליסה'}. ${x.message || ''}` });
   if (x.giver_email) notifier.send({ to: x.giver_email, subject: `קבלה: מתנה לעתיד של ${child.first_name}`, body: `תודה! ₪${x.amount / 100} הושקעו עבור ${child.first_name}. אסמכתא ${paymentRef}.` });
   return child;
 }

@@ -72,18 +72,18 @@ test('child creation requires KYC', async () => {
 });
 
 test('create child gets QR code and birthday event; fund opens after the document checklist', async () => {
-  const r = await api('/children', { method: 'POST', body: { firstName: 'דני', birthDate: '2020-01-01', track: 'conservative', provider: 'meitav' } });
+  const r = await api('/children', { method: 'POST', body: { firstName: 'דני', birthDate: '2020-01-01', track: 'conservative', provider: 'migdal' } });
   assert.equal(r.status, 201);
   childId = r.body.child.id;
   giftCode = r.body.child.giftCode;
   assert.match(giftCode, /^[a-z0-9]{10}$/);
   assert.equal(r.body.child.accountStatus, 'pending_docs');
-  assert.equal(r.body.child.providerName, 'מיטב');
+  assert.equal(r.body.child.providerName, 'מגדל');
   assert.equal(r.body.documents.missing.length, 6);
   assert.equal((await api(`/children/${childId}/documents/guardian_id`, { method: 'POST', body: { fileName: 'virus.exe' } })).body.error, 'invalid_file');
   assert.equal((await api(`/children/${childId}/documents/application_signed`, { method: 'POST', body: { signerName: 'x', agree: true } })).body.error, 'both_signatures_required');
   const { accountId } = await openFund(childId);
-  assert.match(accountId, /^MEI-GML-/);
+  assert.match(accountId, /^MIG-POL-/);
   const d = await api(`/children/${childId}`);
   assert.equal(d.body.child.accountStatus, 'active');
   assert.equal(d.body.events.length, 1);
@@ -129,7 +129,7 @@ test('switch track keeps value; both parents sign; once per quarter', async () =
 });
 
 test('gifts before the fund opens wait, then are invested on opening; parents get reminders', async () => {
-  const kid = (await api('/children', { method: 'POST', body: { firstName: 'מיה', birthDate: '2026-01-15', provider: 'altshuler' } })).body.child;
+  const kid = (await api('/children', { method: 'POST', body: { firstName: 'מיה', birthDate: '2026-01-15', provider: 'harel' } })).body.child;
   const c = await api(`/gift/${kid.giftCode}/contribute`, { method: 'POST', auth: false, body: { amount: 360, giverName: 'סבא' } });
   await api(`/payments/${c.body.checkoutId}/complete`, { method: 'POST', auth: false, body: {} });
   let d = (await api(`/children/${kid.id}`)).body;
@@ -329,7 +329,7 @@ test('employer: employee reports a birth, report links to the QR, HR sends the g
 
 test('at 18 the young adult takes over; from 21 the savings move to a regular fund and the QR keeps taking gifts', async () => {
   const parentToken = token;
-  const made = await api('/children', { method: 'POST', body: { firstName: 'גל', birthDate: '2016-02-01', provider: 'altshuler' } });
+  const made = await api('/children', { method: 'POST', body: { firstName: 'גל', birthDate: '2016-02-01', provider: 'harel' } });
   const id = made.body.child.id, code = made.body.child.giftCode;
   assert.equal(made.body.child.lifecycle.phase, 'minor');
   await openFund(id);
@@ -355,7 +355,7 @@ test('at 18 the young adult takes over; from 21 the savings move to a regular fu
   assert.equal(w.status, 201);
   assert.equal(w.body.withdrawals[0].status, 'paid');
   assert.equal((await api('/kid/track', { method: 'POST', body: { track: 'solid' } })).status, 200);
-  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'meitav' } })).body.error, 'too_young');
+  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'migdal' } })).body.error, 'too_young');
   await api('/kid/privacy', { method: 'POST', body: { parentView: false } });
   const ev = await api('/kid/events', { method: 'POST', body: { type: 'enlistment', title: 'הגיוס של גל', date: '2026-12-01' } });
   assert.equal(ev.body.event.type, 'enlistment');
@@ -368,11 +368,11 @@ test('at 18 the young adult takes over; from 21 the savings move to a regular fu
   db.prepare('UPDATE children SET birth_date=? WHERE id=?').run('2005-02-01', id);
   token = (await api('/kid/login', { method: 'POST', auth: false, body: { username: 'gal', pin: '1357' } })).body.token;
   const v0 = (await api('/kid/me')).body.portfolio.value;
-  const grad = await api('/kid/graduate', { method: 'POST', body: { provider: 'meitav' } });
-  assert.match(grad.body.accountId, /^MEI-GML-/);
+  const grad = await api('/kid/graduate', { method: 'POST', body: { provider: 'migdal' } });
+  assert.match(grad.body.accountId, /^MIG-POL-/);
   assert.equal(grad.body.child.lifecycle.phase, 'graduated');
   assert.equal((await api('/kid/me')).body.portfolio.value, v0);
-  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'meitav' } })).body.error, 'already_graduated');
+  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'migdal' } })).body.error, 'already_graduated');
   const page = await api(`/gift/${code}`, { auth: false });
   assert.ok(page.body.events.some((e) => e.type === 'enlistment'));
   const g2 = await api(`/gift/${code}/contribute`, { method: 'POST', auth: false, body: { amount: 500, giverName: 'חברים' } });
@@ -416,7 +416,7 @@ test('driving lessons: from 16 a teen takes part of the savings beyond the yearl
 test('a QR can be opened at any age: from 18 the saver signs their own documents and runs the fund', async () => {
   const parentToken = token;
   assert.equal((await api('/children', { method: 'POST', body: { firstName: 'x', birthDate: '2099-01-01' } })).body.error, 'child_age_out_of_range');
-  const made = await api('/children', { method: 'POST', body: { firstName: 'דנה', birthDate: '2001-03-01', provider: 'analyst' } });
+  const made = await api('/children', { method: 'POST', body: { firstName: 'דנה', birthDate: '2001-03-01', provider: 'phoenix' } });
   assert.equal(made.status, 201);
   const id = made.body.child.id;
   assert.equal(made.body.child.lifecycle.managedBy, 'self');
@@ -432,7 +432,7 @@ test('a QR can be opened at any age: from 18 the saver signs their own documents
   const signed = await api('/kid/documents/application_signed', { method: 'POST', body: { signerName: 'דנה', agree: true } });
   assert.equal(signed.body.accountStatus, 'in_review', 'one signature is enough for an adult');
   activateFund(ctx, db.prepare('SELECT * FROM children WHERE id=?').get(id));
-  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'analyst' } })).body.error, 'already_graduated', 'already a fund in her own name');
+  assert.equal((await api('/kid/graduate', { method: 'POST', body: { provider: 'phoenix' } })).body.error, 'already_graduated', 'already a fund in her own name');
 
   token = parentToken;
   assert.equal((await api(`/children/${id}/track`, { method: 'POST', body: { track: 'solid', coSigned: true } })).body.error, 'managed_by_child');
@@ -474,31 +474,31 @@ test('parent signs in with ID + registered phone and a 6-digit SMS code', async 
 });
 
 test('the investment house gives the first gift when a QR opens; parents can move the fund to another house', async () => {
-  const made = await api('/children', { method: 'POST', body: { firstName: 'מיה', birthDate: '2024-02-02', provider: 'more' } });
+  const made = await api('/children', { method: 'POST', body: { firstName: 'מיה', birthDate: '2024-02-02', provider: 'clal' } });
   const id = made.body.child.id;
   const gifts = (await api(`/children/${id}/contributions`)).body.contributions;
   assert.equal(gifts.length, 1);
   assert.equal(gifts[0].source, 'provider_gift');
-  assert.equal(gifts[0].giverName, 'מור');
+  assert.equal(gifts[0].giverName, 'כלל');
   assert.equal(gifts[0].amount, 10000);
   assert.equal(db.prepare('SELECT status FROM contributions WHERE child_id=?').get(id).status, 'paid', 'held until the fund opens');
 
   // Before the fund opens, a move only changes where the application goes.
-  const early = await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'analyst' } });
+  const early = await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'phoenix' } });
   assert.equal(early.status, 200);
-  assert.equal(early.body.child.providerName, 'אנליסט');
+  assert.equal(early.body.child.providerName, 'הפניקס');
   await openFund(id);
   assert.equal(db.prepare('SELECT status FROM contributions WHERE child_id=?').get(id).status, 'invested');
   const before = (await api(`/children/${id}`)).body;
   assert.ok(before.portfolio.value > 0);
 
   assert.equal((await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'harel' } })).body.error, 'second_guardian_signature_required');
-  assert.equal((await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'analyst', coSigned: true } })).body.error, 'same_provider');
+  assert.equal((await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'phoenix', coSigned: true } })).body.error, 'same_provider');
   assert.equal((await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'nope', coSigned: true } })).body.error, 'invalid_provider');
   const moved = await api(`/children/${id}/provider`, { method: 'POST', body: { provider: 'harel', coSigned: true } });
   assert.equal(moved.status, 200);
-  assert.match(moved.body.accountId, /^HAR-GML-/);
-  assert.equal(moved.body.child.prevProviderName, 'אנליסט');
+  assert.match(moved.body.accountId, /^HAR-POL-/);
+  assert.equal(moved.body.child.prevProviderName, 'הפניקס');
   const after = (await api(`/children/${id}`)).body;
   assert.equal(after.portfolio.value, before.portfolio.value, 'the money moves as it is: no sale, no tax');
   assert.equal(after.child.track, before.child.track);

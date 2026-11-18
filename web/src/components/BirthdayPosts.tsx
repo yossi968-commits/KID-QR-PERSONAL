@@ -56,7 +56,7 @@ ${url}
       const g = (m: string, f: string) => (boy ? m : f);
       return `🎉 ${name} ${g('בן', 'בת')} ${age}!
 
-${g('הוא גדל', 'היא גדלה')} כל כך מהר, וגם החיסכון ${g('שלו', 'שלה')}. מי שרוצה לפרגן, מתנה דרך QRUV נכנסת לחשבון השקעה על ${g('שמו', 'שמה')} ומחכה ${g('לו', 'לה')} עד גיל 21 🌱
+${g('הוא גדל', 'היא גדלה')} כל כך מהר, וגם החיסכון ${g('שלו', 'שלה')}. מי שרוצה לפרגן, מתנה דרך QRUV נכנסת לפוליסת חיסכון על ${g('שמו', 'שמה')} ומחכה ${g('לו', 'לה')} עד גיל 21 🌱
 
 סורקים או לוחצים, בוחרים סכום, ואפשר לצרף ברכה (גם כזאת שתיפתח רק בגיל 18 💌):
 ${url}
@@ -78,7 +78,7 @@ ${g('הוא כבר יודע', 'היא כבר יודעת')} מה ${g('הוא רו
 
 זה הגיל שבו פתאום יש דעות, חברים, תוכניות ומסכים 😅 וזה גם הגיל שבו ${g('הוא התחיל', 'היא התחילה')} להבין מה זה כסף ולמה כדאי לתת לו זמן לגדול.
 
-מאז שנולד${g('', 'ה')}, המתנות ${g('שלו', 'שלה')} מושקעות בחשבון על ${g('שמו', 'שמה')} דרך QRUV, בבית השקעות מפוקח, עד גיל 21. היום ${g('הוא עוקב', 'היא עוקבת')} אחרי החיסכון באפליקציה ${g('ולומד', 'ולומדת')} בעצמ${g('ו', 'ה')} איך זה עובד.
+מאז שנולד${g('', 'ה')}, המתנות ${g('שלו', 'שלה')} מושקעות בחשבון על ${g('שמו', 'שמה')} דרך QRUV, בחברת ביטוח מפוקחת, עד גיל 21. היום ${g('הוא עוקב', 'היא עוקבת')} אחרי החיסכון באפליקציה ${g('ולומד', 'ולומדת')} בעצמ${g('ו', 'ה')} איך זה עובד.
 
 מי שרוצה לפרגן, לתת מתנה ולהשאיר ברכה:
 ${url}
@@ -109,7 +109,7 @@ ${g('הוא כבר מתכנן', 'היא כבר מתכננת')} את הצעד ה�
       const g = (m: string, f: string) => (boy ? m : f);
       return `${g('הבן', 'הבת')} שלנו ${name} ${g('בן', 'בת')} ${age} 🌟
 
-מה שהתחיל כקוד קטן ביום ההולדת הראשון ${g('שלו', 'שלה')} הפך לחיסכון אמיתי ${g('שלו', 'שלה')}. כל השנים משפחה וחברים נתנו מתנות דרך QRUV, והכסף הושקע על ${g('שמו', 'שמה')} בבית השקעות מפוקח.
+מה שהתחיל כקוד קטן ביום ההולדת הראשון ${g('שלו', 'שלה')} הפך לחיסכון אמיתי ${g('שלו', 'שלה')}. כל השנים משפחה וחברים נתנו מתנות דרך QRUV, והכסף הושקע על ${g('שמו', 'שמה')} בחברת ביטוח מפוקחת.
 
 היום ${g('הוא עוקב', 'היא עוקבת')} אחריו ${g('בעצמו', 'בעצמה')}, ובגיל 18 הניהול עובר ${g('אליו', 'אליה')}. בגיל 21 ${g('הוא יצא', 'היא תצא')} לדרך עם בסיס ${g('שבנה', 'שבנתה')} יחד עם כל מי ${g('שאוהב אותו', 'שאוהב אותה')}.
 
@@ -167,7 +167,7 @@ Link in bio, or scan the code in the second photo 👆
 
 The age of opinions, friends, plans and screens 😅 and also the age of starting to understand money and why it's worth giving it time to grow.
 
-Since birth, gifts have been invested in ${name}'s name through QRUV, at a regulated investment house, until age 21. Now ${name} follows the savings in the app and learns how it works.
+Since birth, gifts have been invested in ${name}'s name through QRUV, at a regulated insurance company, until age 21. Now ${name} follows the savings in the app and learns how it works.
 
 Want to give a gift and leave a greeting?
 ${url}
@@ -189,7 +189,7 @@ Link in bio 👆
 #QRUV #Birthday #GiftForTheFuture`,
     facebook: ({ name, age, url }) => `Our ${name} is ${age} 🌟
 
-What started as a small code on the first birthday became real savings. For years family and friends gave gifts through QRUV, invested in ${name}'s name at a regulated investment house.
+What started as a small code on the first birthday became real savings. For years family and friends gave gifts through QRUV, invested in ${name}'s name at a regulated insurance company.
 
 Today ${name} follows it in the app, takes over at 18, and at 21 sets off with a base built together with everyone who loves them.
 

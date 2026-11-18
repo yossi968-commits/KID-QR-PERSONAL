@@ -3,7 +3,7 @@ export const heDesign = {
   'future.of': 'העתיד של {name}',
   'future.mine': 'העתיד שלי',
   'future.grows': 'החיסכון גדל עם הזמן',
-  'future.held': '+{amount} ממתינים להשקעה עד פתיחת הקופה',
+  'future.held': '+{amount} ממתינים להשקעה עד פתיחת הפוליסה',
   'future.ageNow': 'גיל נוכחי',
   'future.goal': 'יעד',
   'future.ageGoal': 'גיל {age}',

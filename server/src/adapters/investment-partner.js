@@ -75,7 +75,7 @@ export class SandboxInvestmentPartner {
 
   openAccount({ child }) {
     const house = (child.provider || 'sbx').slice(0, 3).toUpperCase();
-    return { accountId: `${house}-GML-` + crypto.randomBytes(4).toString('hex').toUpperCase() + '-' + child.id };
+    return { accountId: `${house}-POL-` + crypto.randomBytes(4).toString('hex').toUpperCase() + '-' + child.id };
   }
 
   #index(date) {

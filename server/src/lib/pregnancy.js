@@ -9,7 +9,7 @@ export const STAGES = [
   { id: 'week30', offset: -70, text: (g, by) => `${by}: עוד כ־10 שבועות ללידה. כבר אפשר להכין את ה־QR האישי של התינוק/ת ב־QRUV, ואורחי הברית/הבריתה ייתנו מתנה שגדלה איתו/ה.` },
   { id: 'week36', offset: -28, text: (g, by) => `${by}: עוד חודש ללידה! בעזרת השם, אחרי הלידה אל תשכחו לפתוח QR אישי לתינוק/ת. זה לוקח 3 דקות.` },
   { id: 'birth', offset: 3, text: (g, by) => `${by}: מזל טוב! 🎉 זה הזמן לפתוח לתינוק/ת QR אישי, כדי שכל מתנה מהמשפחה ומהחברים תושקע לעתיד.` },
-  { id: 'after', offset: 21, text: (g, by) => `${by}: עוד לא פתחתם QR לתינוק/ת? המתנות הראשונות מבית ההשקעות ומהשותפים מחכות.` },
+  { id: 'after', offset: 21, text: (g, by) => `${by}: עוד לא פתחתם QR לתינוק/ת? המתנות הראשונות מחברת הביטוח ומהשותפים מחכות.` },
 ];
 
 export const pregnancyView = (g) => ({ id: g.id, name: g.name, dueDate: g.due_date, partnerId: g.partner_id, remindersSent: JSON.parse(g.reminders || '[]'), childId: g.child_id, createdAt: g.created_at });
