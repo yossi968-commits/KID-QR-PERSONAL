@@ -228,7 +228,7 @@ const he = {
   'pay.processing': 'מעבד...',
 
   'thanks.title': 'תודה, {name}!',
-  'thanks.body': '{amount} הושקעו בחשבון של {child}.',
+  'thanks.body': '{amount} נכנסו לפוליסת החיסכון של {child}.',
   'thanks.future': 'אם השוק יתנהג כמו בעבר, בגיל 21 המתנה שלך יכולה להיות שווה בערך',
   'thanks.another': 'נתינת מתנה נוספת',
   'thanks.ownKid': 'רוצים קוד כזה גם לילדים שלכם?',

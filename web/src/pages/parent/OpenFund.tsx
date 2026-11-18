@@ -34,6 +34,7 @@ export default function OpenFund() {
   const [f, setF] = useState({ provider: '', firstName: '', lastName: '', birthDate: '', avatar: AVATARS[0], track: 'equity', goalText: '', publicMessage: '' });
   const [healthFund, setHealthFund] = useState('');
   const [consents, setConsents] = useState<number[]>([]);
+  const [agency, setAgency] = useState(false);
   useEffect(() => { api<{ providers: Provider[]; defaultProvider: string; welcomeGift: number }>('/providers').then((r) => { setProviders(r.providers); setWelcome(r.welcomeGift); setF((x) => ({ ...x, provider: x.provider || r.defaultProvider })); }); }, []);
   useEffect(() => { api<Family>('/family').then(setFamily).catch(() => {}); }, []);
   // A brother or sister: start from what the family already gave us.
@@ -63,7 +64,7 @@ export default function OpenFund() {
     setErr(''); setBusy(true);
     try {
       const r = await api<{ child: Child; partnerGifts: string[]; reusedDocuments: string[] }>('/children', {
-        body: { ...f, healthFund: fund?.id, partnerConsents: chosen.map((p) => p.id), siblingOf: sibling?.id },
+        body: { ...f, agencyConsent: agency, healthFund: fund?.id, partnerConsents: chosen.map((p) => p.id), siblingOf: sibling?.id },
       });
       nav(`/parent/child/${r.child.id}?tab=fund&new=1&gifts=${r.partnerGifts.length}&reused=${r.reusedDocuments.length}`);
     } catch (x) { setErr(errText(x)); setBusy(false); }
@@ -75,6 +76,7 @@ export default function OpenFund() {
       <div className="eyebrow">{t('open.eyebrow')}</div>
       <h1 style={{ margin: '4px 0 6px' }}>{sibling ? t('sib.title', { name: sibling.firstName }) : t('open.title')}</h1>
       <p className="muted">{sibling ? t('sib.desc') : t('open.lead')}</p>
+      <div className="banner small" style={{ marginBottom: 12 }}>🤝 {t('so.agencyNote')}</div>
       <ol className="steps" aria-label={t('open.progress')}>
         {STEPS.map((s, i) => <li key={s} className={i < step ? 'done' : i === step ? 'on' : ''} aria-current={i === step ? 'step' : undefined}><span className="num">{i + 1}</span>{t(`open.step.${s}` as any)}</li>)}
       </ol>
@@ -168,8 +170,9 @@ export default function OpenFund() {
             </td></tr>
           </tbody></table>
           <div className="banner small">📄 {t('open.docsLater')}</div>
+          <label className="check"><input type="checkbox" checked={agency} onChange={(e) => setAgency(e.target.checked)} />{t('so.agencyConsent')}</label>
           {err && <div className="error">{err}</div>}
-          <div className="row"><button className="btn gold" disabled={busy} onClick={create}>{t('open.create')}</button><button className="btn ghost" onClick={() => setStep(2)}>{t('common.back')}</button></div>
+          <div className="row"><button className="btn gold" disabled={busy || !agency} onClick={create}>{t('open.create')}</button><button className="btn ghost" onClick={() => setStep(2)}>{t('common.back')}</button></div>
         </div>
       )}
       {dialog && <TrackDialog value={f.track} communityTrack={community?.track} years={age >= 21 ? 10 : Math.max(1, 21 - age)} onClose={() => setDialog(false)} onPick={(track) => { setF({ ...f, track }); setDialog(false); }} />}
