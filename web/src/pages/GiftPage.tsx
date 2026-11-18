@@ -2,9 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { api, fv, type Method } from '../lib/api';
-import MoneyTree from '../components/MoneyTree';
-import { MethodPicker, goPay } from '../components/Pay';
-import { useLabels } from '../components/ui';
+import { goPay } from '../components/Pay';
+import { Expand } from '../components/Expand';
+import { METHOD_ICON, useLabels } from '../components/ui';
 import { useErr } from './Auth';
 
 type GiftInfo = {
@@ -27,7 +27,7 @@ export default function GiftPage() {
   const [purpose, setPurpose] = useState<'gift' | 'work'>('gift');
   const [work, setWork] = useState('babysitting');
   const [amount, setAmount] = useState(18000);
-  const [custom, setCustom] = useState('');
+  const [custom, setCustom] = useState<string | null>(null);
   const [monthly, setMonthly] = useState(false);
   const [method, setMethod] = useState('bit');
   const [f, setF] = useState({ giverName: '', giverEmail: '', message: '', unlockAge: '', isPublic: true, eventId: '' });
@@ -40,7 +40,7 @@ export default function GiftPage() {
   if (missing) return <div className="container narrow page-head"><div className="card center">🔍 {t('gift.notFound')}</div></div>;
   if (!info) return <div className="container page-head muted">{t('common.loading')}</div>;
   const { child } = info;
-  const value = custom ? Math.round(Number(custom) * 100) : amount;
+  const value = custom !== null ? Math.round(Number(custom) * 100) : amount;
   const years = Math.max(0, 21 - child.age);
   const capsuleAges = [13, 16, 18, 21].filter((a) => a > child.age);
   const isGift = purpose === 'gift';
@@ -59,71 +59,92 @@ export default function GiftPage() {
     } catch (x) { setErr(errText(x)); setBusy(false); }
   };
 
+  const fits = (m: Method) => (monthly ? m.recurring : !m.recurringOnly);
+  const shown = info.methods.filter(fits);
+  const amountRs = custom ?? String(amount / 100);
+
   return (
-    <div className="container page-head">
-      <div className="gift-grid">
-        <div className="card center g-hero">
-          <div className="avatar lg" style={{ margin: '0 auto' }}>{child.avatar}</div>
-          <h1 style={{ marginTop: 12 }}>{t('gift.title', { name: child.firstName })}</h1>
-          <span className="pill gold" style={{ fontSize: '0.9rem' }}>🎂 {child.daysToBirthday === 0 ? t('gift.turningToday', { name: child.firstName }) : t('gift.turning', { name: child.firstName, n: child.turning, d: child.daysToBirthday })}</span>
-          {child.publicMessage && <p style={{ marginTop: 14, fontSize: '1.05rem' }}>“{child.publicMessage}”</p>}
-          <MoneyTree value={info.giverCount * 15000} deposited={info.giverCount * 10000} size={200} />
-          <p className="muted small">{t('gift.explain', { name: child.firstName })}</p>
+    <div className="container page-head sg">
+      <form className="card sg-card" onSubmit={submit}>
+        <div className="sg-head">
+          <div className="avatar lg">{child.avatar}</div>
+          <h1>{isGift ? t('gift.title', { name: child.firstName }) : t('gift.purposeWork', { name: child.firstName })}</h1>
+          {isGift && <span className="pill gold">🎂 {child.daysToBirthday === 0 ? t('gift.turningToday', { name: child.firstName }) : t('gift.turning', { name: child.firstName, n: child.turning, d: child.daysToBirthday })}</span>}
+          {isGift && child.publicMessage && <p className="muted" style={{ margin: '4px 0 0' }}>“{child.publicMessage}”</p>}
         </div>
-        {info.wall.length > 0 && (
-          <div className="card g-wall">
-            <h3>{t('gift.people', { n: info.giverCount })}</h3>
+
+        <label className="sg-amount">
+          <span className="cur" aria-hidden>₪</span>
+          <input type="number" inputMode="numeric" dir="ltr" aria-label={t('gift.amount')} min={info.limits.min / 100} max={info.limits.max / 100} value={amountRs} onChange={(e) => setCustom(e.target.value)} />
+        </label>
+        <div className="sg-chips">
+          {info.suggested.map((a) => <button type="button" key={a} className={'chip num' + (custom === null && amount === a ? ' on' : '')} onClick={() => { setAmount(a); setCustom(null); }}>{fmtMoney(a)}</button>)}
+        </div>
+        {isGift && years > 0 && value >= info.limits.min && <div className="sg-worth">📈 {monthly ? t('gift.worth21Monthly', { amount: fmtMoney(value), at21: fmtMoney(Array.from({ length: years * 12 }).reduce<number>((v) => v * (1 + 0.065 / 12) + value, 0)) }) : t('gift.worth21', { amount: fmtMoney(fv(value, years)) })}</div>}
+
+        {!isGift && (
+          <label className="field"><span>{t('gift.workType')}</span>
+            <select value={work} onChange={(e) => setWork(e.target.value)}>{WORK.filter((w) => info.sources.includes(w)).map((w) => <option key={w} value={w}>{L.source(w)}</option>)}</select>
+          </label>
+        )}
+        <label className="field"><span>{t('gift.yourName')}</span><input value={f.giverName} onChange={(e) => setF({ ...f, giverName: e.target.value })} placeholder={t('gift.yourNamePh')} required autoComplete="name" /></label>
+
+        <div className="stack-sm">
+          <span className="field-label" style={{ margin: 0 }}>{t('sg.howPay')}</span>
+          <div className="sg-methods" role="radiogroup" aria-label={t('pay.method')}>
+            {shown.map((m) => (
+              <button key={m.id} type="button" role="radio" aria-checked={method === m.id} className={'method' + (method === m.id ? ' on' : '')} onClick={() => setMethod(m.id)}>
+                <span className="m-icon" aria-hidden>{METHOD_ICON[m.id]}</span><span>{t(`method.${m.id}` as any)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isGift && (
+          <Expand icon="💌" title={t('sg.extras')} sub={t('sg.extrasSub')} open={monthly}>
+            <label className="field"><span>{t('gift.message')}</span><textarea value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} placeholder={t('gift.messagePh')} maxLength={500} /></label>
+            {!monthly && capsuleAges.length > 0 && (
+              <label className="field"><span>⏳ {t('gift.capsule')}</span>
+                <select value={f.unlockAge} onChange={(e) => setF({ ...f, unlockAge: e.target.value })}><option value="">{t('gift.capsuleNone')}</option>{capsuleAges.map((a) => <option key={a} value={a}>{a}</option>)}</select>
+              </label>
+            )}
+            {info.events.length > 0 && !monthly && (
+              <label className="field"><span>{t('gift.event')}</span>
+                <select value={f.eventId} onChange={(e) => setF({ ...f, eventId: e.target.value })}>{info.events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}<option value="">—</option></select>
+              </label>
+            )}
+            <label className="check"><input type="checkbox" checked={monthly} onChange={(e) => { setMonthly(e.target.checked); const next = info.methods.find((m) => method === m.id && (e.target.checked ? m.recurring : !m.recurringOnly)); if (!next) setMethod(info.methods.find((m) => (e.target.checked ? m.recurring : !m.recurringOnly))?.id || 'card'); }} />🔁 {t('sg.monthly')}</label>
+            {monthly && <p className="small muted" style={{ margin: 0 }}>{t('pay.monthlyNote')}</p>}
+            <label className="field"><span>{t('gift.email')}</span><input type="email" dir="ltr" value={f.giverEmail} onChange={(e) => setF({ ...f, giverEmail: e.target.value })} required={monthly} autoComplete="email" /></label>
+            <label className="check"><input type="checkbox" checked={f.isPublic} onChange={(e) => setF({ ...f, isPublic: e.target.checked })} />{t('gift.public')}</label>
+          </Expand>
+        )}
+        {!isGift && <label className="field"><span>{t('gift.email')}</span><input type="email" dir="ltr" value={f.giverEmail} onChange={(e) => setF({ ...f, giverEmail: e.target.value })} autoComplete="email" /></label>}
+
+        {err && <div className="error" role="alert">{err}</div>}
+        <button className="btn gold block sg-pay" disabled={busy || value < info.limits.min}>{isGift ? (monthly ? t('gift.submitMonthly', { amount: fmtMoney(value) }) : t('gift.submit', { amount: fmtMoney(value) })) : t('gift.submitWork', { amount: fmtMoney(value) })}</button>
+        <div className="small muted center">🔒 {t('gift.secure')}</div>
+        {info.sources.some((s) => WORK.includes(s)) && (
+          <button type="button" className="sg-link" onClick={() => { if (isGift) { setPurpose('work'); setMonthly(false); } else setPurpose('gift'); }}>{isGift ? t('sg.toWork', { name: child.firstName }) : t('sg.toGift')}</button>
+        )}
+      </form>
+
+      {isGift && info.wall.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <Expand icon="💛" title={t('sg.wall', { n: info.giverCount })} sub={t('sg.wallSub')}>
             <div className="wall">
-              {info.wall.slice(0, 6).map((w, i) => (
+              {info.wall.slice(0, 8).map((w, i) => (
                 <div key={i} className="wall-item" style={{ flexDirection: 'column', gap: 2 }}>
                   <span className="who">{w.fromHouse && '🏦 '}{w.giverName}{w.fromHouse && <span className="pill gold" style={{ marginInlineStart: 6 }}>{t('gift.fromHouse')}</span>}</span>
                   {w.sealedUntil ? <span className="sealed">🔒 {t('gifts.sealed', { age: w.sealedUntil })}</span> : w.message && <span className="muted">“{w.message}”</span>}
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        <form className="card stack g-form" onSubmit={submit}>
-          <div className="seg" role="group" aria-label={t('gift.purpose')} style={{ alignSelf: 'flex-start' }}>
-            <button type="button" className={isGift ? 'on' : ''} onClick={() => setPurpose('gift')}>🎁 {t('gift.purposeGift')}</button>
-            <button type="button" className={!isGift ? 'on' : ''} onClick={() => { setPurpose('work'); setMonthly(false); }}>💼 {t('gift.purposeWork', { name: child.firstName })}</button>
-          </div>
-          {!isGift && (
-            <label className="field"><span>{t('gift.workType')}</span>
-              <select value={work} onChange={(e) => setWork(e.target.value)}>{WORK.filter((w) => info.sources.includes(w)).map((w) => <option key={w} value={w}>{L.source(w)}</option>)}</select>
-            </label>
-          )}
-          <h3 style={{ margin: 0 }}>{t('gift.amount')}</h3>
-          <div className="chips">
-            {info.suggested.map((a) => <button type="button" key={a} className={'chip num' + (!custom && amount === a ? ' on' : '')} onClick={() => { setAmount(a); setCustom(''); }}>{fmtMoney(a)}</button>)}
-          </div>
-          <label className="field"><span>{t('gift.other')}</span><input type="number" dir="ltr" min={info.limits.min / 100} max={info.limits.max / 100} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="₪" /></label>
-          <div className="card gold center" style={{ padding: 10 }}>📈 {monthly ? t('gift.worth21Monthly', { amount: fmtMoney(value), at21: fmtMoney(Array.from({ length: years * 12 }).reduce<number>((v) => v * (1 + 0.065 / 12) + value, 0)) }) : t('gift.worth21', { amount: fmtMoney(fv(value, years)) })}</div>
-
-          <span className="field-label" style={{ marginBottom: -6 }}>{t('pay.method')}</span>
-          <MethodPicker methods={info.methods} monthly={monthly} setMonthly={setMonthly} value={method} onChange={setMethod} allowMonthly={isGift} />
-
-          {isGift && info.events.length > 0 && !monthly && (
-            <label className="field"><span>{t('gift.event')}</span>
-              <select value={f.eventId} onChange={(e) => setF({ ...f, eventId: e.target.value })}>{info.events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}<option value="">—</option></select>
-            </label>
-          )}
-          <label className="field"><span>{t('gift.yourName')}</span><input value={f.giverName} onChange={(e) => setF({ ...f, giverName: e.target.value })} placeholder={t('gift.yourNamePh')} required /></label>
-          <label className="field"><span>{t('gift.email')}</span><input type="email" dir="ltr" value={f.giverEmail} onChange={(e) => setF({ ...f, giverEmail: e.target.value })} required={monthly} /></label>
-          {isGift && <label className="field"><span>{t('gift.message')}</span><textarea value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} placeholder={t('gift.messagePh')} maxLength={500} /></label>}
-          {isGift && !monthly && capsuleAges.length > 0 && (
-            <label className="field"><span>⏳ {t('gift.capsule')}</span>
-              <select value={f.unlockAge} onChange={(e) => setF({ ...f, unlockAge: e.target.value })}><option value="">{t('gift.capsuleNone')}</option>{capsuleAges.map((a) => <option key={a} value={a}>{a}</option>)}</select>
-            </label>
-          )}
-          {isGift && <label className="check"><input type="checkbox" checked={f.isPublic} onChange={(e) => setF({ ...f, isPublic: e.target.checked })} />{t('gift.public')}</label>}
-          {err && <div className="error" role="alert">{err}</div>}
-          <button className="btn gold block" disabled={busy || value < info.limits.min}>{isGift ? (monthly ? t('gift.submitMonthly', { amount: fmtMoney(value) }) : t('gift.submit', { amount: fmtMoney(value) })) : t('gift.submitWork', { amount: fmtMoney(value) })}</button>
-          <div className="small muted center">🔒 {t('gift.secure')}</div>
-        </form>
-      </div>
-      <div className="center small muted" style={{ marginTop: 24 }}><Link to="/">{t('appName')}</Link> · {t('land.trust')}</div>
+            <p className="small muted" style={{ margin: 0 }}>{t('gift.explain', { name: child.firstName })}</p>
+          </Expand>
+        </div>
+      )}
+      <div className="center small muted" style={{ marginTop: 20 }}><Link to="/">{t('appName')}</Link> · {t('land.trust')}</div>
     </div>
   );
 }

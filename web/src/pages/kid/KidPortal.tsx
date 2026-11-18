@@ -10,6 +10,7 @@ import { LifeTimeline } from '../../components/Lifecycle';
 import { DocChecklist } from '../parent/FundTab';
 import type { Docs } from '../../lib/api';
 import MoneyTree from '../../components/MoneyTree';
+import { Expand } from '../../components/Expand';
 import QrPanel from '../../components/QrPanel';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
 import { useLessons, LessonModal, type Lesson, type LessonsRes } from '../../components/Lessons';
@@ -118,8 +119,7 @@ function Young({ d, lessons, reloadLessons }: P) {
               <button className="young-tile" onClick={() => go('learn')}><span className="t-icon">📚</span><b>{t('young.learn')}</b></button>
               <button className="young-tile" onClick={() => go('wishes')}><span className="t-icon">🎁</span><b>{t('young.wishes')}</b></button>
             </div>
-            <div className="bubble center"><div>🎓 {t('kid.at21')}</div><div className="young-big num" style={{ fontSize: '2rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
-            <KidJourney simple />
+            <Expand icon="🎓" title={t('sk.journey')} sub={<>{t('kid.at21')} <b className="num">{fmtMoney(p.projection.finals.mid)}</b></>}><KidJourney simple /></Expand>
             {depositing && <div className="bubble"><DepositForm d={d} onCancel={() => setDepositing(false)} returnTab="home" /></div>}
           </div>
         )}
@@ -190,16 +190,21 @@ function Middle({ d, lessons, reloadLessons }: P) {
                 <div><div className="row between small"><span>{t('mid.level', { n: level })}</span><span>{lessons.totalStars} XP</span></div><div className="xp"><div style={{ width: xp + '%' }} /></div></div>
               </div>
             </div>
-            <div className="grid grid-3">
-              <div className="card"><div className="small muted">{t('mid.fromFamily')}</div><div className="big-num num" style={{ fontSize: '1.6rem' }}>{fmtMoney(p.deposited - p.earned)}</div></div>
-              <div className="card"><div className="small muted">{t('mid.fromMe')}</div><div className="big-num num" style={{ fontSize: '1.6rem', color: 'var(--accent)' }}>{fmtMoney(p.earned)}</div></div>
-              <div className="card"><div className="small muted">{t('kid.at21')}</div><div className="big-num num" style={{ fontSize: '1.6rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
-            </div>
             <MyQrButton onClick={() => go('qr')} />
-            <GoalsCard d={d} onNew={() => go('goals')} />
-            <KidJourney />
-            <h3>{t('mid.badges')}</h3>
-            <div className="badges">{badges.map(([i, l, on]) => <div key={l} className={'badge' + (on ? '' : ' locked')}><span className="b-icon">{i}</span>{l}</div>)}</div>
+            <div className="stack-sm">
+              <Expand icon="🎯" title={t('goals.mine')} sub={t('sk.goalsSub')}><GoalsCard d={d} onNew={() => go('goals')} /></Expand>
+              <Expand icon="📊" title={t('sk.numbers')} sub={t('sk.numbersSub')}>
+                <div className="grid grid-3">
+                  <div className="card"><div className="small muted">{t('mid.fromFamily')}</div><div className="big-num num" style={{ fontSize: '1.6rem' }}>{fmtMoney(p.deposited - p.earned)}</div></div>
+                  <div className="card"><div className="small muted">{t('mid.fromMe')}</div><div className="big-num num" style={{ fontSize: '1.6rem', color: 'var(--accent)' }}>{fmtMoney(p.earned)}</div></div>
+                  <div className="card"><div className="small muted">{t('kid.at21')}</div><div className="big-num num" style={{ fontSize: '1.6rem' }}>{fmtMoney(p.projection.finals.mid)}</div></div>
+                </div>
+              </Expand>
+              <Expand icon="📒" title={t('sk.journey')} sub={t('sk.journeySub')}><KidJourney /></Expand>
+              <Expand icon="🏅" title={t('mid.badges')} sub={t('sk.badgesSub')} badge={<span className="pill num">{badges.filter((b) => b[2]).length}/{badges.length}</span>}>
+                <div className="badges">{badges.map(([i, l, on]) => <div key={l} className={'badge' + (on ? '' : ' locked')}><span className="b-icon">{i}</span>{l}</div>)}</div>
+              </Expand>
+            </div>
           </div>
         )}
         {tab === 'quests' && (
@@ -259,24 +264,28 @@ function Senior({ d, lessons, reloadLessons }: P) {
             {!self && <div className="banner small">🔑 {t('life.until18', { date: fmtDate(child.lifecycle.handoverDate), n: Math.max(0, Math.round((Date.parse(child.lifecycle.handoverDate) - Date.now()) / 86400000)) })}</div>}
             {self && <LifeTimeline child={child} />}
             <MyQrButton onClick={() => go('qr')} />
-            <GoalsCard d={d} onNew={() => go('plan')} />
-            <KidJourney adult={self} />
-            <Kpis items={[
-              { label: t('sen.fromFamily'), value: fmtMoney(p.deposited - p.earned) },
-              { label: t('sen.fromMe'), value: fmtMoney(p.earned), sub: d.pledges.some((x) => x.status === 'active') ? t('sen.standing', { amount: fmtMoney(d.pledges.filter((x) => x.status === 'active').reduce((s, x) => s + x.amount, 0)) }) : undefined },
-              { label: p.projection.payoutAge > 21 ? t('kid.atAge', { age: p.projection.payoutAge }) : t('kid.at21'), value: fmtMoney(p.projection.finals.mid), sub: fmtDate(p.projection.payoutDate) },
-              self
-                ? { label: t('child.gain'), value: fmtMoney(p.gain), sub: `${(p.gainPct * 100).toFixed(1)}%` }
-                : { label: t('plan.available'), value: fmtMoney(d.planner.budget.available), sub: t('plan.resets', { date: fmtDate(d.planner.budget.resetsOn) }) },
-            ]} />
-            <div className="grid grid-2">
-              <div className="card"><h3>{t('child.chartTitle')}</h3><GrowthChart data={p.history} /></div>
-              <div className="card"><h3>{t('child.projTitle', { age: p.projection.payoutAge })}</h3><ProjectionChart points={p.projection.points} /></div>
-            </div>
-            <div className="card">
-              <h3>{t('sen.mix')}</h3>
-              <div className="alloc" aria-hidden><div style={{ width: `${p.deposited ? ((p.deposited - p.earned) / p.value) * 100 : 0}%`, background: 'var(--chart-dep)' }} /><div style={{ width: `${p.value ? (p.earned / p.value) * 100 : 0}%`, background: 'var(--brand)' }} /><div style={{ flex: 1, background: 'var(--good)', opacity: 0.5 }} /></div>
-              <div className="legend" style={{ marginTop: 8 }}><span><i style={{ background: 'var(--chart-dep)' }} />{t('sen.fromFamily')}</span><span><i style={{ background: 'var(--brand)' }} />{t('sen.fromMe')}</span><span><i style={{ background: 'var(--good)', opacity: 0.5 }} />{t('sen.growth')}</span></div>
+            <div className="stack-sm">
+              <Expand icon="🎯" title={t('goals.mine')} sub={t('sk.goalsSub')}><GoalsCard d={d} onNew={() => go('plan')} /></Expand>
+              <Expand icon="📊" title={t('sk.numbers')} sub={t('sk.numbersSub')}>
+                <Kpis items={[
+                  { label: t('sen.fromFamily'), value: fmtMoney(p.deposited - p.earned) },
+                  { label: t('sen.fromMe'), value: fmtMoney(p.earned), sub: d.pledges.some((x) => x.status === 'active') ? t('sen.standing', { amount: fmtMoney(d.pledges.filter((x) => x.status === 'active').reduce((s, x) => s + x.amount, 0)) }) : undefined },
+                  { label: p.projection.payoutAge > 21 ? t('kid.atAge', { age: p.projection.payoutAge }) : t('kid.at21'), value: fmtMoney(p.projection.finals.mid), sub: fmtDate(p.projection.payoutDate) },
+                  self
+                    ? { label: t('child.gain'), value: fmtMoney(p.gain), sub: `${(p.gainPct * 100).toFixed(1)}%` }
+                    : { label: t('plan.available'), value: fmtMoney(d.planner.budget.available), sub: t('plan.resets', { date: fmtDate(d.planner.budget.resetsOn) }) },
+                ]} />
+                <div className="grid grid-2">
+                  <div className="card"><h3>{t('child.chartTitle')}</h3><GrowthChart data={p.history} /></div>
+                  <div className="card"><h3>{t('child.projTitle', { age: p.projection.payoutAge })}</h3><ProjectionChart points={p.projection.points} /></div>
+                </div>
+                <div className="card">
+                  <h3>{t('sen.mix')}</h3>
+                  <div className="alloc" aria-hidden><div style={{ width: `${p.deposited ? ((p.deposited - p.earned) / p.value) * 100 : 0}%`, background: 'var(--chart-dep)' }} /><div style={{ width: `${p.value ? (p.earned / p.value) * 100 : 0}%`, background: 'var(--brand)' }} /><div style={{ flex: 1, background: 'var(--good)', opacity: 0.5 }} /></div>
+                  <div className="legend" style={{ marginTop: 8 }}><span><i style={{ background: 'var(--chart-dep)' }} />{t('sen.fromFamily')}</span><span><i style={{ background: 'var(--brand)' }} />{t('sen.fromMe')}</span><span><i style={{ background: 'var(--good)', opacity: 0.5 }} />{t('sen.growth')}</span></div>
+                </div>
+              </Expand>
+              <Expand icon="📒" title={t('sk.journey')} sub={t('sk.journeySub')}><KidJourney adult={self} /></Expand>
             </div>
           </>
         )}

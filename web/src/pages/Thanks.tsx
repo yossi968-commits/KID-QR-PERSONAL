@@ -10,21 +10,25 @@ export default function Thanks() {
   useEffect(() => { api(`/gift/${code}/receipt/${cid}`).then(setR); }, [code, cid]);
   if (!r) return <div className="container page-head muted">{t('common.loading')}</div>;
   const age = new Date().getFullYear() - Number(r.birthDate.slice(0, 4));
+  const giftLink = window.location.href.replace(/\/thanks\/[^/?#]*$/, '');
+  const share = `https://wa.me/?text=${encodeURIComponent(t('sg.shareText', { name: r.childFirstName }) + giftLink)}`;
   return (
-    <div className="container narrow page-head">
+    <div className="container page-head sg">
       <div className="card center stack">
-        <div style={{ fontSize: 64 }}>🎉{r.avatar}</div>
-        <h1 style={{ fontSize: '1.9rem' }}>{t('thanks.title', { name: r.giverName })}</h1>
-        <p style={{ fontSize: '1.1rem' }}>{t('thanks.body', { amount: fmtMoney(r.amount), child: r.childFirstName })}</p>
-        <div className="card brand">
-          <div className="small">{t('thanks.future')}</div>
-          <div className="num" style={{ fontSize: '2.4rem', fontWeight: 800 }}>{fmtMoney(fv(r.amount, 21 - age))}</div>
-        </div>
-        <div className="row" style={{ justifyContent: 'center' }}>
-          <Link className="btn secondary" to={`/g/${code}`}>{t('thanks.another')}</Link>
-          <Link className="btn" to="/register">{t('thanks.ownKid')}</Link>
-        </div>
+        <div style={{ fontSize: 56 }} aria-hidden>✅</div>
+        <div className="eyebrow">{t('sg.done')}</div>
+        <h1 style={{ fontSize: '1.7rem', margin: 0 }}>{t('thanks.title', { name: r.giverName })}</h1>
+        <p style={{ margin: 0 }}>{r.avatar} {t('thanks.body', { amount: fmtMoney(r.amount), child: r.childFirstName })}</p>
+        <div className="sg-worth">📈 {t('thanks.future')} <b className="num">{fmtMoney(fv(r.amount, Math.max(0, 21 - age)))}</b></div>
+        <a className="btn secondary block" href={share} target="_blank" rel="noopener">💬 {t('sg.share')}</a>
       </div>
+      <div className="own-qr" style={{ marginTop: 14 }}>
+        <div style={{ fontSize: 34 }} aria-hidden>👨‍👩‍👧</div>
+        <h3>{t('sg.ownTitle')}</h3>
+        <p className="small" style={{ margin: 0 }}>{t('sg.ownBody')}</p>
+        <Link className="btn block sg-pay" to="/register">{t('sg.ownCta')}</Link>
+      </div>
+      <div className="center" style={{ marginTop: 12 }}><Link className="sg-link" to={`/g/${code}`}>{t('thanks.another')}</Link></div>
     </div>
   );
 }
