@@ -89,6 +89,8 @@ r.post('/', h((req, res) => {
   // Every child gets a standing birthday campaign from day one.
   db.prepare('INSERT INTO events (child_id, type, title, date) VALUES (?,?,?,?)').run(child.id, 'birthday', `יום הולדת ${age + 1}`, nextBirthday(birthDate));
   audit(db, req.user.id, 'child_created', { childId: child.id, provider });
+  // The parent agreed that their details go to the insurance agency, which gives the advice and opens the policy.
+  if (req.body.agencyConsent === true) audit(db, req.user.id, 'agency_referral_consent', { childId: child.id, provider });
   linkReports(db); // an employer may already be waiting to send a birth gift
   res.status(201).json({ child: childView(child), documents: docsStatus(db, child), partnerGifts, reusedDocuments: reused, pregnancyId });
 }));

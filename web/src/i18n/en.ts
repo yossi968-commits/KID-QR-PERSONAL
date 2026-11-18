@@ -230,7 +230,7 @@ const en: Dict = {
   'pay.processing': 'Processing...',
 
   'thanks.title': 'Thank you, {name}!',
-  'thanks.body': '{amount} was invested in {child}\'s account.',
+  'thanks.body': '{amount} went into {child}\'s savings policy.',
   'thanks.future': 'If markets behave like the past, at 21 your gift could be worth about',
   'thanks.another': 'Give another gift',
   'thanks.ownKid': 'Want a code like this for your kids?',
