@@ -444,6 +444,7 @@ export const ruBase: Record<string, string> = {
   "ctab.events": "События",
   "ctab.learn": "Финграмотность",
   "ctab.settings": "Настройки",
+  "ctab.wallet": "День рождения с PayBox / bit",
   "child.holding": "Накоплено",
   "child.projected": "Ожидается к {age} годам",
   "child.projectedSub": "на {date}",
