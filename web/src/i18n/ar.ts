@@ -444,6 +444,7 @@ export const arBase: Record<string, string> = {
   "ctab.events": "مناسبات",
   "ctab.learn": "تثقيف مالي",
   "ctab.settings": "الإعدادات",
+  "ctab.wallet": "عيد ميلاد مع PayBox / bit",
   "child.holding": "الحيازة",
   "child.projected": "المتوقع في سن {age}",
   "child.projectedSub": "في {date}",

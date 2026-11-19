@@ -11,6 +11,7 @@ import { api, type ChildData } from '../../lib/api';
 import { GrowthChart, ProjectionChart } from '../../components/Charts';
 import QrPanel from '../../components/QrPanel';
 import BirthdayPosts from '../../components/BirthdayPosts';
+import WalletSim from '../../components/WalletSim';
 import { Kpis, Loading, Signed, useLabels } from '../../components/ui';
 import { gradeLabel } from './Dashboard';
 import Money from './Money';
@@ -20,10 +21,10 @@ import { EventsTab, LearnTab, SettingsTab } from './MoreTabs';
 import { FundPill, LifeTimeline } from '../../components/Lifecycle';
 import { ApiError } from '../../lib/api';
 
-const TABS = ['overview', 'money', 'planner', 'fund', 'qr', 'events', 'learn', 'settings', 'more'] as const;
+const TABS = ['overview', 'money', 'planner', 'fund', 'qr', 'wallet', 'events', 'learn', 'settings', 'more'] as const;
 /** The tab bar shows only these; the rest sit in a "more" menu, one tap deeper. */
 const MAIN = ['overview', 'money', 'qr'];
-const MORE_ICON: Record<string, string> = { planner: '🗓️', fund: '📄', events: '🎉', learn: '📚', settings: '⚙️' };
+const MORE_ICON: Record<string, string> = { wallet: '🎈', planner: '🗓️', fund: '📄', events: '🎉', learn: '📚', settings: '⚙️' };
 /** From 18 the fund is the young adult's: parents see it (if allowed) and can still give. */
 const ADULT_TABS = ['overview', 'money', 'qr'] as const;
 
@@ -94,7 +95,10 @@ export default function ChildPage() {
         </div>
       )}
       {tab === 'fund' && <FundTab data={data} reload={load} fresh={sp.get('new') === '1'} />}
-      {tab === 'qr' && <><QrPanel child={child} />{child.lifecycle.phase === 'minor' && <BirthdayPosts child={child} />}</>}
+      {tab === 'qr' && <><QrPanel child={child} />{child.lifecycle.phase === 'minor' && <>
+        <div className="nav-list" style={{ margin: '12px 0' }}><NavRow icon="🎈" title={t('wsim.cta' as any)} sub={t('wsim.ctaSub' as any)} onClick={() => setSp({ tab: 'wallet' })} /></div>
+        <BirthdayPosts child={child} /></>}</>}
+      {tab === 'wallet' && <WalletSim child={child} />}
       {tab === 'events' && <EventsTab data={data} reload={load} />}
       {tab === 'learn' && <LearnTab childId={child.id} />}
       {tab === 'settings' && <SettingsTab data={data} reload={load} />}
