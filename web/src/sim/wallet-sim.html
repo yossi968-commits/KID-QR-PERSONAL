@@ -122,6 +122,25 @@ textarea.in{resize:none;height:60px}
 .wallet-head{background:var(--wallet);color:#fff;padding:12px 16px 18px;display:flex;flex-direction:column;gap:2px}
 .wallet-head .lbl{font-size:11px;font-weight:700;opacity:.85;letter-spacing:.3px}
 .wallet-head .ttl{font-size:18px;font-weight:800}
+.wallet-head{position:relative}
+.wback{border:0;background:rgba(255,255,255,.18);color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:2px 10px;align-self:flex-start;margin-bottom:6px}
+.dock{display:flex;justify-content:center;gap:26px;padding:8px 12px 12px;border-top:1px solid var(--line);background:var(--surface)}
+.dock button{border:0;background:none;color:var(--muted);font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 6px;border-radius:10px}
+.dock button.on{color:var(--ink)}
+.dock button.on .wapp-ic{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--mint)}
+.wapp-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:13px;line-height:1;text-align:center}
+.wapp-ic.sm{width:34px;height:34px;border-radius:10px;font-size:10px}
+.wapp-ic.qruv{background:#102A43}
+.wapp-ic.qruv::first-line{color:#fff}
+.wapp-ic.wallet{background:var(--wallet);font-size:18px}
+.wapp-ic.sm.wallet{font-size:16px}
+.wapp-ic.cam{background:#2B3440;font-size:16px}
+.qa{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qa button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:10px 4px;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.qa i{font-style:normal;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--wallet-soft);color:var(--wallet)}
+.grow{width:100%;border:0;background:var(--wallet-soft);color:var(--ink);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:start;margin-top:6px}
+.grow>span{display:flex;flex-direction:column;min-width:0}
+.bio{border:0;background:var(--wallet-soft);color:var(--wallet);border-radius:24px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:800;font-size:15px;margin:4px auto;width:220px}
 .sim-ribbon{position:absolute;top:44px;left:-34px;transform:rotate(-35deg);background:var(--warn);color:#fff;font-size:10px;font-weight:800;padding:2px 40px;letter-spacing:.5px;z-index:3}
 
 /* QR */
@@ -291,7 +310,8 @@ const GIVERS=[
 const S={}; let tCounter=0;
 function reset(){
   Object.assign(S,{step:1,parent:'home',giver:'scan',linked:false,group:null,payments:[],closed:false,
-    withdrawPath:'bank',consent:false,wd:0,giverIdx:0,amount:180,msg:'',gName:GIVERS[0].n,logN:0});
+    withdrawPath:'bank',consent:false,wd:0,giverIdx:0,amount:180,msg:'',gName:GIVERS[0].n,logN:0,
+    pApp:'qruv',pw:'home',pBal:1240,gBal:2000,myPays:[],withdrawn:false});
   tCounter=0;
   logEl.innerHTML='';logEl.appendChild(logEmpty);logEmpty.hidden=false;
   render();
@@ -346,7 +366,7 @@ function parentView(){
       <p>${CHILD.policy}</p>
       <div class="qrbox"><canvas id="pQR"></canvas><span class="small muted">ה-QR האישי של ${CHILD.name}</span></div></div>
     <div class="card"><h3>אוספים מתנות ליום ההולדת?</h3><p>פתחו קבוצת ${P.name} ליום ההולדת. כל מי שסורק את ה-QR של ${CHILD.name} ישלם ב-${P.name}, ובסוף תעבירו הכל לפוליסת החיסכון בלחיצה.</p>
-      <div style="height:10px"></div><button class="cta" data-a="startGroup">פתיחת קבוצת יום הולדת ב-${P.name}</button></div>
+      <div style="height:10px"></div><button class="cta" data-a="startGroup">פתיחת קבוצת יום הולדת ב-${P.name}</button><p class="small muted" style="margin:8px 0 0">אפשר גם לפתוח את הקבוצה מתוך הארנק (בסרגל למטה).</p></div>
     <div class="disclaimer">QRUV היא אפליקציה דיגיטלית לאיסוף מתנות ושיווק. ייעוץ ופתיחת הפוליסה נעשים על ידי סוכנות ביטוח מורשית.</div></div>`;
   case 'link': return sbar+`<div class="appbar"><button class="back" data-a="goHome">→ חזרה</button></div><div class="scroll">
     <div class="card"><span class="pill wallet">חיבור חשבון ${P.name}</span><h3 style="margin-top:8px">QRUV מבקשת גישה ל-${P.name} שלך</h3>
@@ -355,7 +375,7 @@ function parentView(){
       <p class="small">QRUV לא מקבלת ולא מחזיקה בכסף. הכסף נשאר בקבוצת ה-${P.name} שלך.</p></div>
     <div class="card"><label class="f">שם הקבוצה<input class="in" id="gTitle" value="יום הולדת ${CHILD.age} ל${CHILD.name} 🎈"></label>
       ${P.groupExtra}<div style="height:8px"></div><label class="f">תאריך סגירה<input class="in" id="gDate" value="${CHILD.date}"></label></div>
-    <button class="cta wallet" data-a="authorize">אישור ב-${P.name} ופתיחת הקבוצה</button></div>`;
+    <button class="cta wallet" data-a="toOauth">המשך לאישור בארנק</button></div>`;
   case 'live': return sbar+qruvBar('קבוצת יום הולדת')+`<div class="scroll">
     <div class="card"><div class="row between"><span class="pill mint">● הקבוצה פתוחה</span><span class="small muted">נסגרת ${CHILD.date}</span></div>
       <div class="big num" style="margin-top:8px">${fmt(t)}</div><p>${S.payments.length} מתנות · ${S.group.title}</p></div>
@@ -378,7 +398,7 @@ function parentView(){
       <label class="check" style="margin-top:10px"><input type="radio" name="wp" value="direct" ${S.withdrawPath==='direct'?'checked':''}><span><b>ישירות לחברת הביטוח</b> (דורש שיתוף פעולה)<br><span class="muted">${P.name} מעבירה לחשבון הגבייה של חברת הביטוח עם מספר הפוליסה.</span></span></label></div>
     <div class="card"><label class="check"><input type="checkbox" id="consent" ${S.consent?'checked':''}><span>אני מאשר/ת ש-QRUV תעביר את פרטיי ופרטי ההפקדה לסוכנות הביטוח לצורך ההפקדה לפוליסה.</span></label></div>
     <div class="disclaimer">QRUV לא נותנת ייעוץ ביטוחי או פנסיוני ואינה מחזיקה בכספים. ההפקדה לפוליסה ושאלות על הפוליסה מטופלות על ידי סוכנות הביטוח.</div>
-    <button class="cta mint" data-a="runWithdraw" ${S.consent?'':'disabled'} id="wdBtn">אישור והעברה</button></div>`;
+    <button class="cta mint" data-a="toWalletAuth" ${S.consent?'':'disabled'} id="wdBtn">המשך לאישור בארנק</button></div>`;
   case 'progress': case 'done': {
     const direct=S.withdrawPath==='direct';
     const steps=direct?[
@@ -402,6 +422,67 @@ function parentView(){
   }
 }
 
+/* ---------- neutral wallet app (simulates PayBox / bit behaviour, not their look) ---------- */
+const wHead=(title,back)=>`<div class="sim-ribbon">הדמיה</div><div class="wallet-head">${back?`<button class="wback" data-a="${back}">→ חזרה</button>`:''}<span class="lbl">ארנק דיגיטלי (הדמיה) · מתנהג כמו ${P.name}</span><span class="ttl">${title}</span></div>`;
+const BANK='חשבון הבנק שלך ••4821';
+function walletParentView(){
+  const t=total(),g=S.group;
+  switch(S.pw){
+  case 'oauth': return sbar+wHead('חיבור ל-QRUV','wToQruv')+`<div class="scroll" style="padding-top:12px">
+    <div class="card"><div class="wapp-ic qruv" aria-hidden="true">QR<br>UV</div><h3 style="margin-top:10px">QRUV מבקשת לחבר את הארנק שלך</h3>
+      <p>אחרי האישור QRUV תוכל:</p>
+      <ul class="small" style="margin:8px 0;padding-inline-start:18px;line-height:1.7"><li>לפתוח בשמך קבוצת מתנות ל${CHILD.name}</li><li>לראות את המתנות שנכנסו</li><li>להכין בקשת משיכה, שתאשר/י כאן בעצמך</li></ul>
+      <p class="small">הכסף נשאר בארנק שלך. QRUV לא מקבלת ולא מחזיקה בו.</p></div>
+    <button class="cta wallet" data-a="approveOauth">אישור</button>
+    <button class="cta ghost" data-a="wToQruv">לא עכשיו</button></div>`;
+  case 'new': return sbar+wHead('קבוצה חדשה','wHome')+`<div class="scroll" style="padding-top:12px">
+    <div class="card"><label class="f">מטרה<input class="in" id="wgTitle" value="יום הולדת ${CHILD.age} ל${CHILD.name} 🎈"></label>
+      <div style="height:8px"></div><label class="f">סכום למשתתף<input class="in" value="פתוח (כל אחד בוחר)" readonly></label>
+      <div style="height:8px"></div><label class="f">הקבוצה נסגרת ב-<input class="in" value="${CHILD.date}" readonly></label></div>
+    <div class="card"><label class="check"><input type="checkbox" id="wgLink" checked><span><b>חיבור ל-QR של ${CHILD.name} ב-QRUV</b><br><span class="muted">מי שסורק את ה-QR ישלם לקבוצה הזו, ו-QRUV תציג לך את המתנות.</span></span></label></div>
+    <button class="cta wallet" data-a="wCreate">פתיחת הקבוצה</button></div>`;
+  case 'group': return sbar+wHead(esc(g.title),'wHome')+`<div class="scroll" style="padding-top:12px">
+    <div class="card"><div class="row between"><span class="pill ${S.closed?'gift':'mint'}">${S.withdrawn?'✓ נמשך':S.closed?'נסגרה':'● פתוחה'}</span><span class="small muted">${S.payments.length} משתתפים</span></div>
+      <div class="big num" style="margin-top:8px;color:var(--wallet)">${fmt(S.withdrawn?0:t)}</div><p>${S.withdrawn?`${fmt(t)} נמשכו`:'בקבוצה עכשיו'}</p></div>
+    ${S.linked?`<div class="card row" style="gap:10px"><div class="wapp-ic qruv sm" aria-hidden="true">QR<br>UV</div><p style="margin:0">מחובר ל-QR של ${CHILD.name} ב-QRUV</p></div>`:''}
+    <div class="card"><h3 style="font-size:15px">מי השתתף</h3>${S.payments.length?`<div class="list">${S.payments.slice().reverse().map(p=>`<div class="it"><span class="who">${esc(p.name)}</span><b class="num">${fmt(p.amount)}</b></div>`).join('')}</div>`:'<p>עוד אין תשלומים.</p>'}</div>
+    ${!S.closed?`<button class="cta ghost" data-a="noop">שיתוף קישור לקבוצה</button><button class="cta wallet" data-a="wClose" ${S.payments.length?'':'disabled'}>סגירת הקבוצה</button>`:''}
+    ${S.closed&&!S.withdrawn&&S.parent!=='progress'?`<button class="cta wallet" data-a="wToWithdraw">משיכת ${fmt(t)}</button>`:''}</div>`;
+  case 'withdraw': return sbar+wHead('משיכה מהקבוצה','wGroup')+`<div class="scroll" style="padding-top:12px">
+    <div class="card"><p>סכום</p><div class="big num" style="color:var(--wallet)">${fmt(t)}</div></div>
+    <div class="card"><h3 style="font-size:14.5px">לאן?</h3>
+      <label class="check" style="margin-top:8px"><input type="radio" name="wp" value="bank" ${S.withdrawPath==='bank'?'checked':''}><span><b>${BANK}</b><br><span class="muted">קיים היום בארנקים. אחר כך QRUV תעזור להפקיד לפוליסה.</span></span></label>
+      <label class="check" style="margin-top:10px"><input type="radio" name="wp" value="direct" ${S.withdrawPath==='direct'?'checked':''}><span><b>פוליסת החיסכון של ${CHILD.name}</b> <span class="pill warn">דורש שיתוף פעולה</span><br><span class="muted">${CHILD.policy}. ישירות לחברת הביטוח, עם מספר הפוליסה.</span></span></label></div>
+    <div class="card"><label class="check"><input type="checkbox" id="consent" ${S.consent?'checked':''}><span>אני מאשר/ת ש-QRUV תעביר את פרטיי ופרטי ההפקדה לסוכנות הביטוח לצורך ההפקדה לפוליסה.</span></label></div>
+    <button class="cta wallet" data-a="wToAuth" id="wdBtn" ${S.consent?'':'disabled'}>המשך לאישור</button></div>`;
+  case 'auth': return sbar+wHead('אישור משיכה',S.parent==='withdraw'?'wToQruv':'wWithdraw')+`<div class="scroll" style="padding-top:12px;text-align:center">
+    <div class="card"><p>משיכה של</p><div class="big num" style="color:var(--wallet)">${fmt(t)}</div>
+      <p style="margin-top:6px">אל: ${S.withdrawPath==='direct'?`פוליסת החיסכון של ${CHILD.name}`:BANK}</p></div>
+    <button class="bio" data-a="wApprove" aria-label="אישור בטביעת אצבע"><svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M14 20a10 10 0 0 1 20 0v6"/><path d="M19 21a5 5 0 0 1 10 0v8c0 4-1 7-3 10"/><path d="M24 22v8c0 4-1 7-3 10"/><path d="M9 26v-6a15 15 0 0 1 30 0v4"/><path d="M34 31c0 3-1 6-2 8"/></g></svg><span>אישור בטביעת אצבע</span></button>
+    <p class="small muted" style="margin:0">בהדמיה: לחיצה על האצבע מאשרת.</p></div>`;
+  case 'wdone': return sbar+wHead('המשיכה אושרה')+`<div class="scroll" style="padding-top:12px">
+    <div class="card" style="text-align:center"><div style="font-size:40px">✓</div><h3>${fmt(t)} בדרך</h3><p>אל ${S.withdrawPath==='direct'?`פוליסת החיסכון של ${CHILD.name}`:BANK}.</p></div>
+    <button class="cta" data-a="wToQruv">מעקב ב-QRUV</button></div>`;
+  default: return sbar+wHead(`שלום ${CFG.parent}`)+`<div class="scroll" style="padding-top:12px">
+    <div class="card"><p>היתרה שלך</p><div class="big num" style="color:var(--wallet)">${fmt(S.pBal)}</div></div>
+    <div class="qa"><button data-a="noop"><i>↗</i>העברה</button><button data-a="noop"><i>↙</i>בקשה</button><button data-a="wNew"><i>👥</i>קבוצה</button></div>
+    <div class="card"><h3 style="font-size:15px">הקבוצות שלי</h3>${g?`<button class="grow" data-a="wGroup"><span><b>${esc(g.title)}</b><span class="small muted">${S.withdrawn?'נמשך':S.closed?'נסגרה':'פתוחה'} · ${S.payments.length} משתתפים</span></span><b class="num">${fmt(S.withdrawn?0:t)}</b></button>`:`<p>אין קבוצות פתוחות. פותחים קבוצה לאירוע ומשתפים קישור או QR.</p><div style="height:8px"></div><button class="cta wallet" data-a="wNew">קבוצה חדשה</button>`}</div>
+    <div class="card"><h3 style="font-size:15px">פעולות אחרונות</h3><div class="list small"><div class="it"><span>העברה מ-אבא</span><b class="num">₪200</b></div><div class="it"><span>ארוחת צהריים</span><b class="num">-₪64</b></div></div></div></div>`;
+  }
+}
+function walletGiverView(){
+  const mine=S.myPays||[];
+  return sbar+wHead(`שלום ${esc(S.gName.split(' ')[0])}`)+`<div class="scroll" style="padding-top:12px">
+    <div class="card"><p>היתרה שלך</p><div class="big num" style="color:var(--wallet)">${fmt(S.gBal)}</div></div>
+    <div class="card"><h3 style="font-size:15px">פעולות אחרונות</h3>${mine.length?`<div class="list small">${mine.slice().reverse().map(p=>`<div class="it"><span class="who">${esc(p.name)} → ${esc(S.group?S.group.title:'')}</span><b class="num">-${fmt(p.amount)}</b></div>`).join('')}</div>`:'<p>עוד לא שילמת דרך ה-QR.</p>'}</div>
+    <p class="small muted" style="margin:0;text-align:center">כדי לתת מתנה: מצלמה ← סריקת ה-QR של ${CHILD.name}.</p></div>`;
+}
+function dock(who){
+  const items=who==='parent'?[['qruv','QRUV','pQruv',S.pApp==='qruv'],['wallet','ארנק','pWallet',S.pApp==='wallet']]
+    :[['cam','מצלמה','gCam',['scan','gift','thanks'].includes(S.giver)],['wallet','ארנק','gWallet',['paybox','wpaid','whome'].includes(S.giver)]];
+  return `<nav class="dock" aria-label="אפליקציות">${items.map(([k,l,a,on])=>`<button data-a="${a}" class="${on?'on':''}" aria-pressed="${on}"><span class="wapp-ic ${k} sm" aria-hidden="true">${k==='qruv'?'QR<br>UV':k==='wallet'?'₪':'◉'}</span>${l}</button>`).join('')}</nav>`;
+}
+
 /* ---------- giver screens ---------- */
 function giverView(){
   const open=S.group&&!S.closed;
@@ -420,12 +501,16 @@ function giverView(){
       <div style="height:8px"></div><label class="f">ברכה (לא חובה)<textarea class="in" id="msgIn">${esc(S.msg)}</textarea></label></div>
     <button class="cta wallet" data-a="payPB">תשלום ב-${P.name}</button>
     <p class="small muted" style="margin:0;text-align:center">התשלום עובר לקבוצת ה-${P.name} של ההורים. QRUV לא מחזיקה בכסף.</p></div>`;
-  case `paybox`: return sbar+`<div class="sim-ribbon">הדמיה</div><div class="wallet-head"><span class="lbl">${P.NAME} · מסך הדמיה</span><span class="ttl">אישור תשלום</span></div><div class="scroll" style="padding-top:12px">
-    <div class="card"><p>תשלום לקבוצה</p><h3>${esc(S.group.title)}</h3><p class="small">מנהל/ת הקבוצה: ${CFG.parent}</p>
+  case `paybox`: return sbar+wHead('אישור תשלום')+`<div class="scroll" style="padding-top:12px">
+    <div class="card"><p>תשלום לקבוצה</p><h3>${esc(S.group.title)}</h3><p class="small">מנהל/ת הקבוצה: ${CFG.parent} · דרך QRUV</p>
       <div class="big num" style="margin-top:10px;color:var(--wallet)">${fmt(S.amount)}</div></div>
-    <div class="card"><div class="list small"><div class="it"><span>אמצעי תשלום</span><b>יתרה ב-${P.name}</b></div><div class="it"><span>משלם/ת</span><b>${esc(S.gName)}</b></div>${S.msg?`<div class="it"><span>הערה</span><b>${esc(S.msg)}</b></div>`:''}</div></div>
+    <div class="card"><div class="list small"><div class="it"><span>אמצעי תשלום</span><b>יתרה בארנק (${fmt(S.gBal)})</b></div><div class="it"><span>משלם/ת</span><b>${esc(S.gName)}</b></div>${S.msg?`<div class="it"><span>הערה</span><b>${esc(S.msg)}</b></div>`:''}</div></div>
     <button class="cta wallet" data-a="confirmPB">אישור ותשלום</button>
     <button class="cta ghost" data-a="cancelPB">ביטול</button></div>`;
+  case 'wpaid': return sbar+wHead('התשלום בוצע')+`<div class="scroll" style="padding-top:12px">
+    <div class="card" style="text-align:center"><div style="font-size:40px">✓</div><h3>${fmt(S.amount)} שולמו</h3><p>לקבוצה "${esc(S.group.title)}"</p><p class="small">יתרה: ${fmt(S.gBal)}</p></div>
+    <button class="cta" data-a="backToQruv">חזרה ל-QRUV</button></div>`;
+  case 'whome': return walletGiverView();
   case 'thanks': return sbar+qruvBar('תודה!')+`<div class="scroll">
     <div class="card" style="text-align:center;background:var(--mint-soft);border-color:transparent"><div style="font-size:40px">🎁</div><h3>המתנה נשלחה!</h3><p style="color:var(--ink)">${fmt(S.amount)} לעתיד של ${CHILD.name}. ההורים כבר רואים אותה.</p></div>
     <button class="cta ghost" data-a="noop">שיתוף בווטסאפ</button>
@@ -438,7 +523,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 function renderChrome(){
   document.documentElement.classList.toggle('prov-bit',P.id==='bit');
   $('#hTitle').innerHTML=`<span class="q">QRUV</span> × ${P.name}: מתנות יום הולדת לפוליסת החיסכון`;
-  $('#hSub').textContent=`ההורה פותח ${P.groupTerm} ליום ההולדת, האורחים סורקים את ה-QR של הילד/ה ומשלמים ב-${P.name}, ובסוף ההורה מעביר את הסכום לפוליסת החיסכון על שם הילד/ה. כל קריאת API מופיעה ביומן, עם סימון מה מתועד ומה הנחה.`;
+  $('#hSub').textContent=`ההורה פותח ${P.groupTerm} ליום ההולדת, האורחים סורקים את ה-QR של הילד/ה ומשלמים ב-${P.name}, ובסוף ההורה מעביר את הסכום לפוליסת החיסכון על שם הילד/ה. כל קריאת API מופיעה ביומן, עם סימון מה מתועד ומה הנחה. הארנק בהדמיה הוא ארנק דיגיטלי ניטרלי שמתנהג כמו ${P.name}, לא האפליקציה שלה. בכל טלפון אפשר לעבור בין האפליקציות בסרגל התחתון.`;
   document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-checked',b.dataset.prov===P.id));
   $('#parentLbl').textContent=`${CFG.parent} · ההורה של ${CHILD.name}`;
   const ss=document.querySelectorAll('#stepper .s');[`ההורה מחבר ${P.name}`,`סריקה ותשלום ב-${P.name}`,'סגירת הקבוצה וסיכום',`${P.name} ← פוליסת החיסכון`].forEach((t,i)=>ss[i].textContent=t);
@@ -449,7 +534,7 @@ function renderChrome(){
 }
 
 function render(){renderChrome();
-  pScr.innerHTML=parentView();gScr.innerHTML=giverView();
+  pScr.innerHTML=(S.pApp==='wallet'?walletParentView():parentView())+dock('parent');gScr.innerHTML=giverView()+dock('giver');
   $('#giverName').textContent=S.gName;
   const pq=$('#pQR');if(pq)drawQR(pq,7);const gq=$('#gQR');if(gq)drawQR(gq,7);
   renderStepper();
@@ -457,15 +542,15 @@ function render(){renderChrome();
 
 /* ---------- actions ---------- */
 function startGroup(){S.parent='link';render()}
-function authorize(){
-  const title=($('#gTitle')||{}).value||`יום הולדת ל${CHILD.name}`;
+function authorize(tt){
+  const title=tt||($('#gTitle')||{}).value||`יום הולדת ל${CHILD.name}`;
   log('req','POST /oauth/authorize','asm',{client_id:'qruv',response_type:'code',scope:'groups:write payments:read withdrawals:prepare',redirect_uri:`https://qruv.app/${P.id}/callback`,state:id('st')},`ההורה מאשר ב-${P.name} ש-QRUV תנהל קבוצה בשמו. אין כזה OAuth פומבי היום.`,{code:'(auth code)',access_token:'pbx_at_…',expires_in:3600});
   const gid=id('grp');
   const body={...P.groupBody,title,owner:'parent_dana',closes_at:'2026-11-24T23:59:00+02:00',beneficiary_note:`מתנות לפוליסת החיסכון של ${CHILD.name}`,external_ref:'qruv:child:noa',webhook_url:`https://qruv.app/webhooks/${P.id}`};
   S.group={id:gid,title,link:`${P.link}`+gid.slice(4,10)};
   log('req','POST /v1/groups','asm',body,`קבוצות קיימות באפליקציית ${P.name}, אבל פתיחה מבחוץ דרך API לא מתועדת.`,{group_id:gid,status:'open',join_link:S.group.link+' (דמה)'});
   log('ui','QR → qruv.app/g/noa','int',{child:'noa',qr_target:'gift_page',payment_provider:P.id,group_id:gid},'ה-QR של הילדה לא משתנה. QRUV רק מפנה את דף המתנה לקבוצה הפעילה.');
-  S.linked=true;S.parent='live';S.step=2;render();toast('הקבוצה נפתחה. עכשיו אורחים יכולים לסרוק.');
+  S.linked=true;S.parent='live';S.step=2;S.pApp='qruv';S.pw='group';render();toast('הקבוצה נפתחה. עכשיו אורחים יכולים לסרוק.');
 }
 function scan(){
   const n=$('#gNameIn');if(n&&n.value.trim())S.gName=n.value.trim();
@@ -481,7 +566,7 @@ function payPB(){
 function confirmPB(silent){
   const p={name:S.gName,amount:S.amount,msg:S.msg,id:id('pay')};S.payments.push(p);
   log('hook','payment.succeeded','asm',{event:'payment.succeeded',group_id:S.group.id,payment_id:p.id,intent_id:S.intent||null,amount:p.amount*100,currency:'ILS',payer_display_name:p.name,note:p.msg,headers:{[`X-${P.name}-Signature`]:'t=…,v1=…'}},`${P.name} מודיעה ל-QRUV שהתשלום עבר, וההורה רואה את המתנה מיד.`);
-  if(!silent){S.giver='thanks';render()}
+  if(!silent){S.gBal-=p.amount;S.myPays.push(p);S.giver='wpaid';render()}
 }
 function nextGiver(){S.giverIdx=(S.giverIdx+1)%GIVERS.length;const g=GIVERS[S.giverIdx];S.gName=g.n;S.amount=g.a;S.msg=g.m;S.giver='scan';render()}
 function addMany(){
@@ -492,7 +577,7 @@ function addMany(){
 function endBirthday(){
   log('req','POST /v1/groups/'+S.group.id+'/close','asm',{reason:'event_ended'},'סגירת הקבוצה כדי שהסכום יהיה סופי לפני המשיכה.',{status:'closed',balance:total()*100,payments_count:S.payments.length});
   log('req','GET /v1/groups/'+S.group.id+'/balance','asm',{},`בדיקת התאמה: הסכום ב-${P.name} מול רשימת המתנות ב-QRUV.`,{available:total()*100,pending:0,currency:'ILS'});
-  S.closed=true;S.parent='summary';S.step=3;S.giver='scan';render();
+  S.closed=true;S.parent='summary';S.step=3;if(['gift','paybox'].includes(S.giver))S.giver='scan';render();
 }
 function runWithdraw(){
   const direct=S.withdrawPath==='direct';const wid=id('wd');S.wid=wid;
@@ -500,7 +585,7 @@ function runWithdraw(){
   log('req','POST /v1/groups/'+S.group.id+'/withdrawals','asm',direct?{amount:total()*100,destination:{type:'insurer_collection_account',insurer:'harel',payment_reference:CHILD.policyNo},requires_owner_approval:true}:{amount:total()*100,destination:{type:'owner_bank_account'},requires_owner_approval:true},
     direct?`לא קיים היום: משיכה ישירה לחברת ביטוח. זה הדבר המרכזי לבקש מ-${P.name} ומהראל.`:'משיכה לבנק של מנהל/ת הקבוצה קיימת באפליקציה. דרך API היא הנחה, וההורה מאשר/ת בעצמו/ה.',
     {withdrawal_id:wid,status:'pending_owner_approval',approve_deeplink:`${P.id}://withdrawals/`+wid});
-  S.parent='progress';S.step=4;S.wd=0;render();
+  S.parent='progress';S.step=4;S.wd=0;S.withdrawn=true;render();
   setTimeout(advanceWd,700);
 }
 function advanceWd(){
@@ -524,16 +609,16 @@ let auto=false;
 async function runAuto(){
   if(auto)return;auto=true;$('#autoBtn').disabled=true;
   const w=ms=>new Promise(r=>setTimeout(r,ms));
-  reset();await w(400);startGroup();await w(700);authorize();await w(900);
+  reset();await w(400);startGroup();await w(700);A.toOauth();await w(900);A.approveOauth();await w(900);
   for(let i=0;i<4;i++){
     if(innerWidth<=1000)showCol('giver');
     scan();await w(600);
     const g=GIVERS[S.giverIdx];S.amount=g.a;S.msg=g.m;render();await w(500);
-    payPB();await w(700);confirmPB();await w(800);nextGiver();await w(300);
+    payPB();await w(700);confirmPB();await w(700);A.backToQruv();await w(600);nextGiver();await w(300);
   }
   if(innerWidth<=1000)showCol('parent');
   await w(500);endBirthday();await w(1200);S.parent='withdraw';S.consent=true;render();await w(1000);
-  runWithdraw();await w(3200);if(S.parent==='progress'&&S.wd===2)depositDone();
+  A.toWalletAuth();await w(1200);wApprove();await w(1500);A.wToQruv();await w(2200);if(S.parent==='progress'&&S.wd===2)depositDone();
   auto=false;$('#autoBtn').disabled=false;
 }
 function showCol(c){
@@ -542,10 +627,33 @@ function showCol(c){
   if(c==='log')$('#logDot').hidden=true;
 }
 
-const A={startGroup,authorize,scan,payPB,confirmPB:()=>confirmPB(),nextGiver,addMany,endBirthday,runWithdraw,advanceWd,depositDone,
+function wCreate(){
+  const title=($('#wgTitle')||{}).value||`יום הולדת ל${CHILD.name}`;const link=($('#wgLink')||{checked:true}).checked;
+  const gid=id('grp');S.group={id:gid,title,link:`${P.link}`+gid.slice(4,10)};
+  log('ui','wallet: קבוצה נפתחה באפליקציה','int',{where:'wallet_app',title,amount_per_participant:'open',closes:CHILD.date},`ההורה פותח את הקבוצה ישירות בארנק, כמו שעושים היום ב-${P.name}.`);
+  if(link){log('hook','group.linked_to_partner','asm',{event:'group.linked_to_partner',partner:'qruv',group_id:gid,external_ref:'qruv:child:noa',owner_consent:true},'הנחה: הארנק מודיע ל-QRUV שהקבוצה חוברה ל-QR של הילד/ה. היום אין חיבור כזה.');
+    log('ui','QR → qruv.app/g/noa','int',{child:'noa',qr_target:'gift_page',payment_provider:P.id,group_id:gid},'ה-QR של הילד/ה לא משתנה. QRUV מפנה את דף המתנה לקבוצה הפעילה.');S.linked=true;S.parent='live';}
+  S.step=2;S.pw='group';render();toast(link?'הקבוצה נפתחה וחוברה ל-QR':'הקבוצה נפתחה');
+}
+function wClose(){endBirthday();S.pApp='wallet';S.pw='group';render()}
+function wApprove(){
+  if(S.withdrawPath==='direct'&&!S.consent){toast('צריך לאשר את העברת הפרטים לסוכנות');S.pw='withdraw';render();return}
+  runWithdraw();S.pApp='wallet';S.pw='wdone';render();
+}
+const A={wCreate,wClose,wApprove,
+  toOauth:()=>{S.gTitle=($('#gTitle')||{}).value;S.pApp='wallet';S.pw='oauth';render()},
+  approveOauth:()=>{const t=S.gTitle;authorize(t)},
+  toWalletAuth:()=>{S.pApp='wallet';S.pw='auth';render()},
+  wToQruv:()=>{S.pApp='qruv';render()},wHome:()=>{S.pw='home';render()},wNew:()=>{S.pw='new';render()},
+  wGroup:()=>{S.pw=S.group?'group':'home';render()},wToWithdraw:()=>{S.pw='withdraw';render()},wWithdraw:()=>{S.pw='withdraw';render()},
+  wToAuth:()=>{S.pw='auth';render()},
+  pQruv:()=>{S.pApp='qruv';render()},pWallet:()=>{S.pApp='wallet';if(S.pw==='oauth'||S.pw==='auth'||S.pw==='wdone')S.pw=S.group?'group':'home';render()},
+  gCam:()=>{S.giver=['gift','thanks'].includes(S.giver)?S.giver:'scan';render()},gWallet:()=>{S.giver=S.giver==='paybox'?'paybox':'whome';render()},
+  backToQruv:()=>{S.giver='thanks';render()},
+  startGroup,authorize,scan,payPB,confirmPB:()=>confirmPB(),nextGiver,addMany,endBirthday,runWithdraw,advanceWd,depositDone,
   goHome:()=>{S.parent='home';render()},toSummary:()=>{S.parent='summary';render()},toWithdraw:()=>{S.parent='withdraw';render()},
   cancelPB:()=>{S.giver='gift';render()},noop:()=>toast('בהדמיה הכפתור לא שולח דבר'),
-  newBirthday:()=>{const keep=S.logN;S.group=null;S.payments=[];S.closed=false;S.parent='home';S.step=1;S.wd=0;S.consent=false;render()}};
+  newBirthday:()=>{S.group=null;S.payments=[];S.closed=false;S.withdrawn=false;S.linked=false;S.parent='home';S.pw='home';S.step=1;S.wd=0;S.consent=false;render()}};
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(b&&!b.disabled){A[b.dataset.a]&&A[b.dataset.a]();return}
   const c=e.target.closest('[data-amt]');if(c){S.amount=+c.dataset.amt;S.msg=($('#msgIn')||{}).value||'';render();return}
