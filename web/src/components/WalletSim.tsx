@@ -5,7 +5,7 @@ import { useI18n } from '../i18n';
 import type { Child } from '../lib/api';
 
 /**
- * Birthday group gifts through a wallet (PayBox or bit), as a self-contained simulator.
+ * Birthday group gifts through two made-up wallets (Kupa, PayBox-like; Shekely, bit-like), end to end, as a self-contained simulator.
  * Neither wallet publishes a developer API, so the simulator runs on clearly labelled
  * assumed endpoints. It renders in a sandboxed iframe and reports its height back.
  */
