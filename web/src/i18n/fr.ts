@@ -444,7 +444,7 @@ export const frBase: Record<string, string> = {
   "ctab.events": "Événements",
   "ctab.learn": "Éducation financière",
   "ctab.settings": "Paramètres",
-  "ctab.wallet": "Anniversaire avec PayBox / bit",
+  "ctab.wallet": "Anniversaire avec Kupa / Shekely",
   "child.holding": "Détention",
   "child.projected": "Prévu à {age} ans",
   "child.projectedSub": "le {date}",
