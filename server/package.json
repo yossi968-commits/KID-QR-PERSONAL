@@ -1,0 +1,14 @@
+{
+  "name": "@kfq/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --no-warnings --watch src/index.js",
+    "start": "node --no-warnings src/index.js",
+    "seed": "node --no-warnings src/seed.js",
+    "test": "node --no-warnings --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
